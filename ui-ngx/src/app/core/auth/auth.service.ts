@@ -653,4 +653,14 @@ export class AuthService {
     }
   }
 
+  public signup(payload: { firstName: string; lastName: string; email: string; password: string }): Observable<LoginResponse> {
+    return this.http.post<LoginResponse>('/api/noauth/signup', payload, defaultHttpOptions()).pipe(
+      tap((res: LoginResponse) => {
+        if (res && res.token) {
+          this.setUserFromJwtToken(res.token, res.refreshToken, true);
+        }
+      })
+    );
+  }
+
 }

@@ -63,6 +63,10 @@
             <div class="tb-action-button flex flex-col">
               <button mat-raised-button color="accent" [disabled]="(isLoading$ | async)"
                       type="submit">{{ 'login.login' | translate }}</button>
+              <div class="login-signup-container">
+                <span class="no-account-text">Do not have an account?</span>
+                <button mat-button class="signup-button" routerLink="/signup">Sign up</button>
+              </div>
             </div>
           </div>
         </fieldset>

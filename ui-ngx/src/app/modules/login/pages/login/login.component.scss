@@ -37,6 +37,27 @@
 
       .tb-action-button{
         padding: 20px 0 16px;
+        .login-signup-container {
+          margin-top: 24px; 
+          text-align: left;
+        }
+
+        .no-account-text {
+          color: rgba(255, 255, 255, 0.6); 
+          font-size: 14px;
+        }
+
+        .signup-button {
+          color: #ffffff; 
+          font-weight: 600;
+          text-transform: none;
+          font-size: 14px;
+          margin-left: 4px;
+
+          &:hover {
+            text-decoration: underline;
+          }
+        }
       }
     }
 
