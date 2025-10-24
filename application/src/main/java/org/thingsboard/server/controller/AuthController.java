@@ -48,6 +48,8 @@ import org.thingsboard.server.common.data.security.model.SecuritySettings;
 import org.thingsboard.server.common.data.security.model.UserPasswordPolicy;
 import org.thingsboard.server.config.annotations.ApiOperation;
 import org.thingsboard.server.dao.settings.SecuritySettingsService;
+import org.thingsboard.server.dao.tenant.TenantService;
+import org.thingsboard.server.dao.user.UserService;
 import org.thingsboard.server.queue.util.TbCoreComponent;
 import org.thingsboard.server.service.security.auth.mfa.TwoFactorAuthService;
 import org.thingsboard.server.service.security.auth.rest.RestAuthenticationDetails;
@@ -57,10 +59,15 @@ import org.thingsboard.server.service.security.model.ChangePasswordRequest;
 import org.thingsboard.server.service.security.model.ResetPasswordEmailRequest;
 import org.thingsboard.server.service.security.model.ResetPasswordRequest;
 import org.thingsboard.server.service.security.model.SecurityUser;
+import org.thingsboard.server.service.security.model.SignupRequest;
 import org.thingsboard.server.service.security.model.UserPrincipal;
 import org.thingsboard.server.service.security.model.token.JwtTokenFactory;
 import org.thingsboard.server.service.security.system.SystemSecurityService;
 
+/////////////////////////////////////
+import org.thingsboard.server.common.data.Tenant;
+
+/// ////////////////////////////
 @RestController
 @TbCoreComponent
 @RequestMapping("/api")
@@ -69,7 +76,12 @@ import org.thingsboard.server.service.security.system.SystemSecurityService;
 public class AuthController extends BaseController {
 
     @Value("${server.rest.rate_limits.reset_password_per_user:5:3600}")
+
     private String defaultLimitsConfiguration;
+     // Them test///////////////////////////////////////////////
+    private final TenantService tenantService;
+    private final UserService userService;
+    /////////////////////////////////////////////////////////
     private final BCryptPasswordEncoder passwordEncoder;
     private final JwtTokenFactory tokenFactory;
     private final MailService mailService;
@@ -274,6 +286,64 @@ public class AuthController extends BaseController {
             eventPublisher.publishEvent(new UserCredentialsInvalidationEvent(securityUser.getId()));
         } else {
             throw new ThingsboardException("Invalid reset token!", ThingsboardErrorCode.BAD_REQUEST_PARAMS);
+        }
+    }
+
+    @ApiOperation(value = "Sign Up (signup)",
+        notes = "Public API to register a new tenant and its admin user. " +
+                "Creates a new Tenant and Tenant Admin user, then returns JWT tokens.")
+    @PostMapping(value = "/noauth/signup")
+    public ResponseEntity<?> signUp(@RequestBody SignupRequest signupRequest,
+                                    HttpServletRequest request) throws ThingsboardException {
+        try {
+            // Validate password
+            systemSecurityService.validatePassword(signupRequest.getPassword(), null);
+
+            // Tạo Tenant mới
+            Tenant tenant = new Tenant();
+            tenant.setTitle(signupRequest.getEmail()); // Dùng email làm tên Tenant
+            tenant = tenantService.saveTenant(tenant);
+
+            // Tạo User mới là Tenant Admin
+            User user = new User();
+            user.setTenantId(tenant.getId());
+            user.setAuthority(org.thingsboard.server.common.data.security.Authority.TENANT_ADMIN);
+            user.setEmail(signupRequest.getEmail());
+            user.setFirstName(signupRequest.getFirstName());
+            user.setLastName(signupRequest.getLastName());
+            user = userService.saveUser(tenant.getId(), user);
+
+
+            // Lưu credentials
+            UserCredentials credentials = userService.findUserCredentialsByUserId(tenant.getId(), user.getId());
+            if (credentials == null) {
+                credentials = new UserCredentials();
+                credentials.setUserId(user.getId());
+            }
+            credentials.setEnabled(true);
+            credentials.setActivateToken(null);
+            credentials.setPassword(passwordEncoder.encode(signupRequest.getPassword()));
+            credentials = userService.saveUserCredentials(tenant.getId(), credentials);
+            // Tạo JWT Token
+            UserPrincipal principal = new UserPrincipal(UserPrincipal.Type.USER_NAME, user.getEmail());
+            SecurityUser securityUser = new SecurityUser(user, credentials.isEnabled(), principal);
+            JwtPair tokenPair = tokenFactory.createTokenPair(securityUser);
+
+            // (Optional) Gửi mail chào mừng
+            try {
+                String baseUrl = systemSecurityService.getBaseUrl(tenant.getId(), null, request);
+                String loginUrl = String.format("%s/login", baseUrl);
+                mailService.sendAccountActivatedEmail(loginUrl, user.getEmail());
+            } catch (Exception e) {
+                log.warn("Signup succeeded but email not sent: {}", e.getMessage());
+            }
+
+            log.info("Tenant [{}] + user [{}] created successfully.", tenant.getTitle(), user.getEmail());
+            return ResponseEntity.ok(tokenPair);    
+
+        } catch (Exception e) {
+            log.error("Signup failed", e);
+            throw handleException(e);
         }
     }
 
