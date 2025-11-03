@@ -108,6 +108,13 @@ public final class DeviceProfileEntity extends BaseVersionedEntity<DeviceProfile
     @Column(name = ModelConstants.EXTERNAL_ID_PROPERTY)
     private UUID externalId;
 
+    // THÊM Ở ĐÂY: Lưu DP List giống Tuya (JSONB - tối ưu cho PostgreSQL)
+    @Convert(converter = JsonConverter.class)
+    @JdbcType(PostgreSQLJsonPGObjectJsonbType.class)
+    @Column(name = "dp_list", columnDefinition = "jsonb")
+    private JsonNode dpListJson;
+    ////////////////////////////////////////
+
     public DeviceProfileEntity() {
         super();
     }
@@ -145,8 +152,21 @@ public final class DeviceProfileEntity extends BaseVersionedEntity<DeviceProfile
         if (deviceProfile.getExternalId() != null) {
             this.externalId = deviceProfile.getExternalId().getId();
         }
+        // THÊM Ở ĐÂY: Lấy dpList từ DeviceProfile (nếu có)
+        if (deviceProfile.getDpListJson() != null) {
+            this.dpListJson = deviceProfile.getDpListJson();
+        }
     }
 
+    // THÊM Ở ĐÂY: Getter & Setter cho dpListJson
+    public JsonNode getDpListJson() {
+        return dpListJson;
+    }
+
+    public void setDpListJson(JsonNode dpListJson) {
+        this.dpListJson = dpListJson;
+    }
+    ////////////////////////////////////////
     @Override
     public DeviceProfile toData() {
         DeviceProfile deviceProfile = new DeviceProfile(new DeviceProfileId(this.getUuid()));
@@ -184,7 +204,9 @@ public final class DeviceProfileEntity extends BaseVersionedEntity<DeviceProfile
         if (externalId != null) {
             deviceProfile.setExternalId(new DeviceProfileId(externalId));
         }
-
+        // THÊM Ở ĐÂY
+        deviceProfile.setDpListJson(this.dpListJson);
+        ////////////////////////////////////////
         return deviceProfile;
     }
 

@@ -129,6 +129,8 @@ export class DeviceProfileComponent extends EntityComponent<DeviceProfile> {
         firmwareId: [entity ? entity.firmwareId : null],
         softwareId: [entity ? entity.softwareId : null],
         description: [entity ? entity.description : '', []],
+        // THÊM Ở ĐÂY: DP List giống Tuya
+        dpListJson: [entity?.dpListJson || { dp: [] }, []],
       }
     );
     form.get('type').valueChanges.pipe(
@@ -216,6 +218,8 @@ export class DeviceProfileComponent extends EntityComponent<DeviceProfile> {
     this.entityForm.patchValue({firmwareId: entity.firmwareId}, {emitEvent: false});
     this.entityForm.patchValue({softwareId: entity.softwareId}, {emitEvent: false});
     this.entityForm.patchValue({description: entity.description}, {emitEvent: false});
+    // THÊM Ở ĐÂY: Cập nhật dpListJson
+    this.entityForm.patchValue({dpListJson: entity.dpListJson || { dp: [] }}, {emitEvent: false});
   }
 
   prepareFormValue(formValue: any): any {
@@ -245,5 +249,9 @@ export class DeviceProfileComponent extends EntityComponent<DeviceProfile> {
         horizontalPosition: 'right'
       }));
   }
-
+    // THÊM Ở ĐÂY: Khi DP List thay đổi
+  onDpListChange(dpList: any) {
+    this.entityForm.get('dpListJson').setValue(dpList);
+    this.entityForm.markAsDirty();
+  }
 }

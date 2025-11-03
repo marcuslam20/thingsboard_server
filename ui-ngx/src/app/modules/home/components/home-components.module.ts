@@ -206,6 +206,16 @@ import {
 import { CheckConnectivityDialogComponent } from '@home/components/ai-model/check-connectivity-dialog.component';
 import { AIModelDialogComponent } from '@home/components/ai-model/ai-model-dialog.component';
 
+// THEM O DAY 
+import { DpListEditorComponent } from '@home/components/profile/device/dp-list-editor.component';
+import { MatTableModule } from '@angular/material/table';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
+import { MatSelectModule } from '@angular/material/select';
+import { MatIconModule } from '@angular/material/icon';
+import { FormsModule } from '@angular/forms';
+////////////////////////////////////
+
 @NgModule({
   declarations:
     [
@@ -358,6 +368,9 @@ import { AIModelDialogComponent } from '@home/components/ai-model/ai-model-dialo
       CalculatedFieldTestArgumentsComponent,
       CheckConnectivityDialogComponent,
       AIModelDialogComponent,
+      // THEM O DAY
+      DpListEditorComponent,
+      ////////////////////////////////////
     ],
   imports: [
     CommonModule,
@@ -370,7 +383,15 @@ import { AIModelDialogComponent } from '@home/components/ai-model/ai-model-dialo
     StatesControllerModule,
     DeviceCredentialsModule,
     DeviceProfileCommonModule,
-    EntityDebugSettingsButtonComponent
+    EntityDebugSettingsButtonComponent,
+    // THEM O DAY
+    MatTableModule,
+    MatFormFieldModule,
+    MatInputModule,
+    MatSelectModule,
+    MatIconModule,
+    FormsModule,
+    ///////////////////////////////////
   ],
   exports: [
     RouterTabsComponent,
@@ -505,6 +526,9 @@ import { AIModelDialogComponent } from '@home/components/ai-model/ai-model-dialo
     CalculatedFieldTestArgumentsComponent,
     CheckConnectivityDialogComponent,
     AIModelDialogComponent,
+    // THEM O DAY 
+    DpListEditorComponent,
+    ////////////////////////////////////
   ],
   providers: [
     WidgetComponentService,

@@ -17,6 +17,8 @@ package org.thingsboard.server.common.data;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.Valid;
 import lombok.Data;
@@ -36,6 +38,7 @@ import org.thingsboard.server.common.data.validation.NoXss;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import com.fasterxml.jackson.databind.JsonNode;
 
 @Schema
 @Data
@@ -98,7 +101,9 @@ public class DeviceProfile extends BaseData<DeviceProfileId> implements HasName,
 
     private DeviceProfileId externalId;
     private Long version;
-
+     // THÊM Ở ĐÂY: DP List giống Tuya
+    private JsonNode dpListJson;
+    /////////////////////////////////////////
     public DeviceProfile() {
         super();
     }
@@ -124,6 +129,9 @@ public class DeviceProfile extends BaseData<DeviceProfileId> implements HasName,
         this.defaultEdgeRuleChainId = deviceProfile.getDefaultEdgeRuleChainId();
         this.externalId = deviceProfile.getExternalId();
         this.version = deviceProfile.getVersion();
+        // THÊM Ở ĐÂY: Copy dpListJson từ source
+        this.dpListJson = deviceProfile.getDpListJson();
+        ////////////////////////////////////////
     }
 
     @Schema(description = "JSON object with the device profile Id. " +
@@ -173,5 +181,14 @@ public class DeviceProfile extends BaseData<DeviceProfileId> implements HasName,
             log.warn("Can't serialize device profile data: ", e);
         }
     }
+    // THÊM Ở ĐÂY: Getter & Setter cho DP List (giống Tuya)
+    public JsonNode getDpListJson() {
+        return dpListJson;
+    }
+
+    public void setDpListJson(JsonNode dpListJson) {
+        this.dpListJson = dpListJson;
+    }
+    ////////////////////////////////////////
 
 }
