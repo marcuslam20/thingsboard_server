@@ -1,0 +1,73 @@
+<div class="tb-login-content mat-app-background tb-dark flex flex-1 items-center justify-center">
+  <mat-card appearance="raised" style="max-height: 80vh; overflow-y: auto;">
+    <mat-card-content>
+      <form class="tb-login-form" [formGroup]="signupForm" (ngSubmit)="signup()">
+        <fieldset class="flex flex-col">
+          <div class="flex flex-col items-center justify-start" style="padding: 15px 0;">
+            <tb-logo class="login-logo"></tb-logo>
+          </div>
+
+          <mat-progress-bar color="warn" mode="indeterminate" *ngIf="isLoading$ | async"></mat-progress-bar>
+          <span style="height: 4px;" *ngIf="!(isLoading$ | async)"></span>
+
+          <div tb-toast class="layout-padding flex flex-col">
+            <span style="height: 50px;"></span>
+
+            <mat-form-field class="tb-appearance-transparent">
+              <mat-label>First name</mat-label>
+              <input matInput formControlName="firstname" type="text" placeholder="Enter your first name">
+              <mat-icon matPrefix>person</mat-icon>
+              <mat-error *ngIf="signupForm.get('firstname')?.hasError('required') && signupForm.get('firstname')?.touched">
+                First name is required
+              </mat-error>
+            </mat-form-field>
+
+            <!-- Lastname -->
+            <mat-form-field class="tb-appearance-transparent">
+              <mat-label>Last name</mat-label>
+              <input matInput formControlName="lastname" type="text" placeholder="Enter your last name">
+              <mat-icon matPrefix>person</mat-icon>
+              <mat-error *ngIf="signupForm.get('lastname')?.hasError('required') && signupForm.get('lastname')?.touched">
+                Last name is required
+              </mat-error>
+            </mat-form-field>
+            
+            <mat-form-field class="tb-appearance-transparent">
+              <mat-label>Email</mat-label>
+              <input matInput formControlName="email" type="email" placeholder="Enter your email">
+              <mat-icon matPrefix>email</mat-icon>
+              <mat-error *ngIf="signupForm.get('email')?.invalid && signupForm.get('email')?.touched">
+                Invalid email address
+              </mat-error>
+            </mat-form-field>
+
+            <mat-form-field class="tb-appearance-transparent">
+              <mat-label>Password</mat-label>
+              <input matInput formControlName="password" type="password" placeholder="Enter password">
+              <tb-toggle-password matSuffix></tb-toggle-password>
+              <mat-icon matPrefix>lock</mat-icon>
+            </mat-form-field>
+
+            <mat-form-field class="tb-appearance-transparent">
+              <mat-label>Confirm Password</mat-label>
+              <input matInput formControlName="confirmPassword" type="password" placeholder="Confirm password">
+              <tb-toggle-password matSuffix></tb-toggle-password>
+              <mat-icon matPrefix>lock</mat-icon>
+              <mat-error *ngIf="passwordMismatch">Passwords do not match</mat-error>
+            </mat-form-field>
+
+            <div class="tb-action-button flex flex-col">
+              <button mat-raised-button color="accent" [disabled]="(isLoading$ | async)" type="submit">
+                Sign up
+              </button>
+              <div class="login-signup-container">
+                <span class="no-account-text">Already have an account?</span>
+                <button mat-button class="signup-button" routerLink="/login">Login</button>
+              </div>
+            </div>
+          </div>
+        </fieldset>
+      </form>
+    </mat-card-content>
+  </mat-card>
+</div>
