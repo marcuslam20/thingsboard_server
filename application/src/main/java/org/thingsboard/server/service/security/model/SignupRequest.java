@@ -24,4 +24,5 @@ public class SignupRequest {
     private String firstName;
     private String lastName;
     private String tenantTitle; // optional
+    private String tenantId; // optional
 }
