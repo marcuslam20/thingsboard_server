@@ -13,8 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-const forwardUrl = "http://192.168.68.128:8080";
-const wsForwardUrl = "ws://192.168.68.128:8080";
+const forwardUrl = "http://192.168.1.224:8080";
+const wsForwardUrl = "ws://192.168.1.224:8080";
 // const forwardUrl = "https://performentmarketing.ddnsgeek.com";
 // const wsForwardUrl = "https://performentmarketing.ddnsgeek.com";
 const ruleNodeUiforwardUrl = forwardUrl;

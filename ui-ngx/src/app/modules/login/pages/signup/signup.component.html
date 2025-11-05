@@ -56,6 +56,24 @@
               <mat-error *ngIf="passwordMismatch">Passwords do not match</mat-error>
             </mat-form-field>
 
+            <!-- THÊM MỚI: Tenant ID Input-->
+            <mat-form-field class="tb-appearance-transparent">
+              <mat-label>Tenant ID</mat-label>
+              <input matInput 
+                    formControlName="tenantId" 
+                    type="text" 
+                    placeholder="e.g. 13814000-1dd2-11b2-8080-808080808080"
+                    [class.mat-form-field-invalid]="signupForm.get('tenantId')?.invalid && signupForm.get('tenantId')?.touched">
+              <mat-icon matPrefix>apartment</mat-icon>
+              <mat-hint>Enter the Tenant ID provided by your admin</mat-hint>
+              <mat-error *ngIf="signupForm.get('tenantId')?.hasError('required') && signupForm.get('tenantId')?.touched">
+                Tenant ID is required
+              </mat-error>
+              <mat-error *ngIf="signupForm.get('tenantId')?.hasError('pattern') && signupForm.get('tenantId')?.touched">
+                Invalid Tenant ID format
+              </mat-error>
+            </mat-form-field>
+
             <div class="tb-action-button flex flex-col">
               <button mat-raised-button color="accent" [disabled]="(isLoading$ | async)" type="submit">
                 Sign up
