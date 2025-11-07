@@ -27,10 +27,13 @@ import org.thingsboard.server.common.data.User;
 import org.thingsboard.server.common.data.audit.ActionType;
 import org.thingsboard.server.common.data.edge.Edge;
 import org.thingsboard.server.common.data.exception.ThingsboardException;
+import org.thingsboard.server.common.data.id.CustomerId;
 import org.thingsboard.server.common.data.id.EdgeId;
 import org.thingsboard.server.common.data.id.RuleChainId;
 import org.thingsboard.server.common.data.id.RuleNodeId;
 import org.thingsboard.server.common.data.id.TenantId;
+import org.thingsboard.server.common.data.page.PageData;
+import org.thingsboard.server.common.data.page.PageLink;
 import org.thingsboard.server.common.data.plugin.ComponentLifecycleEvent;
 import org.thingsboard.server.common.data.relation.EntityRelation;
 import org.thingsboard.server.common.data.rule.DefaultRuleChainCreateRequest;
@@ -428,4 +431,12 @@ public class DefaultTbRuleChainService extends AbstractTbEntityService implement
         return ruleNode != null && ruleNode.getType().equals(clazz.getName());
     }
 
+    //THEM CHO CUSTOMER
+    @Override
+    public PageData<RuleChain> findRuleChainsByTenantIdAndCustomerId(
+            TenantId tenantId, CustomerId customerId, RuleChainType type, PageLink pageLink) {
+        log.trace("Executing findRuleChainsByTenantIdAndCustomerId [{}][{}]", tenantId, customerId);
+        return ruleChainService.findRuleChainsByTenantIdAndCustomerId(tenantId, customerId, type, pageLink);
+    }
+    ////////////////////////////////////////////////
 }

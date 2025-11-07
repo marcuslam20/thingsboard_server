@@ -27,6 +27,7 @@ import org.thingsboard.server.common.data.HasDefaultOption;
 import org.thingsboard.server.common.data.HasName;
 import org.thingsboard.server.common.data.HasTenantId;
 import org.thingsboard.server.common.data.HasVersion;
+import org.thingsboard.server.common.data.id.CustomerId;
 import org.thingsboard.server.common.data.id.RuleChainId;
 import org.thingsboard.server.common.data.id.RuleNodeId;
 import org.thingsboard.server.common.data.id.TenantId;
@@ -51,6 +52,18 @@ public class RuleChain extends BaseDataWithAdditionalInfo<RuleChainId> implement
     private RuleChainType type;
     @Schema(description = "JSON object with Rule Chain Id. Pointer to the first rule node that should receive all messages pushed to this rule chain.")
     private RuleNodeId firstRuleNodeId;
+    // === THÊM CHO CUSTOMER ===
+    @Schema(description = "Customer ID - null nếu thuộc Tenant")
+    private CustomerId customerId;
+
+    public CustomerId getCustomerId() {
+        return customerId;
+    }
+
+    public void setCustomerId(CustomerId customerId) {
+        this.customerId = customerId;
+    }
+    ///////////////////////////////////////////
     @Schema(description = "Indicates root rule chain. The root rule chain process messages from all devices and entities by default. User may configure default rule chain per device profile.")
     private boolean root;
     @Schema(description = "Reserved for future usage.")

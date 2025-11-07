@@ -18,12 +18,16 @@ package org.thingsboard.server.service.rule;
 import org.thingsboard.server.common.data.User;
 import org.thingsboard.server.common.data.edge.Edge;
 import org.thingsboard.server.common.data.exception.ThingsboardException;
+import org.thingsboard.server.common.data.id.CustomerId;
 import org.thingsboard.server.common.data.id.RuleChainId;
 import org.thingsboard.server.common.data.id.TenantId;
+import org.thingsboard.server.common.data.page.PageData;
+import org.thingsboard.server.common.data.page.PageLink;
 import org.thingsboard.server.common.data.rule.DefaultRuleChainCreateRequest;
 import org.thingsboard.server.common.data.rule.RuleChain;
 import org.thingsboard.server.common.data.rule.RuleChainMetaData;
 import org.thingsboard.server.common.data.rule.RuleChainOutputLabelsUsage;
+import org.thingsboard.server.common.data.rule.RuleChainType;
 import org.thingsboard.server.common.data.rule.RuleChainUpdateResult;
 import org.thingsboard.server.common.data.rule.RuleNode;
 import org.thingsboard.server.service.entitiy.SimpleTbEntityService;
@@ -57,4 +61,9 @@ public interface TbRuleChainService extends SimpleTbEntityService<RuleChain> {
     RuleChain unsetAutoAssignToEdgeRuleChain(TenantId tenantId, RuleChain ruleChain, User user) throws ThingsboardException;
 
     RuleNode updateRuleNodeConfiguration(RuleNode ruleNode);
+
+    // === THÊM CHO CUSTOMER ===
+    PageData<RuleChain> findRuleChainsByTenantIdAndCustomerId(
+        TenantId tenantId, CustomerId customerId, RuleChainType type, PageLink pageLink
+    );
 }

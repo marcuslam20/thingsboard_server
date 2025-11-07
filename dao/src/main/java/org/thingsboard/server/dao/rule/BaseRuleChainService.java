@@ -32,6 +32,7 @@ import org.thingsboard.server.common.data.EntityType;
 import org.thingsboard.server.common.data.audit.ActionType;
 import org.thingsboard.server.common.data.edge.Edge;
 import org.thingsboard.server.common.data.exception.EntityVersionMismatchException;
+import org.thingsboard.server.common.data.id.CustomerId;
 import org.thingsboard.server.common.data.id.EdgeId;
 import org.thingsboard.server.common.data.id.EntityId;
 import org.thingsboard.server.common.data.id.HasId;
@@ -465,6 +466,19 @@ public class BaseRuleChainService extends AbstractEntityService implements RuleC
         Validator.validatePageLink(pageLink);
         return ruleChainDao.findRuleChainsByTenantIdAndType(tenantId.getId(), type, pageLink);
     }
+    // === THÊM CHO CUSTOMER ===
+    @Override
+    public PageData<RuleChain> findRuleChainsByTenantIdAndCustomerId(
+            TenantId tenantId, CustomerId customerId, RuleChainType type, PageLink pageLink) {
+        return ruleChainDao.findRuleChainsByTenantIdAndCustomerId(
+            tenantId.getId(), customerId.getId(), type, pageLink);
+    }
+
+    @Override
+    public RuleChain findCustomerRootRuleChain(TenantId tenantId, CustomerId customerId, RuleChainType type) {
+        return ruleChainDao.findCustomerRootRuleChain(tenantId.getId(), customerId.getId(), type);
+    }
+    //////////////////////////////////////////////
 
     @Override
     public Collection<RuleChain> findTenantRuleChainsByTypeAndName(TenantId tenantId, RuleChainType type, String name) {

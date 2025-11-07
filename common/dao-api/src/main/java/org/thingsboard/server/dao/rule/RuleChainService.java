@@ -17,6 +17,7 @@ package org.thingsboard.server.dao.rule;
 
 import com.google.common.util.concurrent.ListenableFuture;
 import org.thingsboard.server.common.data.exception.ThingsboardException;
+import org.thingsboard.server.common.data.id.CustomerId;
 import org.thingsboard.server.common.data.id.EdgeId;
 import org.thingsboard.server.common.data.id.RuleChainId;
 import org.thingsboard.server.common.data.id.RuleNodeId;
@@ -73,6 +74,13 @@ public interface RuleChainService extends EntityDaoService {
     List<EntityRelation> getRuleNodeRelations(TenantId tenantId, RuleNodeId ruleNodeId);
 
     PageData<RuleChain> findTenantRuleChainsByType(TenantId tenantId, RuleChainType type, PageLink pageLink);
+    // === THÊM CHO CUSTOMER ===
+    PageData<RuleChain> findRuleChainsByTenantIdAndCustomerId(
+        TenantId tenantId, CustomerId customerId, RuleChainType type, PageLink pageLink
+    );
+
+    RuleChain findCustomerRootRuleChain(TenantId tenantId, CustomerId customerId, RuleChainType type);
+    ///////////////////////////////////////////////
 
     Collection<RuleChain> findTenantRuleChainsByTypeAndName(TenantId tenantId, RuleChainType type, String name);
 

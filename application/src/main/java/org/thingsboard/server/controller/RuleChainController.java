@@ -71,6 +71,7 @@ import org.thingsboard.server.queue.util.TbCoreComponent;
 import org.thingsboard.server.service.rule.TbRuleChainService;
 import org.thingsboard.server.service.script.RuleNodeJsScriptEngine;
 import org.thingsboard.server.service.script.RuleNodeTbelScriptEngine;
+import org.thingsboard.server.service.security.model.SecurityUser;
 import org.thingsboard.server.service.security.permission.Operation;
 import org.thingsboard.server.service.security.permission.Resource;
 
@@ -208,24 +209,51 @@ public class RuleChainController extends BaseController {
         return ruleChainService.loadRuleChainMetaData(getTenantId(), ruleChainId);
     }
 
+    // @ApiOperation(value = "Create Or Update Rule Chain (saveRuleChain)",
+    //         notes = "Create or update the Rule Chain. When creating Rule Chain, platform generates Rule Chain Id as " + UUID_WIKI_LINK +
+    //                 "The newly created Rule Chain Id will be present in the response. " +
+    //                 "Specify existing Rule Chain id to update the rule chain. " +
+    //                 "Referencing non-existing rule chain Id will cause 'Not Found' error." +
+    //                 "\n\n" + RULE_CHAIN_DESCRIPTION +
+    //                 "Remove 'id', 'tenantId' from the request body example (below) to create new Rule Chain entity." +
+    //                 TENANT_AUTHORITY_PARAGRAPH)
+    // @PreAuthorize("hasAuthority('TENANT_ADMIN')")
+    // @PostMapping("/ruleChain")
+    // public RuleChain saveRuleChain(
+    //         @Parameter(description = "A JSON value representing the rule chain.")
+    //         @RequestBody RuleChain ruleChain) throws Exception {
+    //     ruleChain.setTenantId(getCurrentUser().getTenantId());
+    //     checkEntity(ruleChain.getId(), ruleChain, Resource.RULE_CHAIN);
+    //     return tbRuleChainService.save(ruleChain, getCurrentUser());
+    // }
+
+    // THEM CHO CUSTOMER =================================================================
     @ApiOperation(value = "Create Or Update Rule Chain (saveRuleChain)",
-            notes = "Create or update the Rule Chain. When creating Rule Chain, platform generates Rule Chain Id as " + UUID_WIKI_LINK +
-                    "The newly created Rule Chain Id will be present in the response. " +
-                    "Specify existing Rule Chain id to update the rule chain. " +
-                    "Referencing non-existing rule chain Id will cause 'Not Found' error." +
-                    "\n\n" + RULE_CHAIN_DESCRIPTION +
-                    "Remove 'id', 'tenantId' from the request body example (below) to create new Rule Chain entity." +
-                    TENANT_AUTHORITY_PARAGRAPH)
-    @PreAuthorize("hasAuthority('TENANT_ADMIN')")
+        notes = "Create or update the Rule Chain. When creating Rule Chain, platform generates Rule Chain Id as " + UUID_WIKI_LINK +
+                "The newly created Rule Chain Id will be present in the response. " +
+                "Specify existing Rule Chain id to update the rule chain. " +
+                "Referencing non-existing rule chain Id will cause 'Not Found' error." +
+                "\n\n" + RULE_CHAIN_DESCRIPTION +
+                "Remove 'id', 'tenantId' from the request body example (below) to create new Rule Chain entity." +
+                TENANT_AUTHORITY_PARAGRAPH)
+    @PreAuthorize("hasAuthority('TENANT_ADMIN') OR " +
+                "(hasAuthority('CUSTOMER_USER') AND #ruleChain.customerId == principal.customerId)")
     @PostMapping("/ruleChain")
     public RuleChain saveRuleChain(
             @Parameter(description = "A JSON value representing the rule chain.")
             @RequestBody RuleChain ruleChain) throws Exception {
-        ruleChain.setTenantId(getCurrentUser().getTenantId());
-        checkEntity(ruleChain.getId(), ruleChain, Resource.RULE_CHAIN);
-        return tbRuleChainService.save(ruleChain, getCurrentUser());
-    }
 
+        SecurityUser user = getCurrentUser();
+        ruleChain.setTenantId(user.getTenantId());
+
+        if (user.isCustomerUser()) {
+            ruleChain.setCustomerId(user.getCustomerId());
+        }
+
+        checkEntity(ruleChain.getId(), ruleChain, Resource.RULE_CHAIN);
+        return tbRuleChainService.save(ruleChain, user);
+    }
+    // ==================================================================================
     @ApiOperation(value = "Create Default Rule Chain",
             notes = "Create rule chain from template, based on the specified name in the request. " +
                     "Creates the rule chain based on the template that is used to create root rule chain. " + TENANT_AUTHORITY_PARAGRAPH)
@@ -275,9 +303,35 @@ public class RuleChainController extends BaseController {
         return tbRuleChainService.saveRuleChainMetaData(tenantId, ruleChain, ruleChainMetaData, updateRelated, getCurrentUser());
     }
 
+    // @ApiOperation(value = "Get Rule Chains (getRuleChains)",
+    //         notes = "Returns a page of Rule Chains owned by tenant. " + RULE_CHAIN_DESCRIPTION + PAGE_DATA_PARAMETERS + TENANT_AUTHORITY_PARAGRAPH)
+    // @PreAuthorize("hasAuthority('TENANT_ADMIN')")
+    // @GetMapping(value = "/ruleChains", params = {"pageSize", "page"})
+    // public PageData<RuleChain> getRuleChains(
+    //         @Parameter(description = PAGE_SIZE_DESCRIPTION, required = true)
+    //         @RequestParam int pageSize,
+    //         @Parameter(description = PAGE_NUMBER_DESCRIPTION, required = true)
+    //         @RequestParam int page,
+    //         @Parameter(description = RULE_CHAIN_TYPE_DESCRIPTION, schema = @Schema(allowableValues = {"CORE", "EDGE"}))
+    //         @RequestParam(value = "type", required = false) String typeStr,
+    //         @Parameter(description = RULE_CHAIN_TEXT_SEARCH_DESCRIPTION)
+    //         @RequestParam(required = false) String textSearch,
+    //         @Parameter(description = SORT_PROPERTY_DESCRIPTION, schema = @Schema(allowableValues = {"createdTime", "name", "root"}))
+    //         @RequestParam(required = false) String sortProperty,
+    //         @Parameter(description = SORT_ORDER_DESCRIPTION, schema = @Schema(allowableValues = {"ASC", "DESC"}))
+    //         @RequestParam(required = false) String sortOrder) throws ThingsboardException {
+    //     TenantId tenantId = getCurrentUser().getTenantId();
+    //     PageLink pageLink = createPageLink(pageSize, page, textSearch, sortProperty, sortOrder);
+    //     RuleChainType type = RuleChainType.CORE;
+    //     if (StringUtils.isNotBlank(typeStr)) {
+    //         type = RuleChainType.valueOf(typeStr);
+    //     }
+    //     return checkNotNull(ruleChainService.findTenantRuleChainsByType(tenantId, type, pageLink));
+    // }
+    // THEM CHO CUSTOMER =================================================================
     @ApiOperation(value = "Get Rule Chains (getRuleChains)",
-            notes = "Returns a page of Rule Chains owned by tenant. " + RULE_CHAIN_DESCRIPTION + PAGE_DATA_PARAMETERS + TENANT_AUTHORITY_PARAGRAPH)
-    @PreAuthorize("hasAuthority('TENANT_ADMIN')")
+        notes = "Returns a page of Rule Chains owned by tenant or customer. " + RULE_CHAIN_DESCRIPTION + PAGE_DATA_PARAMETERS + TENANT_AUTHORITY_PARAGRAPH)
+    @PreAuthorize("hasAnyAuthority('TENANT_ADMIN', 'CUSTOMER_USER')")
     @GetMapping(value = "/ruleChains", params = {"pageSize", "page"})
     public PageData<RuleChain> getRuleChains(
             @Parameter(description = PAGE_SIZE_DESCRIPTION, required = true)
@@ -292,15 +346,23 @@ public class RuleChainController extends BaseController {
             @RequestParam(required = false) String sortProperty,
             @Parameter(description = SORT_ORDER_DESCRIPTION, schema = @Schema(allowableValues = {"ASC", "DESC"}))
             @RequestParam(required = false) String sortOrder) throws ThingsboardException {
-        TenantId tenantId = getCurrentUser().getTenantId();
+
+        SecurityUser user = getCurrentUser();
         PageLink pageLink = createPageLink(pageSize, page, textSearch, sortProperty, sortOrder);
         RuleChainType type = RuleChainType.CORE;
         if (StringUtils.isNotBlank(typeStr)) {
             type = RuleChainType.valueOf(typeStr);
         }
-        return checkNotNull(ruleChainService.findTenantRuleChainsByType(tenantId, type, pageLink));
-    }
 
+        if (user.isCustomerUser()) {
+            return checkNotNull(ruleChainService.findRuleChainsByTenantIdAndCustomerId(
+                user.getTenantId(), user.getCustomerId(), type, pageLink));
+        } else {
+            return checkNotNull(ruleChainService.findTenantRuleChainsByType(user.getTenantId(), type, pageLink));
+        }
+    }
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    /// THEM CHO CUSTOMER =================================================================
     @ApiOperation(value = "Delete rule chain (deleteRuleChain)",
             notes = "Deletes the rule chain. Referencing non-existing rule chain Id will cause an error. " +
                     "Referencing rule chain that is used in the device profiles will cause an error." + TENANT_AUTHORITY_PARAGRAPH)
