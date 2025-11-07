@@ -415,6 +415,7 @@ public class ModelConstants {
      */
     public static final String RULE_CHAIN_TABLE_NAME = "rule_chain";
     public static final String RULE_CHAIN_TENANT_ID_PROPERTY = TENANT_ID_PROPERTY;
+    public static final String RULE_CHAIN_CUSTOMER_ID_PROPERTY = CUSTOMER_ID_PROPERTY;
     public static final String RULE_CHAIN_NAME_PROPERTY = "name";
     public static final String RULE_CHAIN_TYPE_PROPERTY = "type";
     public static final String RULE_CHAIN_FIRST_RULE_NODE_ID_PROPERTY = "first_rule_node_id";

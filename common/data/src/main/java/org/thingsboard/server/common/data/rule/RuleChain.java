@@ -44,6 +44,10 @@ public class RuleChain extends BaseDataWithAdditionalInfo<RuleChainId> implement
 
     @Schema(requiredMode = Schema.RequiredMode.REQUIRED, description = "JSON object with Tenant Id.", accessMode = Schema.AccessMode.READ_ONLY)
     private TenantId tenantId;
+    // === THÊM CHO CUSTOMER ===
+    @Schema(description = "JSON object with Customer Id. If set - rule chain belongs to specific customer.", accessMode = Schema.AccessMode.READ_ONLY)
+    private CustomerId customerId;
+    ////////////////////////////////////////////
     @NoXss
     @Length(fieldName = "name")
     @Schema(requiredMode = Schema.RequiredMode.REQUIRED, description = "Rule Chain name", example = "Humidity data processing")
@@ -76,6 +80,9 @@ public class RuleChain extends BaseDataWithAdditionalInfo<RuleChainId> implement
     public RuleChain(RuleChain ruleChain) {
         super(ruleChain);
         this.tenantId = ruleChain.getTenantId();
+        // === THÊM CHO CUSTOMER ===
+        this.customerId = ruleChain.getCustomerId(); // <-- thêm dòng này
+        ////////////////////////////////////////////
         this.name = ruleChain.getName();
         this.type = ruleChain.getType();
         this.firstRuleNodeId = ruleChain.getFirstRuleNodeId();

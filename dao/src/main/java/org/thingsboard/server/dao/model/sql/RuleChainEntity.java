@@ -36,6 +36,10 @@ import org.thingsboard.server.dao.util.mapping.JsonConverter;
 
 import java.util.UUID;
 
+// THÊM CHO CUSTOMER
+import org.thingsboard.server.common.data.id.CustomerId;
+///////////////////////////////////////////
+
 @Data
 @EqualsAndHashCode(callSuper = true)
 @Entity
@@ -45,6 +49,10 @@ public class RuleChainEntity extends BaseVersionedEntity<RuleChain> {
     @Column(name = ModelConstants.RULE_CHAIN_TENANT_ID_PROPERTY)
     private UUID tenantId;
 
+    // THÊM CHO CUSTOMER
+    @Column(name = ModelConstants.RULE_CHAIN_CUSTOMER_ID_PROPERTY)
+    private UUID customerId;
+    //////////////////////////////////
     @Column(name = ModelConstants.RULE_CHAIN_NAME_PROPERTY)
     private String name;
 
@@ -78,6 +86,9 @@ public class RuleChainEntity extends BaseVersionedEntity<RuleChain> {
     public RuleChainEntity(RuleChain ruleChain) {
         super(ruleChain);
         this.tenantId = DaoUtil.getId(ruleChain.getTenantId());
+        // THÊM CHO CUSTOMER
+        this.customerId = DaoUtil.getId(ruleChain.getCustomerId());
+        ////////////////////////////////////
         this.name = ruleChain.getName();
         this.type = ruleChain.getType();
         if (ruleChain.getFirstRuleNodeId() != null) {
@@ -98,6 +109,11 @@ public class RuleChainEntity extends BaseVersionedEntity<RuleChain> {
         ruleChain.setCreatedTime(createdTime);
         ruleChain.setVersion(version);
         ruleChain.setTenantId(TenantId.fromUUID(tenantId));
+        // THÊM CHO CUSTOMER
+        if (customerId != null) {
+            ruleChain.setCustomerId(new CustomerId(customerId));
+        }
+        ////////////////////////////////////
         ruleChain.setName(name);
         ruleChain.setType(type);
         if (firstRuleNodeId != null) {

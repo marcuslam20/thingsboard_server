@@ -62,4 +62,15 @@ public interface TbRuleChainService extends SimpleTbEntityService<RuleChain> {
 
     RuleNode updateRuleNodeConfiguration(RuleNode ruleNode);
 
+    // THÊM CHO CUSTOMER
+    /**
+     * Find rule chains by tenantId and customerId
+     */
+    PageData<RuleChain> findRuleChainsByTenantIdAndCustomerId(TenantId tenantId, CustomerId customerId, PageLink pageLink);
+
+    /**
+     * Save rule chain for specific customer
+     */
+    RuleChain saveCustomerRuleChain(TenantId tenantId, CustomerId customerId, RuleChain ruleChain, User user) throws Exception;
+    ////////////////////////////////////////////
 }

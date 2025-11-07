@@ -44,11 +44,21 @@ public interface RuleChainRepository extends JpaRepository<RuleChainEntity, UUID
                                                 @Param("type") RuleChainType type,
                                                 @Param("searchText") String searchText,
                                                 Pageable pageable);
-
+// THÊM CHO CUSTOMER
+    @Query("SELECT rc FROM RuleChainEntity rc WHERE rc.tenantId = :tenantId " +
+            "AND rc.customerId = :customerId " +
+            "AND (:searchText IS NULL OR ilike(rc.name, CONCAT('%', :searchText, '%')) = true)")
+    Page<RuleChainEntity> findByTenantIdAndCustomerId(@Param("tenantId") UUID tenantId,
+                                                      @Param("customerId") UUID customerId,
+                                                      @Param("searchText") String searchText,
+                                                      Pageable pageable);
+//////////////////////////////////
     @Query("SELECT rc FROM RuleChainEntity rc, RelationEntity re WHERE rc.tenantId = :tenantId " +
             "AND rc.id = re.toId AND re.toType = 'RULE_CHAIN' AND re.relationTypeGroup = 'EDGE' " +
             "AND re.relationType = 'Contains' AND re.fromId = :edgeId AND re.fromType = 'EDGE' " +
             "AND (:searchText IS NULL OR ilike(rc.name, CONCAT('%', :searchText, '%')) = true)")
+
+        
     Page<RuleChainEntity> findByTenantIdAndEdgeId(@Param("tenantId") UUID tenantId,
                                                   @Param("edgeId") UUID edgeId,
                                                   @Param("searchText") String searchText,

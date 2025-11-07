@@ -78,6 +78,20 @@ public class JpaRuleChainDao extends JpaAbstractDao<RuleChainEntity, RuleChain> 
                         DaoUtil.toPageable(pageLink)));
     }
 
+    // THEM CHO CUSTOMER
+    @Override
+    public PageData<RuleChain> findRuleChainsByTenantIdAndCustomerId(UUID tenantId, UUID customerId, PageLink pageLink) {
+        log.debug("Try to find rule chains by tenantId [{}], customerId [{}] and pageLink [{}]", tenantId, customerId, pageLink);
+        return DaoUtil.toPageData(ruleChainRepository.findByTenantIdAndCustomerId(
+                tenantId,
+                customerId,
+                pageLink.getTextSearch(),
+                DaoUtil.toPageable(pageLink)
+        ));
+    }
+
+    /////////////////////////////////////////
+
     @Override
     public RuleChain findRootRuleChainByTenantIdAndType(UUID tenantId, RuleChainType type) {
         log.debug("Try to find root rule chain by tenantId [{}] and type [{}]", tenantId, type);

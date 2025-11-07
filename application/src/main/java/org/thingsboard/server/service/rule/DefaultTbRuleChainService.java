@@ -430,4 +430,19 @@ public class DefaultTbRuleChainService extends AbstractTbEntityService implement
     private boolean isRuleNode(RuleNode ruleNode, Class<?> clazz) {
         return ruleNode != null && ruleNode.getType().equals(clazz.getName());
     }
+
+    //THÊM CHO CUSTOMER
+    @Override
+    public PageData<RuleChain> findRuleChainsByTenantIdAndCustomerId(TenantId tenantId, CustomerId customerId, PageLink pageLink) {
+        return ruleChainService.findRuleChainsByTenantIdAndCustomerId(tenantId, customerId, pageLink);
+    }
+
+    @Override
+    public RuleChain saveCustomerRuleChain(TenantId tenantId, CustomerId customerId, RuleChain ruleChain, User user) throws Exception {
+        ruleChain.setTenantId(tenantId);
+        ruleChain.setCustomerId(customerId);
+        return this.save(ruleChain, (SecurityUser) user);
+    }
+
+    ////////////////////////////    
 }

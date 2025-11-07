@@ -101,6 +101,14 @@ public interface RuleChainService extends EntityDaoService {
 
     PageData<RuleChain> findAutoAssignToEdgeRuleChainsByTenantId(TenantId tenantId, PageLink pageLink);
 
+    // THÊM CHO CUSTOMER
+        /**
+     * Find all RuleChains of a specific Customer (within a Tenant)
+     */
+    PageData<RuleChain> findRuleChainsByTenantIdAndCustomerId(TenantId tenantId, CustomerId customerId, PageLink pageLink);
+
+    /////////////////////////////////////////////////
+
     List<RuleNode> findRuleNodesByTenantIdAndType(TenantId tenantId, String name, String toString);
 
     List<RuleNode> findRuleNodesByTenantIdAndType(TenantId tenantId, String type);

@@ -938,5 +938,11 @@ public class BaseRuleChainService extends AbstractEntityService implements RuleC
 
         ruleNode.setSingletonMode(singletonMode);
     }
+    // THÊM CHO CUSTOMER
+    @Override
+    public PageData<RuleChain> findRuleChainsByTenantIdAndCustomerId(TenantId tenantId, CustomerId customerId, PageLink pageLink) {
+        return ruleChainDao.findRuleChainsByTenantIdAndCustomerId(tenantId.getId(), customerId.getId(), pageLink);
+    }
 
+    ///////////////////////////////////////////
 }

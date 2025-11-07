@@ -46,7 +46,9 @@ import org.thingsboard.server.actors.tenant.DebugTbRateLimits;
 import org.thingsboard.server.common.data.EventInfo;
 import org.thingsboard.server.common.data.StringUtils;
 import org.thingsboard.server.common.data.edge.Edge;
+import org.thingsboard.server.common.data.exception.ThingsboardErrorCode;
 import org.thingsboard.server.common.data.exception.ThingsboardException;
+import org.thingsboard.server.common.data.id.CustomerId;
 import org.thingsboard.server.common.data.id.EdgeId;
 import org.thingsboard.server.common.data.id.RuleChainId;
 import org.thingsboard.server.common.data.id.RuleNodeId;
@@ -277,6 +279,28 @@ public class RuleChainController extends BaseController {
         return tbRuleChainService.saveRuleChainMetaData(tenantId, ruleChain, ruleChainMetaData, updateRelated, getCurrentUser());
     }
 
+    // THÊM CHO CUSTOMER
+    @ApiOperation(value = "Update Customer Rule Chain Metadata",
+        notes = "Cho phép Customer cập nhật metadata cho rule chain của họ.")
+    @PreAuthorize("hasAnyAuthority('CUSTOMER_USER', 'CUSTOMER_ADMIN')")
+    @PostMapping("/customer/ruleChain/metadata")
+    public RuleChainMetaData saveCustomerRuleChainMetaData(
+            @RequestBody RuleChainMetaData ruleChainMetaData) throws Exception {
+        SecurityUser user = getCurrentUser();
+        TenantId tenantId = user.getTenantId();
+        CustomerId customerId = user.getCustomerId();
+
+        RuleChain ruleChain = checkRuleChain(ruleChainMetaData.getRuleChainId(), Operation.WRITE);
+
+        // Kiểm tra quyền sở hữu
+        if (!customerId.equals(ruleChain.getCustomerId())) {
+            throw new ThingsboardException("Bạn không có quyền chỉnh sửa RuleChain này!", ThingsboardErrorCode.PERMISSION_DENIED);
+        }
+
+        return tbRuleChainService.saveRuleChainMetaData(tenantId, ruleChain, ruleChainMetaData, true, user);
+    }
+
+    ////////////////////////////////////
     @ApiOperation(value = "Get Rule Chains (getRuleChains)",
             notes = "Returns a page of Rule Chains owned by tenant. " + RULE_CHAIN_DESCRIPTION + PAGE_DATA_PARAMETERS + TENANT_AUTHORITY_PARAGRAPH)
     @PreAuthorize("hasAuthority('TENANT_ADMIN')")
@@ -302,6 +326,48 @@ public class RuleChainController extends BaseController {
         }
         return checkNotNull(ruleChainService.findTenantRuleChainsByType(tenantId, type, pageLink));
     }
+
+    // THÊM CHO CUSTOMER
+
+    @ApiOperation(value = "Get Customer Rule Chains (getCustomerRuleChains)",
+        notes = "Trả về danh sách rule chain thuộc về customer đang đăng nhập.")
+    @PreAuthorize("hasAnyAuthority('CUSTOMER_USER', 'CUSTOMER_ADMIN')")
+    @GetMapping(value = "/customer/ruleChains", params = {"pageSize", "page"})
+    public PageData<RuleChain> getCustomerRuleChains(
+            @RequestParam int pageSize,
+            @RequestParam int page,
+            @RequestParam(required = false) String textSearch,
+            @RequestParam(required = false) String sortProperty,
+            @RequestParam(required = false) String sortOrder) throws ThingsboardException {
+        SecurityUser user = getCurrentUser();
+        TenantId tenantId = user.getTenantId();
+        CustomerId customerId = user.getCustomerId();
+        PageLink pageLink = createPageLink(pageSize, page, textSearch, sortProperty, sortOrder);
+
+        return checkNotNull(ruleChainService.findRuleChainsByTenantIdAndCustomerId(tenantId, customerId, pageLink));
+    }
+
+    @ApiOperation(value = "Create Or Update Customer Rule Chain (saveCustomerRuleChain)",
+        notes = "Cho phép customer tạo hoặc cập nhật Rule Chain của riêng họ.")
+    @PreAuthorize("hasAnyAuthority('CUSTOMER_USER', 'CUSTOMER_ADMIN')")
+    @PostMapping("/customer/ruleChain")
+    public RuleChain saveCustomerRuleChain(
+            @Parameter(description = "A JSON value representing the rule chain.")
+            @RequestBody RuleChain ruleChain) throws Exception {
+        SecurityUser user = getCurrentUser();
+        TenantId tenantId = user.getTenantId();
+        if (user.getCustomerId() == null || user.getCustomerId().isNullUid()) {
+            throw new ThingsboardException("Customer ID is required!", ThingsboardErrorCode.BAD_REQUEST_PARAMS);
+        }
+
+        ruleChain.setTenantId(tenantId);
+        ruleChain.setCustomerId(user.getCustomerId()); // gán customer hiện tại
+
+        checkEntity(ruleChain.getId(), ruleChain, Resource.RULE_CHAIN);
+        return tbRuleChainService.save(ruleChain, user);
+    }
+
+    //////////////////////////////////
     @ApiOperation(value = "Delete rule chain (deleteRuleChain)",
             notes = "Deletes the rule chain. Referencing non-existing rule chain Id will cause an error. " +
                     "Referencing rule chain that is used in the device profiles will cause an error." + TENANT_AUTHORITY_PARAGRAPH)
@@ -317,6 +383,30 @@ public class RuleChainController extends BaseController {
         tbRuleChainService.delete(ruleChain, getCurrentUser());
     }
 
+    // THÊM CHO CUSTOMER
+    @ApiOperation(value = "Delete Customer Rule Chain (deleteCustomerRuleChain)",
+        notes = "Xóa rule chain thuộc customer đang đăng nhập.")
+    @PreAuthorize("hasAnyAuthority('CUSTOMER_USER', 'CUSTOMER_ADMIN')")
+    @DeleteMapping("/customer/ruleChain/{ruleChainId}")
+    @ResponseStatus(HttpStatus.OK)
+    public void deleteCustomerRuleChain(
+            @PathVariable(RULE_CHAIN_ID) String strRuleChainId) throws ThingsboardException {
+        checkParameter(RULE_CHAIN_ID, strRuleChainId);
+        SecurityUser user = getCurrentUser();
+        TenantId tenantId = user.getTenantId();
+        CustomerId customerId = user.getCustomerId();
+        RuleChainId ruleChainId = new RuleChainId(toUUID(strRuleChainId));
+
+        RuleChain ruleChain = checkRuleChain(ruleChainId, Operation.DELETE);
+
+        if (!customerId.equals(ruleChain.getCustomerId())) {
+            throw new ThingsboardException("Bạn không có quyền xóa RuleChain này!", ThingsboardErrorCode.PERMISSION_DENIED);
+        }
+
+        tbRuleChainService.delete(ruleChain, user);
+    }
+
+    ///////////////////////////////////////////
     @ApiOperation(value = "Get latest input message (getLatestRuleNodeDebugInput)",
             notes = "Gets the input message from the debug events for specified Rule Chain Id. " +
                     "Referencing non-existing rule chain Id will cause an error. " + TENANT_AUTHORITY_PARAGRAPH)
