@@ -85,6 +85,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 
+import static org.thingsboard.server.controller.ControllerConstants.CUSTOMER_AUTHORITY_PARAGRAPH;
 import static org.thingsboard.server.controller.ControllerConstants.EDGE_ASSIGN_ASYNC_FIRST_STEP_DESCRIPTION;
 import static org.thingsboard.server.controller.ControllerConstants.EDGE_ASSIGN_RECEIVE_STEP_DESCRIPTION;
 import static org.thingsboard.server.controller.ControllerConstants.EDGE_ID;
@@ -170,6 +171,38 @@ public class RuleChainController extends BaseController {
         return checkRuleChain(ruleChainId, Operation.READ);
     }
 
+    // THEM CHO CUSTOMER
+    @ApiOperation(value = "Get Customer Rule Chain by ID (getCustomerRuleChainById)",
+            notes = "Fetch the Rule Chain object based on the provided Rule Chain Id.")
+    @GetMapping("/customer/ruleChain/{ruleChainId}")
+    public RuleChain getCustomerRuleChainById(
+            @Parameter(description = "Rule Chain ID")
+            @PathVariable("ruleChainId") String strRuleChainId) throws ThingsboardException {
+        
+        checkParameter("ruleChainId", strRuleChainId);
+        RuleChainId ruleChainId = new RuleChainId(toUUID(strRuleChainId));
+
+        SecurityUser user = getCurrentUser();
+
+        if(!user.isCustomerUser()) {
+            throw new ThingsboardException(" Must Customer have this permission",
+                ThingsboardErrorCode.PERMISSION_DENIED);
+        }
+
+        RuleChain ruleChain = ruleChainService.findRuleChainById(getTenantId(), ruleChainId);
+        if (ruleChain == null) {
+            throw new ThingsboardException("Rule Chain not found!",
+                ThingsboardErrorCode.ITEM_NOT_FOUND);
+        }
+
+        if (!user.getCustomerId().equals(ruleChain.getCustomerId())) {
+            throw new ThingsboardException("Rule Chain not permission for you!",
+                ThingsboardErrorCode.PERMISSION_DENIED);
+        }
+        return ruleChain;
+
+    } 
+    //////////////////////////////////////////////////////
     @ApiOperation(value = "Get Rule Chain output labels (getRuleChainOutputLabels)",
             notes = "Fetch the unique labels for the \"output\" Rule Nodes that belong to the Rule Chain based on the provided Rule Chain Id. "
                     + RULE_CHAIN_DESCRIPTION + TENANT_AUTHORITY_PARAGRAPH)
@@ -211,6 +244,30 @@ public class RuleChainController extends BaseController {
         return ruleChainService.loadRuleChainMetaData(getTenantId(), ruleChainId);
     }
 
+    // THÊM CHO CUSTOMER
+    @ApiOperation(value = "Get Rule Chain (getCustomerRuleChainById)",
+            notes = "Fetch the Rule Chain Metadata object based on the provided Rule Chain Id. " + RULE_CHAIN_METADATA_DESCRIPTION + CUSTOMER_AUTHORITY_PARAGRAPH)
+    @PreAuthorize("hasAuthority('CUSTOMER_USER')")
+    @GetMapping("/customer/ruleChain/{ruleChainId}/metadata")
+    public RuleChainMetaData getCustomerChainMetaData(
+            @PathVariable(RULE_CHAIN_ID) String strRuleChainId) throws ThingsboardException {
+        RuleChainId ruleChainId = new RuleChainId(toUUID(strRuleChainId));
+
+        SecurityUser user = getCurrentUser();
+
+        RuleChain ruleChain = ruleChainService.findRuleChainById(getTenantId(), ruleChainId);
+        if (ruleChain == null) {
+            throw new ThingsboardException("Rule Chain not found!",
+                ThingsboardErrorCode.ITEM_NOT_FOUND);
+        }
+
+        if (!user.getCustomerId().equals(ruleChain.getCustomerId())) {
+            throw new ThingsboardException("Not your Rule Chain!", ThingsboardErrorCode.PERMISSION_DENIED);
+        }
+
+        return ruleChainService.loadRuleChainMetaData(getTenantId(), ruleChainId);
+    } 
+    /////////////////////////////////////////
     @ApiOperation(value = "Create Or Update Rule Chain (saveRuleChain)",
             notes = "Create or update the Rule Chain. When creating Rule Chain, platform generates Rule Chain Id as " + UUID_WIKI_LINK +
                     "The newly created Rule Chain Id will be present in the response. " +
@@ -331,7 +388,7 @@ public class RuleChainController extends BaseController {
 
     @ApiOperation(value = "Get Customer Rule Chains (getCustomerRuleChains)",
         notes = "Trả về danh sách rule chain thuộc về customer đang đăng nhập.")
-    @PreAuthorize("hasAnyAuthority('CUSTOMER_USER', 'CUSTOMER_ADMIN')")
+    @PreAuthorize("hasAuthority('CUSTOMER_USER')")
     @GetMapping(value = "/customer/ruleChains", params = {"pageSize", "page"})
     public PageData<RuleChain> getCustomerRuleChains(
             @RequestParam int pageSize,
@@ -363,7 +420,7 @@ public class RuleChainController extends BaseController {
         ruleChain.setTenantId(tenantId);
         ruleChain.setCustomerId(user.getCustomerId()); // gán customer hiện tại
 
-        checkEntity(ruleChain.getId(), ruleChain, Resource.RULE_CHAIN);
+        // checkEntity(ruleChain.getId(), ruleChain, Resource.RULE_CHAIN);
         return tbRuleChainService.save(ruleChain, user);
     }
 
