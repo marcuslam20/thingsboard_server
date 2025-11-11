@@ -90,6 +90,10 @@ import {
 import { FormProperty, propertyValid } from '@shared/models/dynamic-form.models';
 import { CalculatedFieldsService } from '@core/http/calculated-fields.service';
 import { CalculatedField } from '@shared/models/calculated-field.models';
+// THÊM CHO CUSTOMER
+import { getCurrentAuthState, getCurrentAuthUser } from '@core/auth/auth.selectors';
+import { Authority } from '@shared/models/authority.enum';
+/////////////////////////////////////
 
 export type editMissingAliasesFunction = (widgets: Array<Widget>, isSingleWidget: boolean,
                                           customTitle: string, missingEntityAliases: EntityAliases) => Observable<EntityAliases>;
@@ -122,6 +126,16 @@ export class ImportExportService {
               private dialog: MatDialog) {
 
   }
+
+  // THÊM CHO CUSTOMER 
+  private getApiPrefix(): string {
+    const authUser = getCurrentAuthUser(this.store);
+    if (authUser.authority === Authority.CUSTOMER_USER) {
+      return '/api/customer';
+    }
+    return '/api';
+  }
+  ///////////////////////////////
 
   public exportFormProperties(properties: FormProperty[], fileName: string) {
     this.exportToPc(properties, fileName);
@@ -438,6 +452,8 @@ export class ImportExportService {
   }
 
   public exportEntity(entityData: VersionedEntity): void {
+    //THÊM CHO CUSTOMER
+    const apiPrefix = this.getApiPrefix();
     const id = (entityData as EntityInfoData).id ?? (entityData as RuleChainMetaData).ruleChainId;
     let fileName = (entityData as EntityInfoData).name;
     let preparedData;
@@ -447,7 +463,7 @@ export class ImportExportService {
         preparedData = this.prepareProfileExport(entityData as DeviceProfile | AssetProfile);
         break;
       case EntityType.RULE_CHAIN:
-        forkJoin([this.ruleChainService.getRuleChainMetadata(id.id), this.ruleChainService.getRuleChain(id.id)])
+        forkJoin([this.ruleChainService.getRuleChainMetadata(id.id, null, apiPrefix), this.ruleChainService.getRuleChain(id.id, undefined, apiPrefix)])
           .pipe(
             take(1),
             map(([ruleChainMetaData, ruleChain]) => {
@@ -646,8 +662,9 @@ export class ImportExportService {
   }
 
   public exportRuleChain(ruleChainId: string) {
-    this.ruleChainService.getRuleChain(ruleChainId).pipe(
-      mergeMap(ruleChain => this.ruleChainService.getRuleChainMetadata(ruleChainId).pipe(
+    const apiPrefix = this.getApiPrefix();
+    this.ruleChainService.getRuleChain(ruleChainId, { ignoreErrors: true, ignoreLoading: true }, apiPrefix).pipe(
+      mergeMap(ruleChain => this.ruleChainService.getRuleChainMetadata(ruleChainId, null, apiPrefix).pipe(
         map((ruleChainMetaData) => {
           const ruleChainExport: RuleChainImport = {
             ruleChain: this.prepareRuleChain(ruleChain),
@@ -714,8 +731,10 @@ export class ImportExportService {
             },
             additionalInfo: ruleChainConnection.additionalInfo
           };
+          // THÊM CHO CUSTOMER
+          const apiPrefix = this.getApiPrefix();
           ruleChainNameResolveObservables.push(this.ruleChainService.getRuleChain(ruleChainNode.configuration.ruleChainId,
-            {ignoreErrors: true, ignoreLoading: true}).pipe(
+            {ignoreErrors: true, ignoreLoading: true}, apiPrefix).pipe(
               catchError(() => of({name: 'Rule Chain Input'} as RuleChain)),
               map((ruleChain => {
                 ruleChainNode.name = ruleChain.name;

@@ -905,7 +905,10 @@ const defaultUserMenuMap = new Map<Authority, MenuReference[]>([
         pages: [
           {id: MenuId.notification_inbox}
         ]
-      }
+      },
+      // === THÊM CHO CUSTOMER ===
+      {id: MenuId.rule_chains}
+      ///////////////////////////
     ]
   ]
 ]);
@@ -1022,6 +1025,12 @@ const referenceToMenuSection = (authState: AuthState, reference: MenuReference):
         result.pages = reference.pages.map(page =>
           referenceToMenuSection(authState, page)).filter(page => !!page);
       }
+
+      // THÊM CHO CUSTOMER
+      if (result.id === MenuId.rule_chains && authState.authUser.authority === Authority.CUSTOMER_USER) {
+        result.path = '/customer-rule-chains';
+      }
+      /////////////////////////////////
       return result;
     } else {
       return undefined;

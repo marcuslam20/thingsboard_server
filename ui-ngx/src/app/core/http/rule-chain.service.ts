@@ -67,11 +67,15 @@ export class RuleChainService {
     return this.http.get<PageData<RuleChain>>(`/api/ruleChains${pageLink.toQuery()}&type=${type}`,
       defaultHttpOptionsFromConfig(config));
   }
-
-  public getRuleChain(ruleChainId: string, config?: RequestConfig): Observable<RuleChain> {
-    return this.http.get<RuleChain>(`/api/ruleChain/${ruleChainId}`, defaultHttpOptionsFromConfig(config));
+  // THÊM CHO CUSTOMER
+  // public getRuleChain(ruleChainId: string, config?: RequestConfig): Observable<RuleChain> {
+  //   return this.http.get<RuleChain>(`/api/ruleChain/${ruleChainId}`, defaultHttpOptionsFromConfig(config));
+  // }
+  public getRuleChain(ruleChainId: string, config?: RequestConfig, apiPrefix: string = '/api'): Observable<RuleChain> {
+    return this.http.get<RuleChain>(`${apiPrefix}/ruleChain/${ruleChainId}`, defaultHttpOptionsFromConfig(config));
   }
-
+  /////////////////////////////////////////
+  
   public getRuleChainOutputLabels(ruleChainId: string, config?: RequestConfig): Observable<Array<string>> {
     return this.http.get<Array<string>>(`/api/ruleChain/${ruleChainId}/output/labels`, defaultHttpOptionsFromConfig(config));
   }
@@ -82,26 +86,42 @@ export class RuleChainService {
     }, defaultHttpOptionsFromConfig(config));
   }
 
-  public saveRuleChain(ruleChain: RuleChain, config?: RequestConfig): Observable<RuleChain> {
-    return this.http.post<RuleChain>('/api/ruleChain', ruleChain, defaultHttpOptionsFromConfig(config));
+  // THÊM CHO CUSTOMER
+  // public saveRuleChain(ruleChain: RuleChain, config?: RequestConfig): Observable<RuleChain> {
+  //   return this.http.post<RuleChain>('/api/ruleChain', ruleChain, defaultHttpOptionsFromConfig(config));
+  // }
+  public saveRuleChain(ruleChain: RuleChain, config?: RequestConfig, apiPrefix: string = '/api'): Observable<RuleChain> {
+    return this.http.post<RuleChain>(`${apiPrefix}/ruleChain`, ruleChain, defaultHttpOptionsFromConfig(config));
   }
+  /////////////////////////////////////////
 
-  public deleteRuleChain(ruleChainId: string, config?: RequestConfig) {
-    return this.http.delete(`/api/ruleChain/${ruleChainId}`, defaultHttpOptionsFromConfig(config));
+  // THÊM CHO CUSTOMER
+  // public deleteRuleChain(ruleChainId: string, config?: RequestConfig) {
+  //   return this.http.delete(`/api/ruleChain/${ruleChainId}`, defaultHttpOptionsFromConfig(config));
+  // }
+  public deleteRuleChain(ruleChainId: string, config?: RequestConfig, apiPrefix: string = '/api') {
+    return this.http.delete(`${apiPrefix}/ruleChain/${ruleChainId}`, defaultHttpOptionsFromConfig(config));
   }
-
+  /////////////////////////////////////////
   public setRootRuleChain(ruleChainId: string, config?: RequestConfig): Observable<RuleChain> {
     return this.http.post<RuleChain>(`/api/ruleChain/${ruleChainId}/root`, null, defaultHttpOptionsFromConfig(config));
   }
-
-  public getRuleChainMetadata(ruleChainId: string, config?: RequestConfig): Observable<RuleChainMetaData> {
-    return this.http.get<RuleChainMetaData>(`/api/ruleChain/${ruleChainId}/metadata`, defaultHttpOptionsFromConfig(config));
+  // THÊM CHO CUSTOMER
+  // public getRuleChainMetadata(ruleChainId: string, config?: RequestConfig): Observable<RuleChainMetaData> {
+  //   return this.http.get<RuleChainMetaData>(`/api/ruleChain/${ruleChainId}/metadata`, defaultHttpOptionsFromConfig(config));
+  // }
+  public getRuleChainMetadata(ruleChainId: string, config?: RequestConfig, apiPrefix: string = '/api'): Observable<RuleChainMetaData> {
+    return this.http.get<RuleChainMetaData>(`${apiPrefix}/ruleChain/${ruleChainId}/metadata`,defaultHttpOptionsFromConfig(config));
   }
-
-  public saveRuleChainMetadata(ruleChainMetaData: RuleChainMetaData, config?: RequestConfig): Observable<RuleChainMetaData> {
-    return this.http.post<RuleChainMetaData>('/api/ruleChain/metadata', ruleChainMetaData, defaultHttpOptionsFromConfig(config));
+  // /////////////////////////////////////////
+  // THÊM CHO CUSTOMER
+  // public saveRuleChainMetadata(ruleChainMetaData: RuleChainMetaData, config?: RequestConfig): Observable<RuleChainMetaData> {
+  //   return this.http.post<RuleChainMetaData>('/api/ruleChain/metadata', ruleChainMetaData, defaultHttpOptionsFromConfig(config));
+  // }
+  public saveRuleChainMetadata(ruleChainMetaData: RuleChainMetaData,config?: RequestConfig, apiPrefix: string = '/api'): Observable<RuleChainMetaData> {
+    return this.http.post<RuleChainMetaData>(`${apiPrefix}/ruleChain/metadata`,ruleChainMetaData,defaultHttpOptionsFromConfig(config));
   }
-
+  /////////////////////////////////////////
   public getRuleNodeComponents(modulesMap: IModulesMap, ruleChainType: RuleChainType, config?: RequestConfig):
     Observable<Array<RuleNodeComponentDescriptor>> {
      if (this.ruleNodeComponentsMap.get(ruleChainType)) {
@@ -291,4 +311,8 @@ export class RuleChainService {
     return this.http.post<Edge>(`/api/edge/${edgeId}/${ruleChainId}/root`, defaultHttpOptionsFromConfig(config));
   }
 
+  // THÊM CHO CUSTOMER
+  public getTenantRuleChains(url: string, pageLink: PageLink): Observable<PageData<RuleChain>> {
+    return this.http.get<PageData<RuleChain>>(`${url}${pageLink.toQuery()}`, defaultHttpOptionsFromConfig()); 
+  }
 }

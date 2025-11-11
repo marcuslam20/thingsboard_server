@@ -98,6 +98,10 @@ import { TbContextMenuEvent } from '@shared/models/jquery-event.models';
 import { EntityDebugSettings } from '@shared/models/entity.models';
 import Timeout = NodeJS.Timeout;
 
+// THÊM CHO CUSTOMER
+import { getCurrentAuthState, getCurrentAuthUser } from '@core/auth/auth.selectors';
+import { Authority } from '@shared/models/authority.enum';
+/////////////////////////////////////
 @Component({
   selector: 'tb-rulechain-page',
   templateUrl: './rulechain-page.component.html',
@@ -1033,7 +1037,11 @@ export class RuleChainPageComponent extends PageComponent
           node.additionalInfo.layoutX -= deltaX;
           node.additionalInfo.layoutY -= deltaY;
         });
-        this.ruleChainService.saveRuleChainMetadata(ruleChainMetaData).subscribe(() => {
+
+        // THÊM CHO CUSTOMER
+        const apiPrefix = this.getApiPrefix();
+        //////////////////////////
+        this.ruleChainService.saveRuleChainMetadata(ruleChainMetaData, null, apiPrefix).subscribe(() => {
           const component = this.ruleChainService.getRuleNodeComponentByClazz(this.ruleChainType, ruleChainNodeClazz);
           const descriptor = ruleNodeTypeDescriptors.get(component.type);
           let icon = descriptor.icon;
@@ -1455,12 +1463,16 @@ export class RuleChainPageComponent extends PageComponent
 
   saveRuleChain(): Observable<any> {
     const saveResult = new ReplaySubject<void>();
+    // THÊM CHO CUSTOMER
+    const apiPrefix = this.getApiPrefix();
+    ////////////////////////////////
     let saveRuleChainObservable: Observable<RuleChain>;
     if (this.isImport) {
-      saveRuleChainObservable = this.ruleChainService.saveRuleChain(this.ruleChain);
+      saveRuleChainObservable = this.ruleChainService.saveRuleChain(this.ruleChain, undefined, apiPrefix);
     } else {
       saveRuleChainObservable = of(this.ruleChain);
     }
+    
     saveRuleChainObservable.subscribe((ruleChain) => {
       this.ruleChain = ruleChain;
       const ruleChainMetaData: RuleChainMetaData = {
@@ -1513,11 +1525,12 @@ export class RuleChainPageComponent extends PageComponent
           });
         }
       });
-      this.ruleChainService.saveRuleChainMetadata(ruleChainMetaData)
+      this.ruleChainService.saveRuleChainMetadata(ruleChainMetaData, null, apiPrefix)
         .pipe(
           catchError(err => {
             if (err.status === HttpStatusCode.Conflict) {
-              return this.ruleChainService.getRuleChainMetadata(ruleChainMetaData.ruleChainId.id);
+              // return this.ruleChainService.getRuleChainMetadata(ruleChainMetaData.ruleChainId.id);    // COMMENT 11/11/2025
+              return this.ruleChainService.getRuleChainMetadata(ruleChainMetaData.ruleChainId.id, null, apiPrefix);
             }
             return throwError(() => err);
           })
@@ -1543,10 +1556,11 @@ export class RuleChainPageComponent extends PageComponent
   }
 
   reloadRuleChain() {
-    this.ruleChainService.getRuleChain(this.ruleChain.id.id).subscribe((ruleChain) => {
+    const apiPrefix = this.getApiPrefix();
+    this.ruleChainService.getRuleChain(this.ruleChain.id.id, undefined, apiPrefix).subscribe((ruleChain) => {
       this.ruleChain = ruleChain;
       this.updateBreadcrumbs.emit();
-      this.ruleChainService.getRuleChainMetadata(this.ruleChain.id.id).subscribe((ruleChainMetaData) => {
+      this.ruleChainService.getRuleChainMetadata(this.ruleChain.id.id, null, apiPrefix).subscribe((ruleChainMetaData) => {
         this.ruleChainMetaData = ruleChainMetaData;
         this.isDirtyValue = false;
         this.createRuleChainModel();
@@ -1736,6 +1750,16 @@ export class RuleChainPageComponent extends PageComponent
       tooltip.open();
     }, 500);
   }
+
+  // THÊM CHO CUSTOMER
+  private getApiPrefix(): string {
+    const authUser = getCurrentAuthUser(this.store);
+    if (authUser.authority === Authority.CUSTOMER_USER) {
+      return '/api/customer';
+    }
+    return '/api';
+  }
+  //////////////////////////////////////////
 }
 
 export interface AddRuleNodeLinkDialogData {

@@ -96,16 +96,30 @@ export class RuleChainsTableConfigResolver  {
 
   resolve(route: ActivatedRouteSnapshot): EntityTableConfig<RuleChain> {
     const edgeId = route.params?.edgeId;
+    // THÊM CHO CUSTOMER
+    const apiPrefix = route.data.apiPrefix || '/api'; // LẤY TỪ ROUTE
+    //////////////////////
     const ruleChainScope = route.data?.ruleChainsType ? route.data?.ruleChainsType : 'tenant';
     this.config.componentsData = {
       ruleChainScope,
-      edgeId
+      edgeId,
+      apiPrefix // THEM CHO CUSTOMER
     };
     this.config.columns = this.configureEntityTableColumns(ruleChainScope);
-    this.config.entitiesFetchFunction = this.configureEntityFunctions(ruleChainScope, edgeId);
+    // this.config.entitiesFetchFunction = this.configureEntityFunctions(ruleChainScope, edgeId);      //// COMMENT DONG NAY 11/11/2025
+    // THÊM CHO CUSTOMER
+    this.config.entitiesFetchFunction = (pageLink: PageLink) => {
+      return this.ruleChainService.getTenantRuleChains(apiPrefix + '/ruleChains', pageLink);
+    };
+    //////////////////////////////
     this.config.groupActionDescriptors = this.configureGroupActions(ruleChainScope);
     this.config.addActionDescriptors = this.configureAddActions(ruleChainScope);
     this.config.cellActionDescriptors = this.configureCellActions(ruleChainScope);
+    // === THÊM CHO CUSTOMER: loadEntity & saveEntity ===
+    this.config.loadEntity = (id) => this.ruleChainService.getRuleChain(id.id, undefined, apiPrefix);
+    this.config.saveEntity = (ruleChain) => this.ruleChainService.saveRuleChain(ruleChain, undefined, apiPrefix);
+    this.config.deleteEntity = (id) => this.ruleChainService.deleteRuleChain(id.id, undefined, apiPrefix);
+    /////////////////////////////////////////////////////////
     if (ruleChainScope === 'tenant' || ruleChainScope === 'edges') {
       this.config.entitySelectionEnabled = ruleChain => ruleChain && !ruleChain.root;
       this.config.deleteEnabled = (ruleChain) => ruleChain && !ruleChain.root;

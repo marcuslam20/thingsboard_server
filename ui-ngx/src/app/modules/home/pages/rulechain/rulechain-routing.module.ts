@@ -34,6 +34,11 @@ import { ItemBufferService, MenuId } from '@core/public-api';
 import { MODULES_MAP } from '@shared/public-api';
 import { IModulesMap } from '@modules/common/modules-map.models';
 
+import {
+  CustomerRuleChainResolver,
+  CustomerRuleChainMetaDataResolver
+} from './customer-rulechain.resolver';
+
 @Injectable()
 export class RuleChainResolver  {
 
@@ -179,6 +184,47 @@ const routes: Routes = [
       }
     ]
   }
+
+  // === THÊM CHO CUSTOMER ===
+  ,{
+    path: 'customer-rule-chains',
+    data: {
+      breadcrumb: { menuId: MenuId.rule_chains },
+      apiPrefix: '/api/customer',
+      auth: [Authority.CUSTOMER_USER]
+    },
+    children: [
+      {
+        path: '',
+        component: EntitiesTableComponent,
+        data: {
+          title: 'rulechain.rulechains',
+          apiPrefix: '/api/customer'
+        },
+        resolve: {
+          entitiesTableConfig: RuleChainsTableConfigResolver
+        }
+      },
+      {
+        path: ':ruleChainId',
+        component: RuleChainPageComponent,
+        canDeactivate: [ConfirmOnExitGuard],
+        data: {
+          apiPrefix: '/api/customer',
+          auth: [Authority.CUSTOMER_USER],
+          ruleChainType: RuleChainType.CORE
+        },
+        loadChildren: () => import('./rulechain-page.module').then(m => m.RuleChainPageModule),
+        resolve: {
+          ruleChain: CustomerRuleChainResolver,
+          ruleChainMetaData: CustomerRuleChainMetaDataResolver,
+          ruleNodeComponents: RuleNodeComponentsResolver, // THÊM
+          tooltipster: TooltipsterResolver // THÊM
+        }
+      }
+    ]
+  }
+  /////////////////////////////
 ];
 
 // @dynamic
@@ -191,7 +237,10 @@ const routes: Routes = [
     RuleChainMetaDataResolver,
     RuleNodeComponentsResolver,
     TooltipsterResolver,
-    RuleChainImportGuard
+    RuleChainImportGuard,
+    // THÊM CHO CUSTOMER
+    CustomerRuleChainResolver,
+    CustomerRuleChainMetaDataResolver
   ]
 })
 export class RuleChainRoutingModule { }

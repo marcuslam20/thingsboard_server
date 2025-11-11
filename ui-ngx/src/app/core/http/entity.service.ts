@@ -165,7 +165,10 @@ export class EntityService {
         observable = this.userService.getUser(entityId, config);
         break;
       case EntityType.RULE_CHAIN:
-        observable = this.ruleChainService.getRuleChain(entityId, config);
+        // THÊM CHO CUSTOMER
+        const apiPrefix = this.getApiPrefix();
+        // observable = this.ruleChainService.getRuleChain(entityId, config);
+        observable = this.ruleChainService.getRuleChain(entityId, { ...config, ignoreLoading: true }, apiPrefix);
         break;
       case EntityType.ALARM:
         observable = this.alarmService.getAlarm(entityId, config);
@@ -293,8 +296,9 @@ export class EntityService {
         observable = this.oauth2Service.findTenantOAuth2ClientInfosByIds(entityIds, config);
         break;
       case EntityType.RULE_CHAIN:
+        const apiPrefix = this.getApiPrefix();
         observable = this.getEntitiesByIdsObservable(
-          (id) => this.ruleChainService.getRuleChain(id, config),
+          (id) => this.ruleChainService.getRuleChain(id, { ...config, ignoreLoading: true }, apiPrefix),
           entityIds);
         break;
     }
@@ -1385,6 +1389,23 @@ export class EntityService {
     return {entityId};
   }
 
+  // THÊM CHO CUSTOMER
+  private getApiPrefixForEdgeEvent(entity: EdgeEvent): string {
+    const authUser = getCurrentAuthUser(this.store);
+    if (authUser.authority === Authority.CUSTOMER_USER) {
+      return '/api/customer';
+    }
+    return '/api';
+  }
+  // THÊM HÀM NÀY VÀO TRONG CLASS
+  private getApiPrefix(): string {
+    const authUser = getCurrentAuthUser(this.store);
+    if (authUser.authority === Authority.CUSTOMER_USER) {
+      return '/api/customer';
+    }
+    return '/api';
+  }
+  ////////////////////////////////////////
   private createDatasourceFromSubscriptionInfo(subscriptionInfo: SubscriptionInfo): Datasource {
     subscriptionInfo = this.validateSubscriptionInfo(subscriptionInfo);
     let datasource: Datasource = null;
@@ -1534,7 +1555,14 @@ export class EntityService {
         }
         break;
       case EdgeEventType.RULE_CHAIN_METADATA:
-        entityObservable = this.ruleChainService.getRuleChainMetadata(entityId);
+        // entityObservable = this.ruleChainService.getRuleChainMetadata(entityId); // comment dong nay 11/11/2025
+        // THÊM CHO CUSTOMER
+        const apiPrefix = this.getApiPrefixForEdgeEvent(entity); // THÊM DÒNG NÀY
+        entityObservable = this.ruleChainService.getRuleChainMetadata(
+          entityId,
+          { ignoreLoading: true, ignoreErrors: true },
+          apiPrefix
+        );
         break;
       case EdgeEventType.WIDGET_TYPE:
         entityObservable = this.widgetService.getWidgetTypeById(entityId);
