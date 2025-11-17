@@ -19,6 +19,7 @@ import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { BehaviorSubject } from 'rxjs';
 import { AuthService } from '@core/auth/auth.service';
 import { Router } from '@angular/router';
+import { telegramParams } from 'ngx-sharebuttons';
 
 @Component({
   selector: 'tb-signup',
@@ -31,6 +32,9 @@ export class SignupComponent {
   isLoading$ = new BehaviorSubject<boolean>(false);
   passwordMismatch = false;
 
+  // UUID pattern: 8-4-4-4-12
+  private uuidPattern = '^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$';
+
   constructor(
     private fb: FormBuilder
     , private authService: AuthService
@@ -41,7 +45,8 @@ export class SignupComponent {
       lastname: ['', Validators.required],  
       email: ['', [Validators.required, Validators.email]],
       password: ['', Validators.required],
-      confirmPassword: ['', Validators.required]
+      confirmPassword: ['', Validators.required],
+      tenantId: ['', [Validators.required, Validators.pattern(this.uuidPattern)]] // Thêm validator cho UUID
     });
   }
 
@@ -51,7 +56,7 @@ export class SignupComponent {
       return;
     }
 
-    const { firstname, lastname, email, password, confirmPassword } = this.signupForm.value;
+    const { firstname, lastname, email, password, confirmPassword, tenantId } = this.signupForm.value;
     if (password !== confirmPassword) {
       this.passwordMismatch = true;
       return;
@@ -64,7 +69,8 @@ export class SignupComponent {
       firstName: firstname,
       lastName: lastname,
       email: email,
-      password: password
+      password: password,
+      tenantId: tenantId.trim() //Gửi tenantId cùng với payload đăng ký
     };
 
     this.authService.signup(payload).subscribe({
@@ -80,10 +86,10 @@ export class SignupComponent {
       complete: () => this.isLoading$.next(false)
     });
     
-    setTimeout(() => {
-      console.log('Signup data:', this.signupForm.value);
-      this.isLoading$.next(false);
-      alert('Sign up successful! (demo)');
-    }, 2000);
+    // setTimeout(() => {
+    //   console.log('Signup data:', this.signupForm.value);
+    //   this.isLoading$.next(false);
+    //   alert('Sign up successful! (demo)');
+    // }, 2000);
   }
 }
