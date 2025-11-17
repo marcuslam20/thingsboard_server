@@ -1,0 +1,80 @@
+// .small {
+//   width: 80px;
+// }
+
+// mat-form-field {
+//   margin: 0 4px;
+// }
+
+// DP LIST EDITOR 
+
+/* 1. Bảng: không tràn, co giãn */
+.mat-mdc-table {
+  table-layout: fixed !important;
+  width: 100% !important;
+}
+
+/* 2. CỘT CÂN ĐỐI - CHỈNH CHÍNH XÁC */
+.mat-column-id     { width: 50px;  min-width: 50px;  }
+.mat-column-code   { width: 100px; min-width: 100px; }
+.mat-column-name   { width: 130px; min-width: 130px; }
+.mat-column-type   { width: 80px;  min-width: 80px;  }
+.mat-column-rw     { width: 70px;  min-width: 70px;  }
+.mat-column-min    { width: 60px;  min-width: 60px;  }
+.mat-column-max    { width: 60px;  min-width: 60px;  }
+.mat-column-unit   { width: 60px;  min-width: 60px;  }
+.mat-column-actions{ width: 50px;  min-width: 50px;  }
+
+/* 3. Ô INPUT: nhỏ, vừa khít cột */
+td.mat-mdc-cell .mat-mdc-form-field {
+  margin: 2px 0 !important;
+  width: 100% !important;
+}
+
+.mat-mdc-form-field input.mat-input-element {
+  font-size: 12px !important;
+  padding: 4px 6px !important;
+  height: 24px !important;
+  line-height: 24px !important;
+  box-sizing: border-box;
+}
+
+/* 4. Viền mờ, mỏng */
+.mat-mdc-form-field .mat-mdc-form-field-infix {
+  padding: 0 !important;
+  min-height: 28px !important;
+  border: 1px solid rgba(0, 0, 0, 0.08) !important;
+  border-radius: 4px !important;
+  background: rgba(0, 0, 0, 0.01) !important;
+}
+
+.mat-mdc-form-field.mat-focused .mat-mdc-form-field-infix {
+  border-color: rgba(25, 118, 210, 0.4) !important;
+  box-shadow: 0 0 0 1px rgba(25, 118, 210, 0.2) !important;
+  background: white !important;
+}
+
+.mat-mdc-form-field .mat-mdc-form-field-underline {
+  display: none !important;
+}
+
+/* 5. Nút xóa: nhỏ, rõ ràng */
+.mat-mdc-icon-button {
+  width: 32px !important;
+  height: 32px !important;
+  line-height: 32px !important;
+  margin: 0 auto !important;
+  display: block !important;
+}
+
+/* 6. Select: nhỏ gọn */
+.mat-mdc-select {
+  font-size: 12px !important;
+  padding: 2px 0 !important;
+}
+
+/* 7. Responsive: thu nhỏ trên màn hình nhỏ */
+@media (max-width: 960px) {
+  .mat-column-name { width: 110px; }
+  .mat-column-code { width: 90px; }
+}

@@ -601,6 +601,9 @@ export interface DeviceProfile extends BaseData<DeviceProfileId>, HasTenantId, H
   softwareId?: OtaPackageId;
   profileData: DeviceProfileData;
   defaultEdgeRuleChainId?: RuleChainId;
+
+  // THÊM: DP List giống Tuya
+  dpListJson?: any;
 }
 
 export interface DeviceProfileInfo extends EntityInfoData, HasTenantId {

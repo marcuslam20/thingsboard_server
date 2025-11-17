@@ -1,0 +1,104 @@
+<div class="mat-elevation-z2 p-4">
+  <button mat-raised-button color="primary" (click)="addDp()" class="mb-3">
+    + Add DP
+  </button>
+
+  <table mat-table [dataSource]="dataSource" class="w-full" [trackBy]="trackByFn">
+
+    <!-- ID -->
+    <ng-container matColumnDef="id">
+      <th mat-header-cell *matHeaderCellDef> ID </th>
+      <td mat-cell *matCellDef="let dp; let i = index">
+        <mat-form-field appearance="outline" class="w-20">
+          <input matInput [(ngModel)]="dp.id" (change)="emitChange()" />
+        </mat-form-field>
+      </td>
+    </ng-container>
+
+    <!-- Code -->
+    <ng-container matColumnDef="code">
+      <th mat-header-cell *matHeaderCellDef> Code </th>
+      <td mat-cell *matCellDef="let dp">
+        <mat-form-field appearance="outline" class="w-32">
+          <input matInput [(ngModel)]="dp.code" (change)="emitChange()" required />
+        </mat-form-field>
+      </td>
+    </ng-container>
+
+    <!-- Name -->
+    <ng-container matColumnDef="name">
+      <th mat-header-cell *matHeaderCellDef> Name </th>
+      <td mat-cell *matCellDef="let dp">
+        <mat-form-field appearance="outline" class="w-40">
+          <input matInput [(ngModel)]="dp.name" (change)="emitChange()" />
+        </mat-form-field>
+      </td>
+    </ng-container>
+
+    <!-- Type -->
+    <ng-container matColumnDef="type">
+      <th mat-header-cell *matHeaderCellDef> Type </th>
+      <td mat-cell *matCellDef="let dp">
+        <mat-select [(ngModel)]="dp.type" (selectionChange)="emitChange()" class="w-28">
+          <mat-option value="bool">bool</mat-option>
+          <mat-option value="value">value</mat-option>
+          <mat-option value="enum">enum</mat-option>
+          <mat-option value="string">string</mat-option>
+        </mat-select>
+      </td>
+    </ng-container>
+
+    <!-- RW -->
+    <ng-container matColumnDef="rw">
+      <th mat-header-cell *matHeaderCellDef> RW </th>
+      <td mat-cell *matCellDef="let dp">
+        <mat-select [(ngModel)]="dp.rw" (selectionChange)="emitChange()" class="w-20">
+          <mat-option value="r">r</mat-option>
+          <mat-option value="w">w</mat-option>
+          <mat-option value="rw">rw</mat-option>
+        </mat-select>
+      </td>
+    </ng-container>
+
+    <!-- Min/Max/Unit (chỉ hiện khi type = value) -->
+    <ng-container matColumnDef="min">
+      <th mat-header-cell *matHeaderCellDef> Min </th>
+      <td mat-cell *matCellDef="let dp">
+        <mat-form-field appearance="outline" class="w-20" *ngIf="dp.type === 'value'">
+          <input matInput type="number" [(ngModel)]="dp.min" (change)="emitChange()" />
+        </mat-form-field>
+      </td>
+    </ng-container>
+
+    <ng-container matColumnDef="max">
+      <th mat-header-cell *matHeaderCellDef> Max </th>
+      <td mat-cell *matCellDef="let dp">
+        <mat-form-field appearance="outline" class="w-20" *ngIf="dp.type === 'value'">
+          <input matInput type="number" [(ngModel)]="dp.max" (change)="emitChange()" />
+        </mat-form-field>
+      </td>
+    </ng-container>
+
+    <ng-container matColumnDef="unit">
+      <th mat-header-cell *matHeaderCellDef> Unit </th>
+      <td mat-cell *matCellDef="let dp">
+        <mat-form-field appearance="outline" class="w-20" *ngIf="dp.type === 'value'">
+          <input matInput [(ngModel)]="dp.unit" (change)="emitChange()" />
+        </mat-form-field>
+      </td>
+    </ng-container>
+
+    <!-- Delete -->
+    <ng-container matColumnDef="actions">
+      <th mat-header-cell *matHeaderCellDef></th>
+      <td mat-cell *matCellDef="let dp; let i = index">
+        <button mat-icon-button color="warn" (click)="removeDp(i)">
+          <mat-icon>delete</mat-icon>
+        </button>
+      </td>
+    </ng-container>
+
+    <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+    <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+  </table>
+</div>

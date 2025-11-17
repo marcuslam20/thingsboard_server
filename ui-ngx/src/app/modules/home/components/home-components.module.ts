@@ -205,6 +205,15 @@ import {
 } from '@home/components/calculated-fields/components/test-arguments/calculated-field-test-arguments.component';
 import { CheckConnectivityDialogComponent } from '@home/components/ai-model/check-connectivity-dialog.component';
 import { AIModelDialogComponent } from '@home/components/ai-model/ai-model-dialog.component';
+//////////////////////////// 
+import { DpListEditorComponent } from '@home/components/profile/device/dp-list-editor.component';
+import { MatTableModule } from '@angular/material/table';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
+import { MatSelectModule } from '@angular/material/select';
+import { MatIconModule } from '@angular/material/icon';
+import { FormsModule } from '@angular/forms';
+////////////////////////////////////
 import { ResourcesDialogComponent } from "@home/components/resources/resources-dialog.component";
 import { ResourcesLibraryComponent } from "@home/components/resources/resources-library.component";
 import {
@@ -368,8 +377,9 @@ import {
       CalculatedFieldGeofencingZoneGroupsPanelComponent,
       CheckConnectivityDialogComponent,
       AIModelDialogComponent,
-      ResourcesDialogComponent,
-      ResourcesLibraryComponent,
+      ///////// THEM
+      DpListEditorComponent,
+      ////////////////////////////////////
     ],
   imports: [
     CommonModule,
@@ -382,7 +392,15 @@ import {
     StatesControllerModule,
     DeviceCredentialsModule,
     DeviceProfileCommonModule,
-    EntityDebugSettingsButtonComponent
+    EntityDebugSettingsButtonComponent,
+    /////////////////////////
+    MatTableModule,
+    MatFormFieldModule,
+    MatInputModule,
+    MatSelectModule,
+    MatIconModule,
+    FormsModule,
+    ///////////////////////////////////
   ],
   exports: [
     RouterTabsComponent,
@@ -519,8 +537,9 @@ import {
     CalculatedFieldGeofencingZoneGroupsPanelComponent,
     CheckConnectivityDialogComponent,
     AIModelDialogComponent,
-    ResourcesDialogComponent,
-    ResourcesLibraryComponent,
+    // THEM
+    DpListEditorComponent,
+    ////////////////////////////////////
   ],
   providers: [
     WidgetComponentService,

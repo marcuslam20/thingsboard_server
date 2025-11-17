@@ -183,6 +183,25 @@
           </mat-expansion-panel>
         </mat-accordion>
       </div>
+            <!-- THÊM: DP List giống Tuya -->
+      <div formGroupName="dpListJson" style="padding-bottom: 16px;">
+        <mat-accordion multi="true">
+          <mat-expansion-panel [expanded]="true">
+            <mat-expansion-panel-header>
+              <mat-panel-title>
+                <div>DP List (Data Points)</div>
+              </mat-panel-title>
+            </mat-expansion-panel-header>
+            <ng-template matExpansionPanelContent>
+              <tb-dp-list-editor
+                [dpList]="entityForm.get('dpListJson').value"
+                (dpListChange)="onDpListChange($event)">
+              </tb-dp-list-editor>
+            </ng-template>
+          </mat-expansion-panel>
+        </mat-accordion>
+      </div>
+      <!-- KẾT THÚC THÊM -->
     </fieldset>
   </form>
 </div>
