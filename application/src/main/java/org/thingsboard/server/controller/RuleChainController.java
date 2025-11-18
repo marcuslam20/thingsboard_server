@@ -347,11 +347,16 @@ public class RuleChainController extends BaseController {
         TenantId tenantId = user.getTenantId();
         CustomerId customerId = user.getCustomerId();
 
-        RuleChain ruleChain = checkRuleChain(ruleChainMetaData.getRuleChainId(), Operation.WRITE);
+        // RuleChain ruleChain = checkRuleChain(ruleChainMetaData.getRuleChainId(), Operation.WRITE);
 
+        RuleChain ruleChain = ruleChainService.findRuleChainById(tenantId, ruleChainMetaData.getRuleChainId());
+        if (ruleChain == null) {
+            throw new ThingsboardException("Rule Chain not found!",
+                ThingsboardErrorCode.ITEM_NOT_FOUND);
+        }
         // Kiểm tra quyền sở hữu
         if (!customerId.equals(ruleChain.getCustomerId())) {
-            throw new ThingsboardException("Bạn không có quyền chỉnh sửa RuleChain này!", ThingsboardErrorCode.PERMISSION_DENIED);
+            throw new ThingsboardException("You can only modify your own rule chains!", ThingsboardErrorCode.PERMISSION_DENIED);
         }
 
         return tbRuleChainService.saveRuleChainMetaData(tenantId, ruleChain, ruleChainMetaData, true, user);
