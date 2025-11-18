@@ -446,23 +446,45 @@ public class RuleChainController extends BaseController {
     @PreAuthorize("hasAnyAuthority('CUSTOMER_USER', 'CUSTOMER_ADMIN')")
     @DeleteMapping("/customer/ruleChain/{ruleChainId}")
     @ResponseStatus(HttpStatus.OK)
+    // public void deleteCustomerRuleChain(
+    //         @PathVariable(RULE_CHAIN_ID) String strRuleChainId) throws ThingsboardException {
+    //     checkParameter(RULE_CHAIN_ID, strRuleChainId);
+    //     SecurityUser user = getCurrentUser();
+    //     TenantId tenantId = user.getTenantId();
+    //     CustomerId customerId = user.getCustomerId();
+    //     RuleChainId ruleChainId = new RuleChainId(toUUID(strRuleChainId));
+
+    //     RuleChain ruleChain = checkRuleChain(ruleChainId, Operation.DELETE);
+
+    //     if (!customerId.equals(ruleChain.getCustomerId())) {
+    //         throw new ThingsboardException("Bạn không có quyền xóa RuleChain này!", ThingsboardErrorCode.PERMISSION_DENIED);
+    //     }
+
+    //     tbRuleChainService.delete(ruleChain, user);
+    // }
+
     public void deleteCustomerRuleChain(
             @PathVariable(RULE_CHAIN_ID) String strRuleChainId) throws ThingsboardException {
         checkParameter(RULE_CHAIN_ID, strRuleChainId);
-        SecurityUser user = getCurrentUser();
-        TenantId tenantId = user.getTenantId();
-        CustomerId customerId = user.getCustomerId();
         RuleChainId ruleChainId = new RuleChainId(toUUID(strRuleChainId));
 
-        RuleChain ruleChain = checkRuleChain(ruleChainId, Operation.DELETE);
+        SecurityUser user = getCurrentUser();
+        if (!user.isCustomerUser()) {
+            throw new ThingsboardException("Only Customer user can delete customer rule chain!",
+                ThingsboardErrorCode.PERMISSION_DENIED);
+        }
 
-        if (!customerId.equals(ruleChain.getCustomerId())) {
-            throw new ThingsboardException("Bạn không có quyền xóa RuleChain này!", ThingsboardErrorCode.PERMISSION_DENIED);
+        RuleChain ruleChain = ruleChainService.findRuleChainById(getTenantId(), ruleChainId);
+        if( ruleChain == null) {
+            throw new ThingsboardException("Rule Chain not found!",
+                ThingsboardErrorCode.ITEM_NOT_FOUND);
+        }
+        if (!user.getCustomerId().equals(ruleChain.getCustomerId())) {
+            throw new ThingsboardException("You can only delete your own rule chain!", ThingsboardErrorCode.PERMISSION_DENIED);
         }
 
         tbRuleChainService.delete(ruleChain, user);
     }
-
     ///////////////////////////////////////////
     @ApiOperation(value = "Get latest input message (getLatestRuleNodeDebugInput)",
             notes = "Gets the input message from the debug events for specified Rule Chain Id. " +
