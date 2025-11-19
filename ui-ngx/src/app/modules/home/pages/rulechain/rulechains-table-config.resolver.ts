@@ -51,6 +51,7 @@ import { Edge } from '@shared/models/edge.models';
 import { mergeMap } from 'rxjs/operators';
 import { PageData } from '@shared/models/page/page-data';
 import { CustomTranslatePipe } from '@shared/pipe/custom-translate.pipe';
+import { BaseData, HasId } from '@shared/models/base-data';
 
 @Injectable()
 export class RuleChainsTableConfigResolver  {
@@ -108,9 +109,30 @@ export class RuleChainsTableConfigResolver  {
     this.config.columns = this.configureEntityTableColumns(ruleChainScope);
     // this.config.entitiesFetchFunction = this.configureEntityFunctions(ruleChainScope, edgeId);      //// COMMENT DONG NAY 11/11/2025
     // THÊM CHO CUSTOMER
-    this.config.entitiesFetchFunction = (pageLink: PageLink) => {
-      return this.ruleChainService.getTenantRuleChains(apiPrefix + '/ruleChains', pageLink);
-    };
+    // this.config.entitiesFetchFunction = (pageLink: PageLink) => {
+    //   return this.ruleChainService.getTenantRuleChains(apiPrefix + '/ruleChains', pageLink);
+    // };
+
+    // entitiesFetchFunction
+    if (ruleChainScope === 'customer') {
+      this.config.entitiesFetchFunction = (pageLink: PageLink) => {
+        return this.ruleChainService.getTenantRuleChains(apiPrefix + '/ruleChains', pageLink);
+      };
+
+      // THÊM handleRowClick cho customer
+      this.config.handleRowClick = (event: Event, entity: BaseData<HasId>): boolean => {
+        const ruleChainScope = this.config.componentsData.ruleChainScope; // tenant / customer
+        if (ruleChainScope === 'customer') {
+          this.router.navigateByUrl(`/customer-rule-chains/${entity.id.id}`);
+        } else {
+          this.router.navigateByUrl(`/ruleChains/${entity.id}`);
+        }
+        return true;
+      };
+    } else {
+      // tenant / edge config khác
+      this.config.entitiesFetchFunction = this.configureEntityFunctions(ruleChainScope, edgeId);
+    }
     //////////////////////////////
     this.config.groupActionDescriptors = this.configureGroupActions(ruleChainScope);
     this.config.addActionDescriptors = this.configureAddActions(ruleChainScope);

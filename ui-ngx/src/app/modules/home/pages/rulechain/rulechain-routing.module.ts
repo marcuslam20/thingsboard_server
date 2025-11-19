@@ -131,7 +131,7 @@ const routes: Routes = [
         path: '',
         component: EntitiesTableComponent,
         data: {
-          auth: [Authority.TENANT_ADMIN],
+          auth: [Authority.TENANT_ADMIN, Authority.CUSTOMER_USER],
           title: 'rulechain.rulechains',
           ruleChainsType: 'tenant'
         },
@@ -191,7 +191,8 @@ const routes: Routes = [
     data: {
       breadcrumb: { menuId: MenuId.rule_chains },
       apiPrefix: '/api/customer',
-      auth: [Authority.CUSTOMER_USER]
+      auth: [Authority.CUSTOMER_USER],
+      ruleChainsType: 'customer'
     },
     children: [
       {
