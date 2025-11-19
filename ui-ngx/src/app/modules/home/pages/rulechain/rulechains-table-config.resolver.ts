@@ -344,11 +344,14 @@ export class RuleChainsTableConfigResolver  {
   openRuleChain($event: Event, ruleChain: RuleChain) {
     if ($event) {
       $event.stopPropagation();
-    }
+    }   
+    const scope = this.config.componentsData.ruleChainScope;
     if (this.config.componentsData.ruleChainScope === 'edges') {
       this.router.navigateByUrl(`edgeManagement/ruleChains/${ruleChain.id.id}`);
     } else if (this.config.componentsData.ruleChainScope === 'edge') {
       this.router.navigateByUrl(`edgeInstances/${this.config.componentsData.edgeId}/ruleChains/${ruleChain.id.id}`);
+    } else if (this.config.componentsData.ruleChainScope === 'customer') {
+      this.router.navigateByUrl(`customer-rule-chains/${ruleChain.id.id}`);
     } else {
       this.router.navigateByUrl(`ruleChains/${ruleChain.id.id}`);
     }
