@@ -34,6 +34,7 @@ import org.thingsboard.server.common.data.exception.ThingsboardException;
 import org.thingsboard.server.common.data.id.DeviceId;
 import org.thingsboard.server.common.data.id.TenantId;
 import org.thingsboard.server.common.data.id.UserId;
+import org.thingsboard.server.common.data.security.UserCredentials;
 import org.thingsboard.server.dao.model.sql.GoogleOAuth2TokenEntity;
 import org.thingsboard.server.queue.util.TbCoreComponent;
 import org.thingsboard.server.service.google.GoogleAssistantService;
@@ -163,8 +164,19 @@ public class GoogleAssistantController extends BaseController {
                               "&response_type=" + responseType + "'>Try again</a></body></html>");
             }
 
+            // Get user credentials to verify password
+            UserCredentials credentials = userService.findUserCredentialsByUserId(TenantId.SYS_TENANT_ID, user.getId());
+            if (credentials == null || !credentials.isEnabled()) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                        .contentType(MediaType.TEXT_HTML)
+                        .body("<html><body><h1>Login Failed</h1><p>Account is disabled or invalid</p>" +
+                              "<a href='/api/google/oauth/authorize?client_id=" + clientId +
+                              "&redirect_uri=" + redirectUri + "&state=" + state +
+                              "&response_type=" + responseType + "'>Try again</a></body></html>");
+            }
+
             // Verify password
-            boolean passwordMatches = passwordEncoder.matches(password, user.getPassword());
+            boolean passwordMatches = passwordEncoder.matches(password, credentials.getPassword());
             if (!passwordMatches) {
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                         .contentType(MediaType.TEXT_HTML)
@@ -176,7 +188,7 @@ public class GoogleAssistantController extends BaseController {
 
             // User authenticated successfully - generate authorization code
             TenantId tenantId = user.getTenantId();
-            UserId userId = new UserId(user.getId().getId());
+            UserId userId = user.getId();
             String googleUserId = UUID.randomUUID().toString();
 
             String authCode = googleOAuth2Service.generateAuthorizationCode(tenantId, userId, googleUserId);
