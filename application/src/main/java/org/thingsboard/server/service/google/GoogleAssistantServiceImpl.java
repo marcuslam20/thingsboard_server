@@ -21,6 +21,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.thingsboard.server.common.data.AttributeScope;
 import org.thingsboard.server.common.data.Device;
 import org.thingsboard.server.common.data.id.DeviceId;
 import org.thingsboard.server.common.data.id.TenantId;
@@ -31,6 +32,9 @@ import org.thingsboard.server.common.data.kv.TsKvEntry;
 import org.thingsboard.server.common.data.page.PageData;
 import org.thingsboard.server.common.data.page.PageLink;
 import org.thingsboard.server.common.data.rpc.RpcError;
+import org.thingsboard.server.common.data.rpc.ToDeviceRpcRequestBody;
+import org.thingsboard.server.common.msg.rpc.FromDeviceRpcResponse;
+import org.thingsboard.server.common.msg.rpc.ToDeviceRpcRequest;
 import org.thingsboard.server.dao.attributes.AttributesService;
 import org.thingsboard.server.dao.device.DeviceService;
 import org.thingsboard.server.dao.timeseries.TimeseriesService;
@@ -406,16 +410,33 @@ public class GoogleAssistantServiceImpl implements GoogleAssistantService {
         try {
             log.debug("Sending RPC command to device {}: method={}, params={}", device.getId(), method, params);
 
-            // Use device RPC service to send command
-            // Note: Actual implementation depends on ThingsBoard RPC service API
-            // This is a placeholder that may need adjustment based on actual API
-            deviceRpcService.processRestApiRpcRequest(
+            // Create RPC request body
+            ToDeviceRpcRequestBody body = new ToDeviceRpcRequestBody(method, params.toString());
+
+            // Create RPC request
+            ToDeviceRpcRequest rpcRequest = new ToDeviceRpcRequest(
+                UUID.randomUUID(),
                 device.getTenantId(),
                 device.getId(),
-                method,
-                params.toString(),
-                null,
-                null
+                true, // oneWay - we don't need a response
+                System.currentTimeMillis() + 10000, // 10 second timeout
+                body, // body
+                false, // not persisted
+                null, // no retries
+                null // no additional info
+            );
+
+            // Send RPC command with callback
+            deviceRpcService.processRestApiRpcRequest(
+                rpcRequest,
+                response -> {
+                    if (response.getError().isPresent()) {
+                        log.error("RPC command failed for device {}: {}", device.getId(), response.getError().get());
+                    } else {
+                        log.debug("RPC command sent successfully to device {}", device.getId());
+                    }
+                },
+                null // SecurityUser - null for system calls
             );
         } catch (Exception e) {
             log.error("Error sending RPC command to device {}: {}", device.getId(), e.getMessage(), e);
@@ -484,7 +505,7 @@ public class GoogleAssistantServiceImpl implements GoogleAssistantService {
             }
 
             // Fallback to attributes
-            List<AttributeKvEntry> attributes = attributesService.find(tenantId, deviceId, "LATEST_TELEMETRY", Collections.singletonList(key)).get();
+            List<AttributeKvEntry> attributes = attributesService.find(tenantId, deviceId, AttributeScope.CLIENT_SCOPE, Collections.singletonList(key)).get();
             if (!attributes.isEmpty()) {
                 return Optional.of(attributes.get(0).getBooleanValue().orElse(false));
             }
@@ -501,12 +522,12 @@ public class GoogleAssistantServiceImpl implements GoogleAssistantService {
             List<TsKvEntry> tsKvEntries = timeseriesService.findAll(tenantId, deviceId, Collections.singletonList(query)).get();
 
             if (!tsKvEntries.isEmpty()) {
-                return Optional.of((int) tsKvEntries.get(0).getLongValue().orElse(0L));
+                return Optional.of(tsKvEntries.get(0).getLongValue().orElse(0L).intValue());
             }
 
-            List<AttributeKvEntry> attributes = attributesService.find(tenantId, deviceId, "LATEST_TELEMETRY", Collections.singletonList(key)).get();
+            List<AttributeKvEntry> attributes = attributesService.find(tenantId, deviceId, AttributeScope.CLIENT_SCOPE, Collections.singletonList(key)).get();
             if (!attributes.isEmpty()) {
-                return Optional.of((int) attributes.get(0).getLongValue().orElse(0L));
+                return Optional.of(attributes.get(0).getLongValue().orElse(0L).intValue());
             }
         } catch (Exception e) {
             log.error("Error getting int value for key {}: {}", key, e.getMessage());
@@ -524,7 +545,7 @@ public class GoogleAssistantServiceImpl implements GoogleAssistantService {
                 return Optional.of(tsKvEntries.get(0).getDoubleValue().orElse(0.0));
             }
 
-            List<AttributeKvEntry> attributes = attributesService.find(tenantId, deviceId, "LATEST_TELEMETRY", Collections.singletonList(key)).get();
+            List<AttributeKvEntry> attributes = attributesService.find(tenantId, deviceId, AttributeScope.CLIENT_SCOPE, Collections.singletonList(key)).get();
             if (!attributes.isEmpty()) {
                 return Optional.of(attributes.get(0).getDoubleValue().orElse(0.0));
             }
@@ -544,7 +565,7 @@ public class GoogleAssistantServiceImpl implements GoogleAssistantService {
                 return Optional.of(tsKvEntries.get(0).getValueAsString());
             }
 
-            List<AttributeKvEntry> attributes = attributesService.find(tenantId, deviceId, "LATEST_TELEMETRY", Collections.singletonList(key)).get();
+            List<AttributeKvEntry> attributes = attributesService.find(tenantId, deviceId, AttributeScope.CLIENT_SCOPE, Collections.singletonList(key)).get();
             if (!attributes.isEmpty()) {
                 return Optional.of(attributes.get(0).getValueAsString());
             }
