@@ -27,6 +27,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 import org.thingsboard.server.common.data.User;
 import org.thingsboard.server.common.data.exception.ThingsboardException;
@@ -57,39 +58,144 @@ public class GoogleAssistantController extends BaseController {
 
     private final GoogleAssistantService googleAssistantService;
     private final GoogleOAuth2Service googleOAuth2Service;
+    private final PasswordEncoder passwordEncoder;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     // ============== OAuth2 Endpoints ==============
 
     @GetMapping(value = "/oauth/authorize")
     @Operation(summary = "OAuth2 Authorization Endpoint",
-            description = "Displays authorization page for Google account linking. User must login to ThingsBoard.")
+            description = "Displays authorization page for Google account linking with login form.")
     public ResponseEntity<String> authorizeForm(
             @Parameter(description = "OAuth2 client ID") @RequestParam("client_id") String clientId,
             @Parameter(description = "OAuth2 redirect URI") @RequestParam("redirect_uri") String redirectUri,
             @Parameter(description = "OAuth2 state parameter") @RequestParam("state") String state,
             @Parameter(description = "OAuth2 response type") @RequestParam("response_type") String responseType,
-            @Parameter(description = "Google user ID") @RequestParam(value = "user_locale", required = false) String userLocale
+            @Parameter(description = "Google user ID") @RequestParam(value = "user_locale", required = false) String userLocale,
+            @AuthenticationPrincipal SecurityUser currentUser
     ) {
         log.debug("OAuth2 authorization request: clientId={}, redirectUri={}, state={}", clientId, redirectUri, state);
 
-        // In production, this should render an HTML page for user login/consent
-        // For now, return a simple HTML form
+        // If user is already authenticated, show authorization consent page
+        if (currentUser != null) {
+            String html = String.format(
+                "<!DOCTYPE html><html><head><title>Google Assistant Authorization</title>" +
+                "<style>body{font-family:Arial,sans-serif;max-width:500px;margin:50px auto;padding:20px;text-align:center}" +
+                "button{background:#4285f4;color:white;border:none;padding:12px 24px;font-size:16px;border-radius:4px;cursor:pointer}" +
+                "button:hover{background:#357ae8}</style></head>" +
+                "<body><h1>Link ThingsBoard with Google Assistant</h1>" +
+                "<p>Logged in as: <strong>%s</strong></p>" +
+                "<p>Allow Google Assistant to control your ThingsBoard devices?</p>" +
+                "<form method='POST' action='/api/google/oauth/authorize'>" +
+                "<input type='hidden' name='client_id' value='%s'/>" +
+                "<input type='hidden' name='redirect_uri' value='%s'/>" +
+                "<input type='hidden' name='state' value='%s'/>" +
+                "<input type='hidden' name='response_type' value='%s'/>" +
+                "<button type='submit'>Authorize</button>" +
+                "</form></body></html>",
+                currentUser.getEmail(), clientId, redirectUri, state, responseType
+            );
+            return ResponseEntity.ok().contentType(MediaType.TEXT_HTML).body(html);
+        }
+
+        // User not authenticated - show login form
         String html = String.format(
-            "<!DOCTYPE html><html><head><title>Google Assistant Authorization</title></head>" +
-            "<body><h1>Link ThingsBoard with Google Assistant</h1>" +
-            "<p>Click 'Authorize' to allow Google Assistant to control your devices.</p>" +
-            "<form method='POST' action='/api/google/oauth/authorize'>" +
+            "<!DOCTYPE html><html><head><title>ThingsBoard Login</title>" +
+            "<meta charset='UTF-8'>" +
+            "<style>" +
+            "body{font-family:Arial,sans-serif;max-width:400px;margin:50px auto;padding:20px;background:#f5f5f5}" +
+            ".container{background:white;padding:30px;border-radius:8px;box-shadow:0 2px 4px rgba(0,0,0,0.1)}" +
+            "h1{color:#333;font-size:24px;margin-bottom:10px;text-align:center}" +
+            ".subtitle{color:#666;font-size:14px;margin-bottom:30px;text-align:center}" +
+            ".form-group{margin-bottom:20px}" +
+            "label{display:block;margin-bottom:5px;color:#333;font-size:14px}" +
+            "input{width:100%%;padding:10px;border:1px solid #ddd;border-radius:4px;font-size:14px;box-sizing:border-box}" +
+            "button{width:100%%;background:#4285f4;color:white;border:none;padding:12px;font-size:16px;border-radius:4px;cursor:pointer;margin-top:10px}" +
+            "button:hover{background:#357ae8}" +
+            ".error{color:#d32f2f;font-size:14px;margin-top:10px;display:none}" +
+            "</style></head>" +
+            "<body><div class='container'>" +
+            "<h1>Link with Google Assistant</h1>" +
+            "<p class='subtitle'>Login to your ThingsBoard account</p>" +
+            "<form method='POST' action='/api/google/oauth/login'>" +
             "<input type='hidden' name='client_id' value='%s'/>" +
             "<input type='hidden' name='redirect_uri' value='%s'/>" +
             "<input type='hidden' name='state' value='%s'/>" +
             "<input type='hidden' name='response_type' value='%s'/>" +
-            "<button type='submit'>Authorize</button>" +
-            "</form></body></html>",
+            "<div class='form-group'>" +
+            "<label>Email</label>" +
+            "<input type='email' name='username' required placeholder='your@email.com'/>" +
+            "</div>" +
+            "<div class='form-group'>" +
+            "<label>Password</label>" +
+            "<input type='password' name='password' required placeholder='Password'/>" +
+            "</div>" +
+            "<button type='submit'>Login and Authorize</button>" +
+            "</form></div></body></html>",
             clientId, redirectUri, state, responseType
         );
 
         return ResponseEntity.ok().contentType(MediaType.TEXT_HTML).body(html);
+    }
+
+    @PostMapping(value = "/oauth/login")
+    @Operation(summary = "OAuth2 Login and Authorization",
+            description = "Handles login form submission and generates authorization code")
+    public ResponseEntity<?> loginAndAuthorize(
+            @Parameter(description = "Username/Email") @RequestParam("username") String username,
+            @Parameter(description = "Password") @RequestParam("password") String password,
+            @Parameter(description = "OAuth2 client ID") @RequestParam("client_id") String clientId,
+            @Parameter(description = "OAuth2 redirect URI") @RequestParam("redirect_uri") String redirectUri,
+            @Parameter(description = "OAuth2 state parameter") @RequestParam("state") String state,
+            @Parameter(description = "OAuth2 response type") @RequestParam("response_type") String responseType
+    ) {
+        try {
+            log.debug("OAuth2 login attempt for user: {}", username);
+
+            // Authenticate user using ThingsBoard auth service
+            User user = userService.findUserByEmail(TenantId.SYS_TENANT_ID, username);
+            if (user == null) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                        .contentType(MediaType.TEXT_HTML)
+                        .body("<html><body><h1>Login Failed</h1><p>Invalid username or password</p>" +
+                              "<a href='/api/google/oauth/authorize?client_id=" + clientId +
+                              "&redirect_uri=" + redirectUri + "&state=" + state +
+                              "&response_type=" + responseType + "'>Try again</a></body></html>");
+            }
+
+            // Verify password
+            boolean passwordMatches = passwordEncoder.matches(password, user.getPassword());
+            if (!passwordMatches) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                        .contentType(MediaType.TEXT_HTML)
+                        .body("<html><body><h1>Login Failed</h1><p>Invalid username or password</p>" +
+                              "<a href='/api/google/oauth/authorize?client_id=" + clientId +
+                              "&redirect_uri=" + redirectUri + "&state=" + state +
+                              "&response_type=" + responseType + "'>Try again</a></body></html>");
+            }
+
+            // User authenticated successfully - generate authorization code
+            TenantId tenantId = user.getTenantId();
+            UserId userId = new UserId(user.getId().getId());
+            String googleUserId = UUID.randomUUID().toString();
+
+            String authCode = googleOAuth2Service.generateAuthorizationCode(tenantId, userId, googleUserId);
+
+            // Redirect back to Google with authorization code
+            String redirectUrl = String.format("%s?code=%s&state=%s", redirectUri, authCode, state);
+
+            log.debug("Login and authorization successful for user: {}, redirecting to: {}", username, redirectUrl);
+
+            return ResponseEntity.status(HttpStatus.FOUND)
+                    .header("Location", redirectUrl)
+                    .build();
+
+        } catch (Exception e) {
+            log.error("Error during OAuth2 login: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .contentType(MediaType.TEXT_HTML)
+                    .body("<html><body><h1>Error</h1><p>An error occurred during login</p></body></html>");
+        }
     }
 
     @PostMapping(value = "/oauth/authorize")
