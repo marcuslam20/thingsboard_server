@@ -17,6 +17,7 @@ package org.thingsboard.server.service.google;
 
 import org.thingsboard.server.common.data.id.DeviceId;
 import org.thingsboard.server.common.data.id.TenantId;
+import org.thingsboard.server.common.data.id.UserId;
 import org.thingsboard.server.service.google.dto.GoogleCapabilities;
 import org.thingsboard.server.service.google.dto.GoogleCommand;
 import org.thingsboard.server.service.google.dto.GoogleDevice;
@@ -38,6 +39,18 @@ public interface GoogleAssistantService {
      * @return list of Google-enabled devices
      */
     List<GoogleDevice> getGoogleEnabledDevices(TenantId tenantId);
+
+    /**
+     * Get all devices with Google Assistant enabled for a specific user.
+     * Filters devices based on user role:
+     * - Tenant Admin: returns all tenant devices
+     * - Customer User: returns only devices assigned to user's customer
+     *
+     * @param tenantId the tenant ID
+     * @param userId the user ID
+     * @return list of Google-enabled devices for this user
+     */
+    List<GoogleDevice> getGoogleEnabledDevicesForUser(TenantId tenantId, UserId userId);
 
     /**
      * Get a specific device with Google Assistant capabilities.

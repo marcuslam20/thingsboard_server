@@ -328,9 +328,10 @@ public class GoogleAssistantController extends BaseController {
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
             }
 
-            // Validate token and get tenant
+            // Validate token and get tenant & user
             GoogleOAuth2TokenEntity tokenEntity = googleOAuth2Service.validateAndGetToken(accessToken);
             TenantId tenantId = tokenEntity.toTenantId();
+            UserId userId = tokenEntity.toUserId();
 
             // Extract request ID and intent
             String requestId = request.get("requestId").asText();
@@ -340,13 +341,13 @@ public class GoogleAssistantController extends BaseController {
             }
 
             String intent = inputs.get(0).get("intent").asText();
-            log.debug("Processing intent: {} for tenant: {}", intent, tenantId);
+            log.debug("Processing intent: {} for tenant: {}, user: {}", intent, tenantId, userId);
 
             // Route to appropriate handler
             Object response;
             switch (intent) {
                 case "action.devices.SYNC":
-                    response = handleSync(tenantId, requestId);
+                    response = handleSync(tenantId, userId, requestId);
                     break;
                 case "action.devices.EXECUTE":
                     response = handleExecute(tenantId, requestId, inputs.get(0));
@@ -473,10 +474,11 @@ public class GoogleAssistantController extends BaseController {
         return null;
     }
 
-    private GoogleSyncResponse handleSync(TenantId tenantId, String requestId) {
-        log.debug("Handling SYNC intent for tenant: {}", tenantId);
+    private GoogleSyncResponse handleSync(TenantId tenantId, UserId userId, String requestId) {
+        log.debug("Handling SYNC intent for tenant: {}, user: {}", tenantId, userId);
 
-        List<GoogleDevice> devices = googleAssistantService.getGoogleEnabledDevices(tenantId);
+        // Get devices filtered by user role (tenant admin or customer user)
+        List<GoogleDevice> devices = googleAssistantService.getGoogleEnabledDevicesForUser(tenantId, userId);
 
         List<GoogleSyncResponse.Device> googleDevices = devices.stream()
                 .map(this::mapToSyncDevice)
@@ -486,6 +488,8 @@ public class GoogleAssistantController extends BaseController {
                 .agentUserId(tenantId.toString())
                 .devices(googleDevices)
                 .build();
+
+        log.info("SYNC response: {} devices returned for user {}", googleDevices.size(), userId);
 
         return GoogleSyncResponse.builder()
                 .requestId(requestId)

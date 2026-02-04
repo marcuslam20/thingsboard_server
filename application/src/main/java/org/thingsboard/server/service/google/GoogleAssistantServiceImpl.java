@@ -22,9 +22,13 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.thingsboard.server.common.data.AttributeScope;
+import org.thingsboard.server.common.data.Customer;
 import org.thingsboard.server.common.data.Device;
+import org.thingsboard.server.common.data.User;
+import org.thingsboard.server.common.data.id.CustomerId;
 import org.thingsboard.server.common.data.id.DeviceId;
 import org.thingsboard.server.common.data.id.TenantId;
+import org.thingsboard.server.common.data.id.UserId;
 import org.thingsboard.server.common.data.kv.AttributeKvEntry;
 import org.thingsboard.server.common.data.kv.BaseReadTsKvQuery;
 import org.thingsboard.server.common.data.kv.ReadTsKvQuery;
@@ -38,6 +42,7 @@ import org.thingsboard.server.common.msg.rpc.ToDeviceRpcRequest;
 import org.thingsboard.server.dao.attributes.AttributesService;
 import org.thingsboard.server.dao.device.DeviceService;
 import org.thingsboard.server.dao.timeseries.TimeseriesService;
+import org.thingsboard.server.dao.user.UserService;
 import org.thingsboard.server.queue.util.TbCoreComponent;
 import org.thingsboard.server.service.google.dto.GoogleCapabilities;
 import org.thingsboard.server.service.google.dto.GoogleCommand;
@@ -59,6 +64,7 @@ public class GoogleAssistantServiceImpl implements GoogleAssistantService {
     private final AttributesService attributesService;
     private final TimeseriesService timeseriesService;
     private final TbCoreDeviceRpcService deviceRpcService;
+    private final UserService userService;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     private static final String GOOGLE_CAPABILITIES_KEY = "googleCapabilities";
@@ -98,6 +104,46 @@ public class GoogleAssistantServiceImpl implements GoogleAssistantService {
 
         log.debug("Found {} Google-enabled devices for tenant: {}", googleDevices.size(), tenantId);
         return googleDevices;
+    }
+
+    @Override
+    public List<GoogleDevice> getGoogleEnabledDevicesForUser(TenantId tenantId, UserId userId) {
+        log.debug("Getting Google-enabled devices for tenant: {}, user: {}", tenantId, userId);
+
+        // Get user to check role/authority
+        User user = userService.findUserById(tenantId, userId);
+        if (user == null) {
+            log.warn("User not found: {}", userId);
+            return Collections.emptyList();
+        }
+
+        // Get all Google-enabled devices for tenant
+        List<GoogleDevice> allDevices = getGoogleEnabledDevices(tenantId);
+
+        // If user is tenant admin, return all devices
+        if (user.getAuthority().name().equals("TENANT_ADMIN")) {
+            log.debug("User is tenant admin, returning all {} devices", allDevices.size());
+            return allDevices;
+        }
+
+        // If user is customer user, filter by customer
+        CustomerId customerId = user.getCustomerId();
+        if (customerId == null || customerId.isNullUid()) {
+            log.warn("Customer user {} has no customerId, returning empty list", userId);
+            return Collections.emptyList();
+        }
+
+        // Filter devices by customerId
+        List<GoogleDevice> customerDevices = new ArrayList<>();
+        for (GoogleDevice googleDevice : allDevices) {
+            Device device = deviceService.findDeviceById(tenantId, new DeviceId(googleDevice.getId()));
+            if (device != null && device.getCustomerId() != null && device.getCustomerId().equals(customerId)) {
+                customerDevices.add(googleDevice);
+            }
+        }
+
+        log.debug("Found {} Google-enabled devices for customer user {}", customerDevices.size(), userId);
+        return customerDevices;
     }
 
     @Override
