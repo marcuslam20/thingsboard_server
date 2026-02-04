@@ -629,8 +629,12 @@ public class GoogleAssistantController extends BaseController {
         GoogleSyncResponse.DeviceName name = GoogleSyncResponse.DeviceName.builder()
                 .defaultNames(Collections.singletonList(device.getName()))
                 .name(device.getName())
-                .nicknames(capabilities.getNicknames() != null ? capabilities.getNicknames() :
-                    Collections.singletonList(device.getLabel() != null ? device.getLabel() : device.getName()))
+                .nicknames(capabilities.getNicknames() != null && !capabilities.getNicknames().isEmpty()
+                    ? capabilities.getNicknames()
+                    : Collections.singletonList(
+                        device.getLabel() != null && !device.getLabel().isEmpty()
+                            ? device.getLabel()
+                            : device.getName()))
                 .build();
 
         GoogleSyncResponse.DeviceInfo deviceInfo = GoogleSyncResponse.DeviceInfo.builder()
