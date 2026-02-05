@@ -186,7 +186,7 @@ public class GoogleAssistantServiceImpl implements GoogleAssistantService {
 
         // Apply custom RPC mapping if configured
         String finalRpcMethod = standardRpcMethod;
-        ObjectNode finalRpcParams = standardRpcParams;
+        JsonNode finalRpcParams = standardRpcParams;
 
         if (capabilities != null && capabilities.getRpcMapping() != null) {
             GoogleCapabilities.RpcMethodMapping customMapping = capabilities.getRpcMapping().get(standardRpcMethod);
@@ -468,11 +468,12 @@ public class GoogleAssistantServiceImpl implements GoogleAssistantService {
         return rpcParams;
     }
 
-    private void sendRpcCommand(Device device, String method, ObjectNode params) {
+    private void sendRpcCommand(Device device, String method, JsonNode params) {
         try {
             log.debug("Sending RPC command to device {}: method={}, params={}", device.getId(), method, params);
 
             // Create RPC request body
+            // params can be object, primitive number, or primitive string
             ToDeviceRpcRequestBody body = new ToDeviceRpcRequestBody(method, params.toString());
 
             // Create RPC request
@@ -654,35 +655,40 @@ public class GoogleAssistantServiceImpl implements GoogleAssistantService {
     }
 
     /**
-     * Apply custom parameter mapping based on device configuration
+     * Apply custom parameter mapping based on device configuration.
+     * Returns JsonNode which can be ObjectNode (object), IntNode (number), or TextNode (string)
      */
-    private ObjectNode applyCustomParamMapping(ObjectNode standardParams, GoogleCapabilities.RpcMethodMapping customMapping) {
+    private JsonNode applyCustomParamMapping(ObjectNode standardParams, GoogleCapabilities.RpcMethodMapping customMapping) {
         String paramFormat = customMapping.getParamFormat();
 
-        // Case 1: Numeric format (e.g., 1/0 for boolean)
+        // Case 1: Numeric format - return primitive number (e.g., 1, not {"value": 1})
         if ("numeric".equals(paramFormat)) {
             // Convert object params to single numeric value
             // Typically for boolean: {"state": true} → 1
             if (standardParams.has("state")) {
                 boolean boolValue = standardParams.get("state").asBoolean();
-                return objectMapper.createObjectNode().put("value", boolValue ? 1 : 0);
+                return objectMapper.getNodeFactory().numberNode(boolValue ? 1 : 0);
             }
             // For brightness/percentage: {"brightness": 80} → 80
             if (standardParams.has("brightness")) {
-                return objectMapper.createObjectNode().put("value", standardParams.get("brightness").asInt());
+                return objectMapper.getNodeFactory().numberNode(standardParams.get("brightness").asInt());
             }
             // Fallback: return first value as number
             if (standardParams.size() > 0) {
                 String firstKey = standardParams.fieldNames().next();
-                return objectMapper.createObjectNode().put("value", standardParams.get(firstKey).asInt());
+                JsonNode firstValue = standardParams.get(firstKey);
+                if (firstValue.isBoolean()) {
+                    return objectMapper.getNodeFactory().numberNode(firstValue.asBoolean() ? 1 : 0);
+                }
+                return objectMapper.getNodeFactory().numberNode(firstValue.asInt());
             }
         }
 
-        // Case 2: String format
+        // Case 2: String format - return primitive string (e.g., "on", not {"value": "on"})
         else if ("string".equals(paramFormat)) {
             if (standardParams.size() > 0) {
                 String firstKey = standardParams.fieldNames().next();
-                return objectMapper.createObjectNode().put("value", standardParams.get(firstKey).asText());
+                return objectMapper.getNodeFactory().textNode(standardParams.get(firstKey).asText());
             }
         }
 
