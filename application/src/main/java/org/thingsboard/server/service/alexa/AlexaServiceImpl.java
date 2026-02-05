@@ -34,7 +34,6 @@ import org.thingsboard.server.service.alexa.dto.AlexaCapabilities;
 import org.thingsboard.server.service.alexa.dto.AlexaCommand;
 import org.thingsboard.server.service.alexa.dto.AlexaDevice;
 import org.thingsboard.server.service.rpc.TbCoreDeviceRpcService;
-import org.thingsboard.server.service.rpc.ToDeviceRpcRequestActorMsg;
 import org.thingsboard.server.common.msg.rpc.ToDeviceRpcRequest;
 
 import java.util.ArrayList;
