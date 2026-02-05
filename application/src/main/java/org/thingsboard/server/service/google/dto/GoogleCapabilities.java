@@ -81,4 +81,52 @@ public class GoogleCapabilities {
      */
     @JsonProperty("nicknames")
     private List<String> nicknames;
+
+    /**
+     * Custom RPC method mapping for device-specific firmware.
+     * If not specified, uses default ThingsBoard RPC methods.
+     *
+     * Example for custom firmware:
+     * {
+     *   "setPower": {
+     *     "method": "setRelayState",
+     *     "paramFormat": "numeric",
+     *     "paramMapping": {"state": "value"}
+     *   }
+     * }
+     *
+     * Supported paramFormat:
+     * - "object": Standard object format {"key": value}
+     * - "numeric": Single numeric value (0/1 for boolean)
+     * - "string": Single string value
+     */
+    @JsonProperty("rpcMapping")
+    private Map<String, RpcMethodMapping> rpcMapping;
+
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    public static class RpcMethodMapping {
+        /**
+         * Custom RPC method name to send to device
+         */
+        @JsonProperty("method")
+        private String method;
+
+        /**
+         * Parameter format: "object", "numeric", or "string"
+         */
+        @JsonProperty("paramFormat")
+        @Builder.Default
+        private String paramFormat = "object";
+
+        /**
+         * Custom parameter name mapping
+         * Maps standard param names to custom param names
+         */
+        @JsonProperty("paramMapping")
+        private Map<String, String> paramMapping;
+    }
 }

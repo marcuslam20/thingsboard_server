@@ -177,13 +177,29 @@ public class GoogleAssistantServiceImpl implements GoogleAssistantService {
             throw new IllegalArgumentException("Device not found: " + deviceId);
         }
 
-        // Map Google command to RPC method and params
-        String rpcMethod = mapCommandToRpcMethod(command.getCommand());
-        ObjectNode rpcParams = mapCommandParams(command.getCommand(), command.getParams());
+        // Get device capabilities for custom RPC mapping
+        GoogleCapabilities capabilities = getDeviceCapabilities(device);
+
+        // Map Google command to RPC method and params (with custom mapping support)
+        String standardRpcMethod = mapCommandToRpcMethod(command.getCommand());
+        ObjectNode standardRpcParams = mapCommandParams(command.getCommand(), command.getParams());
+
+        // Apply custom RPC mapping if configured
+        String finalRpcMethod = standardRpcMethod;
+        ObjectNode finalRpcParams = standardRpcParams;
+
+        if (capabilities != null && capabilities.getRpcMapping() != null) {
+            GoogleCapabilities.RpcMethodMapping customMapping = capabilities.getRpcMapping().get(standardRpcMethod);
+            if (customMapping != null) {
+                log.debug("Applying custom RPC mapping for method: {}", standardRpcMethod);
+                finalRpcMethod = customMapping.getMethod();
+                finalRpcParams = applyCustomParamMapping(standardRpcParams, customMapping);
+            }
+        }
 
         // Send RPC command to device
         try {
-            sendRpcCommand(device, rpcMethod, rpcParams);
+            sendRpcCommand(device, finalRpcMethod, finalRpcParams);
             log.debug("Command executed successfully on device: {}", deviceId);
         } catch (Exception e) {
             log.error("Error executing command on device {}: {}", deviceId, e.getMessage(), e);
@@ -619,5 +635,72 @@ public class GoogleAssistantServiceImpl implements GoogleAssistantService {
             log.error("Error getting string value for key {}: {}", key, e.getMessage());
         }
         return Optional.empty();
+    }
+
+    /**
+     * Get Google capabilities from device additional info
+     */
+    private GoogleCapabilities getDeviceCapabilities(Device device) {
+        try {
+            JsonNode additionalInfo = device.getAdditionalInfo();
+            if (additionalInfo != null && additionalInfo.has(GOOGLE_CAPABILITIES_KEY)) {
+                JsonNode capabilitiesNode = additionalInfo.get(GOOGLE_CAPABILITIES_KEY);
+                return objectMapper.treeToValue(capabilitiesNode, GoogleCapabilities.class);
+            }
+        } catch (Exception e) {
+            log.error("Error getting device capabilities: {}", e.getMessage());
+        }
+        return null;
+    }
+
+    /**
+     * Apply custom parameter mapping based on device configuration
+     */
+    private ObjectNode applyCustomParamMapping(ObjectNode standardParams, GoogleCapabilities.RpcMethodMapping customMapping) {
+        String paramFormat = customMapping.getParamFormat();
+
+        // Case 1: Numeric format (e.g., 1/0 for boolean)
+        if ("numeric".equals(paramFormat)) {
+            // Convert object params to single numeric value
+            // Typically for boolean: {"state": true} → 1
+            if (standardParams.has("state")) {
+                boolean boolValue = standardParams.get("state").asBoolean();
+                return objectMapper.createObjectNode().put("value", boolValue ? 1 : 0);
+            }
+            // For brightness/percentage: {"brightness": 80} → 80
+            if (standardParams.has("brightness")) {
+                return objectMapper.createObjectNode().put("value", standardParams.get("brightness").asInt());
+            }
+            // Fallback: return first value as number
+            if (standardParams.size() > 0) {
+                String firstKey = standardParams.fieldNames().next();
+                return objectMapper.createObjectNode().put("value", standardParams.get(firstKey).asInt());
+            }
+        }
+
+        // Case 2: String format
+        else if ("string".equals(paramFormat)) {
+            if (standardParams.size() > 0) {
+                String firstKey = standardParams.fieldNames().next();
+                return objectMapper.createObjectNode().put("value", standardParams.get(firstKey).asText());
+            }
+        }
+
+        // Case 3: Object format with custom key mapping
+        else if ("object".equals(paramFormat) && customMapping.getParamMapping() != null) {
+            ObjectNode mappedParams = objectMapper.createObjectNode();
+            Map<String, String> paramMapping = customMapping.getParamMapping();
+
+            standardParams.fields().forEachRemaining(entry -> {
+                String standardKey = entry.getKey();
+                String customKey = paramMapping.getOrDefault(standardKey, standardKey);
+                mappedParams.set(customKey, entry.getValue());
+            });
+
+            return mappedParams;
+        }
+
+        // Default: return as-is
+        return standardParams;
     }
 }
