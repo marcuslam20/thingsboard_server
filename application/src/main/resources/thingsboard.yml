@@ -2037,3 +2037,11 @@ mqtt:
       # The actual delay is randomized within a range defined by multiplying the base delay by a factor between (1 - jitter_factor) and (1 + jitter_factor).
       # For example, a jitter_factor of 0.15 means the actual delay may vary by up to ±15% of the base delay.
       jitter_factor: "${TB_MQTT_CLIENT_RETRANSMISSION_JITTER_FACTOR:0.15}"
+
+# Alexa Smart Home Integration
+alexa:
+  oauth:
+    # OAuth2 client credentials for Alexa Smart Home skill
+    # These should match the values configured in Alexa Developer Console
+    client_id: "${ALEXA_OAUTH_CLIENT_ID:}"
+    client_secret: "${ALEXA_OAUTH_CLIENT_SECRET:}"
