@@ -35,5 +35,7 @@ pom.xml.versionsBackup
 .instance_id
 rebuild-docker.sh
 */.run/**
-.run/**
+.run
+**/node_modules/
+alexa-skill/dist//**
 .run

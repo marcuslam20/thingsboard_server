@@ -78,7 +78,8 @@ public class ThingsboardSecurityConfiguration {
     public static final String PUBLIC_LOGIN_ENTRY_POINT = "/api/auth/login/public";
     public static final String TOKEN_REFRESH_ENTRY_POINT = "/api/auth/token";
     public static final String ALEXA_OAUTH_ENTRY_POINT = "/api/alexa/oauth/**";
-    protected static final String[] NON_TOKEN_BASED_AUTH_ENTRY_POINTS = new String[]{"/index.html", "/assets/**", "/static/**", "/api/noauth/**", "/webjars/**", "/api/license/**", "/api/images/public/**", "/.well-known/**", "/api/alexa/oauth/**"};
+    public static final String ALEXA_SKILL_ENTRY_POINT = "/api/alexa/skill/**";
+    protected static final String[] NON_TOKEN_BASED_AUTH_ENTRY_POINTS = new String[]{"/index.html", "/assets/**", "/static/**", "/api/noauth/**", "/webjars/**", "/api/license/**", "/api/images/public/**", "/.well-known/**", "/api/alexa/oauth/**", "/api/alexa/skill/**"};
     public static final String TOKEN_BASED_AUTH_ENTRY_POINT = "/api/**";
     public static final String WS_ENTRY_POINT = "/api/ws/**";
     public static final String MAIL_OAUTH2_PROCESSING_ENTRY_POINT = "/api/admin/mail/oauth2/code";
@@ -166,7 +167,7 @@ public class ThingsboardSecurityConfiguration {
         List<String> pathsToSkip = new ArrayList<>(Arrays.asList(NON_TOKEN_BASED_AUTH_ENTRY_POINTS));
         pathsToSkip.addAll(Arrays.asList(WS_ENTRY_POINT, TOKEN_REFRESH_ENTRY_POINT, FORM_BASED_LOGIN_ENTRY_POINT,
                 PUBLIC_LOGIN_ENTRY_POINT, DEVICE_API_ENTRY_POINT, MAIL_OAUTH2_PROCESSING_ENTRY_POINT,
-                DEVICE_CONNECTIVITY_CERTIFICATE_DOWNLOAD_ENTRY_POINT, ALEXA_OAUTH_ENTRY_POINT));
+                DEVICE_CONNECTIVITY_CERTIFICATE_DOWNLOAD_ENTRY_POINT, ALEXA_OAUTH_ENTRY_POINT, ALEXA_SKILL_ENTRY_POINT));
         SkipPathRequestMatcher matcher = new SkipPathRequestMatcher(pathsToSkip, TOKEN_BASED_AUTH_ENTRY_POINT);
         JwtTokenAuthenticationProcessingFilter filter
                 = new JwtTokenAuthenticationProcessingFilter(failureHandler, jwtHeaderTokenExtractor, matcher);

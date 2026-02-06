@@ -24,12 +24,17 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.thingsboard.server.common.data.Device;
 import org.thingsboard.server.common.data.DeviceProfile;
+import org.thingsboard.server.common.data.User;
+import org.thingsboard.server.common.data.id.CustomerId;
 import org.thingsboard.server.common.data.id.DeviceId;
 import org.thingsboard.server.common.data.id.TenantId;
+import org.thingsboard.server.common.data.id.UserId;
+import org.thingsboard.server.common.data.security.Authority;
 import org.thingsboard.server.common.data.page.PageData;
 import org.thingsboard.server.common.data.page.PageLink;
 import org.thingsboard.server.dao.device.DeviceProfileService;
 import org.thingsboard.server.dao.device.DeviceService;
+import org.thingsboard.server.dao.user.UserService;
 import org.thingsboard.server.service.alexa.dto.AlexaCapabilities;
 import org.thingsboard.server.service.alexa.dto.AlexaCommand;
 import org.thingsboard.server.service.alexa.dto.AlexaDevice;
@@ -53,6 +58,7 @@ public class AlexaServiceImpl implements AlexaService {
     private final DeviceService deviceService;
     private final DeviceProfileService deviceProfileService;
     private final TbCoreDeviceRpcService rpcService;
+    private final UserService userService;
     private final ObjectMapper objectMapper;
 
     private static final int DEFAULT_RPC_TIMEOUT = 5000; // 5 seconds
@@ -77,6 +83,45 @@ public class AlexaServiceImpl implements AlexaService {
         } while (pageData.hasNext());
 
         log.info("Found {} Alexa-enabled devices for tenant {}", alexaDevices.size(), tenantId);
+        return alexaDevices;
+    }
+
+    @Override
+    public List<AlexaDevice> getAlexaEnabledDevices(TenantId tenantId, UserId userId) {
+        User user = userService.findUserById(tenantId, userId);
+        if (user == null) {
+            throw new IllegalArgumentException("User not found: " + userId);
+        }
+
+        // If customer user, scope devices to their customer
+        if (Authority.CUSTOMER_USER.equals(user.getAuthority())) {
+            CustomerId customerId = user.getCustomerId();
+            if (customerId != null && !customerId.isNullUid()) {
+                return getAlexaEnabledDevicesForCustomer(tenantId, customerId);
+            }
+        }
+
+        // Tenant admin - return all tenant devices
+        return getAlexaEnabledDevices(tenantId);
+    }
+
+    private List<AlexaDevice> getAlexaEnabledDevicesForCustomer(TenantId tenantId, CustomerId customerId) {
+        List<AlexaDevice> alexaDevices = new ArrayList<>();
+        PageLink pageLink = new PageLink(MAX_DEVICES_PER_PAGE);
+
+        PageData<Device> pageData;
+        do {
+            pageData = deviceService.findDevicesByTenantIdAndCustomerId(tenantId, customerId, pageLink);
+            for (Device device : pageData.getData()) {
+                AlexaCapabilities capabilities = getAlexaCapabilities(device);
+                if (capabilities != null && capabilities.isEnabled()) {
+                    alexaDevices.add(mapToAlexaDevice(device, capabilities));
+                }
+            }
+            pageLink = pageLink.nextPageLink();
+        } while (pageData.hasNext());
+
+        log.info("Found {} Alexa-enabled devices for customer {}", alexaDevices.size(), customerId);
         return alexaDevices;
     }
 

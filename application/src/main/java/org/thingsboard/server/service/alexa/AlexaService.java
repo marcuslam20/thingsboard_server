@@ -17,6 +17,7 @@
 package org.thingsboard.server.service.alexa;
 
 import org.thingsboard.server.common.data.id.TenantId;
+import org.thingsboard.server.common.data.id.UserId;
 import org.thingsboard.server.service.alexa.dto.AlexaCommand;
 import org.thingsboard.server.service.alexa.dto.AlexaDevice;
 
@@ -36,6 +37,17 @@ public interface AlexaService {
      * @return List of Alexa-enabled devices
      */
     List<AlexaDevice> getAlexaEnabledDevices(TenantId tenantId);
+
+    /**
+     * Get Alexa-enabled devices scoped to the given user.
+     * If the user is a customer user, only returns devices assigned to that customer.
+     * If the user is a tenant admin, returns all tenant devices.
+     *
+     * @param tenantId The tenant ID
+     * @param userId The user ID (used to determine customer scope)
+     * @return List of Alexa-enabled devices visible to the user
+     */
+    List<AlexaDevice> getAlexaEnabledDevices(TenantId tenantId, UserId userId);
 
     /**
      * Get a specific device by ID with its Alexa capabilities.
