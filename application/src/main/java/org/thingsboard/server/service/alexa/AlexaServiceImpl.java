@@ -220,12 +220,9 @@ public class AlexaServiceImpl implements AlexaService {
                     null
             );
 
-            rpcService.processRestApiRpcRequest(rpcRequest, result -> {
-                log.debug("RPC command {} sent to device {}", method, device.getId());
-            }, error -> {
-                log.error("Failed to send RPC command {} to device {}: {}", 
-                        method, device.getId(), error.getMessage());
-            });
+            rpcService.processRestApiRpcRequest(rpcRequest, response -> {
+                log.debug("RPC command {} sent to device {}, response: {}", method, device.getId(), response);
+            }, null);
         } catch (Exception e) {
             log.error("Error sending RPC command to device", e);
             throw new RuntimeException("Failed to send command to device", e);
