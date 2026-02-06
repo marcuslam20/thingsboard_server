@@ -278,6 +278,9 @@ public class AlexaOAuth2ServiceImpl implements AlexaOAuth2Service {
             log.warn("Alexa OAuth client credentials not configured - allowing any credentials");
             return true;
         }
+        log.debug("Validating credentials - received clientId: [{}], configured clientId: [{}]", clientId, configuredClientId);
+        log.debug("Validating credentials - clientId match: {}, clientSecret match: {}",
+                configuredClientId.equals(clientId), configuredClientSecret.equals(clientSecret));
         return configuredClientId.equals(clientId) && configuredClientSecret.equals(clientSecret);
     }
 
