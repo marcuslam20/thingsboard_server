@@ -43,6 +43,7 @@ import org.thingsboard.server.service.security.model.SecurityUser;
 
 import jakarta.servlet.http.HttpServletRequest;
 
+import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.List;
@@ -438,7 +439,13 @@ public class AlexaController extends BaseController {
                 String decoded = new String(Base64.getDecoder().decode(authHeader.substring(6)), StandardCharsets.UTF_8);
                 String[] parts = decoded.split(":", 2);
                 if (parts.length == 2) {
-                    return parts;
+                    // URL-decode per OAuth2 spec (RFC 6749 section 2.3.1)
+                    String decodedId = URLDecoder.decode(parts[0], StandardCharsets.UTF_8);
+                    String decodedSecret = URLDecoder.decode(parts[1], StandardCharsets.UTF_8);
+                    log.debug("Basic Auth - raw: [{}], decoded id length: {}, decoded secret length: {}",
+                            decoded.substring(0, Math.min(20, decoded.length())) + "...",
+                            decodedId.length(), decodedSecret.length());
+                    return new String[]{decodedId, decodedSecret};
                 }
             } catch (Exception e) {
                 log.warn("Failed to decode Basic Auth header: {}", e.getMessage());

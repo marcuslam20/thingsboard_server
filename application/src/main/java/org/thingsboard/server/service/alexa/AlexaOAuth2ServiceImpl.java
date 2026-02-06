@@ -279,6 +279,12 @@ public class AlexaOAuth2ServiceImpl implements AlexaOAuth2Service {
             return true;
         }
         log.debug("Validating credentials - received clientId: [{}], configured clientId: [{}]", clientId, configuredClientId);
+        log.debug("Validating credentials - received secret length: {}, configured secret length: {}",
+                clientSecret != null ? clientSecret.length() : 0,
+                configuredClientSecret != null ? configuredClientSecret.length() : 0);
+        log.debug("Validating credentials - received secret last10: [{}], configured secret last10: [{}]",
+                clientSecret != null && clientSecret.length() > 10 ? clientSecret.substring(clientSecret.length() - 10) : clientSecret,
+                configuredClientSecret != null && configuredClientSecret.length() > 10 ? configuredClientSecret.substring(configuredClientSecret.length() - 10) : configuredClientSecret);
         log.debug("Validating credentials - clientId match: {}, clientSecret match: {}",
                 configuredClientId.equals(clientId), configuredClientSecret.equals(clientSecret));
         return configuredClientId.equals(clientId) && configuredClientSecret.equals(clientSecret);
