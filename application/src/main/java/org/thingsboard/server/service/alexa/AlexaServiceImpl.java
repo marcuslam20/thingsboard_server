@@ -34,6 +34,7 @@ import org.thingsboard.server.service.alexa.dto.AlexaCapabilities;
 import org.thingsboard.server.service.alexa.dto.AlexaCommand;
 import org.thingsboard.server.service.alexa.dto.AlexaDevice;
 import org.thingsboard.server.service.rpc.TbCoreDeviceRpcService;
+import org.thingsboard.server.common.data.rpc.ToDeviceRpcRequestBody;
 import org.thingsboard.server.common.msg.rpc.ToDeviceRpcRequest;
 
 import java.util.ArrayList;
@@ -206,14 +207,14 @@ public class AlexaServiceImpl implements AlexaService {
      */
     private void sendRpcCommand(TenantId tenantId, Device device, String method, JsonNode params) {
         try {
+            ToDeviceRpcRequestBody body = new ToDeviceRpcRequestBody(method, params.toString());
             ToDeviceRpcRequest rpcRequest = new ToDeviceRpcRequest(
                     UUID.randomUUID(),
                     tenantId,
                     device.getId(),
                     true, // one-way
                     System.currentTimeMillis() + TimeUnit.MILLISECONDS.toMillis(DEFAULT_RPC_TIMEOUT),
-                    method,
-                    params.toString(),
+                    body,
                     false,
                     0,
                     null
