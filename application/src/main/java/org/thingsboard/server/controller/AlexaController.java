@@ -266,12 +266,16 @@ public class AlexaController extends BaseController {
             @Parameter(description ="Redirect URI") @RequestParam(value = "redirect_uri", required = false) String redirectUri,
             HttpServletRequest request
     ) {
-        // Extract client credentials from HTTP Basic Auth header if not in form params
-        if ((clientId == null || clientId.isEmpty()) && request.getHeader("Authorization") != null) {
+        // Extract client credentials from HTTP Basic Auth header if missing from form params
+        if (request.getHeader("Authorization") != null) {
             String[] credentials = extractBasicAuthCredentials(request);
             if (credentials != null) {
-                clientId = credentials[0];
-                clientSecret = credentials[1];
+                if (clientId == null || clientId.isEmpty()) {
+                    clientId = credentials[0];
+                }
+                if (clientSecret == null || clientSecret.isEmpty()) {
+                    clientSecret = credentials[1];
+                }
             }
         }
 
