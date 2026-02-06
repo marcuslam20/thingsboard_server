@@ -41,6 +41,10 @@ import org.thingsboard.server.service.alexa.dto.AlexaDevice;
 import org.thingsboard.server.service.alexa.dto.AlexaOAuth2TokenResponse;
 import org.thingsboard.server.service.security.model.SecurityUser;
 
+import jakarta.servlet.http.HttpServletRequest;
+
+import java.nio.charset.StandardCharsets;
+import java.util.Base64;
 import java.util.List;
 import java.util.UUID;
 
@@ -254,22 +258,30 @@ public class AlexaController extends BaseController {
     @PostMapping(value = "/oauth/token", consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
     public ResponseEntity<AlexaOAuth2TokenResponse> exchangeToken(
             @Parameter(description ="Grant type") @RequestParam("grant_type") String grantType,
-            @Parameter(description ="OAuth2 client ID") @RequestParam("client_id") String clientId,
-            @Parameter(description ="OAuth2 client secret") @RequestParam("client_secret") String clientSecret,
+            @Parameter(description ="OAuth2 client ID") @RequestParam(value = "client_id", required = false) String clientId,
+            @Parameter(description ="OAuth2 client secret") @RequestParam(value = "client_secret", required = false) String clientSecret,
             @Parameter(description ="Authorization code") @RequestParam(value = "code", required = false) String code,
             @Parameter(description ="Refresh token") @RequestParam(value = "refresh_token", required = false) String refreshToken,
-            @Parameter(description ="Redirect URI") @RequestParam(value = "redirect_uri", required = false) String redirectUri
+            @Parameter(description ="Redirect URI") @RequestParam(value = "redirect_uri", required = false) String redirectUri,
+            HttpServletRequest request
     ) {
+        // Extract client credentials from HTTP Basic Auth header if not in form params
+        if ((clientId == null || clientId.isEmpty()) && request.getHeader("Authorization") != null) {
+            String[] credentials = extractBasicAuthCredentials(request);
+            if (credentials != null) {
+                clientId = credentials[0];
+                clientSecret = credentials[1];
+            }
+        }
+
         log.debug("Token exchange request: grantType={}, clientId={}", grantType, clientId);
 
         try {
             AlexaOAuth2TokenResponse response;
 
             if ("authorization_code".equals(grantType)) {
-                // Exchange authorization code for tokens
                 response = alexaOAuth2Service.exchangeCodeForToken(code, clientId, clientSecret);
             } else if ("refresh_token".equals(grantType)) {
-                // Refresh access token
                 response = alexaOAuth2Service.refreshAccessToken(refreshToken, clientId, clientSecret);
             } else {
                 response = AlexaOAuth2TokenResponse.builder()
@@ -418,6 +430,22 @@ public class AlexaController extends BaseController {
     }
 
     // ============== Helper Methods ==============
+
+    private String[] extractBasicAuthCredentials(HttpServletRequest request) {
+        String authHeader = request.getHeader("Authorization");
+        if (authHeader != null && authHeader.startsWith("Basic ")) {
+            try {
+                String decoded = new String(Base64.getDecoder().decode(authHeader.substring(6)), StandardCharsets.UTF_8);
+                String[] parts = decoded.split(":", 2);
+                if (parts.length == 2) {
+                    return parts;
+                }
+            } catch (Exception e) {
+                log.warn("Failed to decode Basic Auth header: {}", e.getMessage());
+            }
+        }
+        return null;
+    }
 
     private ResponseEntity<String> buildLoginErrorResponse(String clientId, String redirectUri,
                                                             String state, String responseType,
