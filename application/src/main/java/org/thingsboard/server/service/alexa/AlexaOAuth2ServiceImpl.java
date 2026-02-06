@@ -51,8 +51,8 @@ public class AlexaOAuth2ServiceImpl implements AlexaOAuth2Service {
     private static final int AUTH_CODE_LENGTH = 32;
     private static final int TOKEN_LENGTH = 64;
     private static final long AUTH_CODE_EXPIRY_MINUTES = 10;
-    private static final long ACCESS_TOKEN_EXPIRY_HOURS = 1;
-    private static final long REFRESH_TOKEN_EXPIRY_DAYS = 30;
+    private static final long ACCESS_TOKEN_EXPIRY_DAYS = 90; // 90 days like reference
+    private static final long REFRESH_TOKEN_EXPIRY_DAYS = 90;
 
     @Value("${alexa.oauth.client_id:}")
     private String configuredClientId;
@@ -129,7 +129,7 @@ public class AlexaOAuth2ServiceImpl implements AlexaOAuth2Service {
         String accessToken = generateSecureToken(TOKEN_LENGTH);
         String refreshToken = generateSecureToken(TOKEN_LENGTH);
         Timestamp now = Timestamp.from(Instant.now());
-        Timestamp accessTokenExpiry = Timestamp.from(Instant.now().plus(ACCESS_TOKEN_EXPIRY_HOURS, ChronoUnit.HOURS));
+        Timestamp accessTokenExpiry = Timestamp.from(Instant.now().plus(ACCESS_TOKEN_EXPIRY_DAYS, ChronoUnit.DAYS));
 
         // Delete any existing token for this Alexa user
         tokenDao.deleteByAlexaUserId(authCodeEntity.getAlexaUserId());
@@ -190,7 +190,7 @@ public class AlexaOAuth2ServiceImpl implements AlexaOAuth2Service {
         // Generate new access token
         String newAccessToken = generateSecureToken(TOKEN_LENGTH);
         Timestamp now = Timestamp.from(Instant.now());
-        Timestamp accessTokenExpiry = Timestamp.from(Instant.now().plus(ACCESS_TOKEN_EXPIRY_HOURS, ChronoUnit.HOURS));
+        Timestamp accessTokenExpiry = Timestamp.from(Instant.now().plus(ACCESS_TOKEN_EXPIRY_DAYS, ChronoUnit.DAYS));
 
         tokenEntity.setAccessToken(newAccessToken);
         tokenEntity.setExpiresAt(accessTokenExpiry);
@@ -206,6 +206,7 @@ public class AlexaOAuth2ServiceImpl implements AlexaOAuth2Service {
                 .accessToken(newAccessToken)
                 .tokenType("Bearer")
                 .expiresIn(expiresIn)
+                .refreshToken(refreshToken) // Return same refresh token
                 .build();
     }
 

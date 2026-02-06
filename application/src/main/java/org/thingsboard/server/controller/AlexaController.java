@@ -211,7 +211,6 @@ public class AlexaController extends BaseController {
      */
     @Operation(summary ="OAuth2 Authorization Submit",
             description ="Processes authorization and generates authorization code for authenticated users")
-    @PreAuthorize("hasAnyAuthority('TENANT_ADMIN', 'CUSTOMER_USER')")
     @PostMapping(value = "/oauth/authorize")
     public ResponseEntity<?> authorizeSubmit(
             @Parameter(description ="OAuth2 client ID") @RequestParam("client_id") String clientId,
