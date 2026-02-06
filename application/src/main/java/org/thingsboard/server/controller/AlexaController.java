@@ -16,9 +16,9 @@
  */
 package org.thingsboard.server.controller;
 
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
-import io.swagger.annotations.ApiParam;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -48,7 +48,7 @@ import java.util.UUID;
  * REST API Controller for Alexa Smart Home integration.
  * Provides endpoints for OAuth2 authorization, device discovery and command execution.
  */
-@Api(tags = "Alexa Integration")
+@Tag(name = "Alexa Integration")
 @RestController
 @TbCoreComponent
 @RequestMapping("/api/alexa")
@@ -65,14 +65,14 @@ public class AlexaController extends BaseController {
     /**
      * OAuth2 Authorization Endpoint - displays login form for Alexa account linking.
      */
-    @ApiOperation(value = "OAuth2 Authorization Endpoint",
-            notes = "Displays authorization page for Alexa account linking with login form.")
+    @Operation(summary = "OAuth2 Authorization Endpoint",
+            description = "Displays authorization page for Alexa account linking with login form.")
     @GetMapping(value = "/oauth/authorize")
     public ResponseEntity<String> authorizeForm(
-            @ApiParam(value = "OAuth2 client ID") @RequestParam("client_id") String clientId,
-            @ApiParam(value = "OAuth2 redirect URI") @RequestParam("redirect_uri") String redirectUri,
-            @ApiParam(value = "OAuth2 state parameter") @RequestParam("state") String state,
-            @ApiParam(value = "OAuth2 response type") @RequestParam("response_type") String responseType,
+            @Parameter(description ="OAuth2 client ID") @RequestParam("client_id") String clientId,
+            @Parameter(description ="OAuth2 redirect URI") @RequestParam("redirect_uri") String redirectUri,
+            @Parameter(description ="OAuth2 state parameter") @RequestParam("state") String state,
+            @Parameter(description ="OAuth2 response type") @RequestParam("response_type") String responseType,
             @AuthenticationPrincipal SecurityUser currentUser
     ) {
         log.debug("OAuth2 authorization request: clientId={}, redirectUri={}, state={}", clientId, redirectUri, state);
@@ -147,16 +147,16 @@ public class AlexaController extends BaseController {
     /**
      * OAuth2 Login and Authorization - handles login form submission.
      */
-    @ApiOperation(value = "OAuth2 Login and Authorization",
-            notes = "Handles login form submission and generates authorization code")
+    @Operation(summary ="OAuth2 Login and Authorization",
+            description ="Handles login form submission and generates authorization code")
     @PostMapping(value = "/oauth/login")
     public ResponseEntity<?> loginAndAuthorize(
-            @ApiParam(value = "Username/Email") @RequestParam("username") String username,
-            @ApiParam(value = "Password") @RequestParam("password") String password,
-            @ApiParam(value = "OAuth2 client ID") @RequestParam("client_id") String clientId,
-            @ApiParam(value = "OAuth2 redirect URI") @RequestParam("redirect_uri") String redirectUri,
-            @ApiParam(value = "OAuth2 state parameter") @RequestParam("state") String state,
-            @ApiParam(value = "OAuth2 response type") @RequestParam("response_type") String responseType
+            @Parameter(description ="Username/Email") @RequestParam("username") String username,
+            @Parameter(description ="Password") @RequestParam("password") String password,
+            @Parameter(description ="OAuth2 client ID") @RequestParam("client_id") String clientId,
+            @Parameter(description ="OAuth2 redirect URI") @RequestParam("redirect_uri") String redirectUri,
+            @Parameter(description ="OAuth2 state parameter") @RequestParam("state") String state,
+            @Parameter(description ="OAuth2 response type") @RequestParam("response_type") String responseType
     ) {
         try {
             log.debug("OAuth2 login attempt for user: {}", username);
@@ -209,15 +209,15 @@ public class AlexaController extends BaseController {
     /**
      * OAuth2 Authorization Submit - processes authorization for already authenticated users.
      */
-    @ApiOperation(value = "OAuth2 Authorization Submit",
-            notes = "Processes authorization and generates authorization code for authenticated users")
+    @Operation(summary ="OAuth2 Authorization Submit",
+            description ="Processes authorization and generates authorization code for authenticated users")
     @PreAuthorize("hasAnyAuthority('TENANT_ADMIN', 'CUSTOMER_USER')")
     @PostMapping(value = "/oauth/authorize")
     public ResponseEntity<?> authorizeSubmit(
-            @ApiParam(value = "OAuth2 client ID") @RequestParam("client_id") String clientId,
-            @ApiParam(value = "OAuth2 redirect URI") @RequestParam("redirect_uri") String redirectUri,
-            @ApiParam(value = "OAuth2 state parameter") @RequestParam("state") String state,
-            @ApiParam(value = "OAuth2 response type") @RequestParam("response_type") String responseType,
+            @Parameter(description ="OAuth2 client ID") @RequestParam("client_id") String clientId,
+            @Parameter(description ="OAuth2 redirect URI") @RequestParam("redirect_uri") String redirectUri,
+            @Parameter(description ="OAuth2 state parameter") @RequestParam("state") String state,
+            @Parameter(description ="OAuth2 response type") @RequestParam("response_type") String responseType,
             @AuthenticationPrincipal SecurityUser currentUser
     ) throws ThingsboardException {
         log.debug("Processing OAuth2 authorization for user: {}", currentUser.getId());
@@ -250,16 +250,16 @@ public class AlexaController extends BaseController {
     /**
      * OAuth2 Token Exchange - exchanges authorization code for access token.
      */
-    @ApiOperation(value = "OAuth2 Token Exchange",
-            notes = "Exchanges authorization code for access token or refreshes access token")
+    @Operation(summary ="OAuth2 Token Exchange",
+            description ="Exchanges authorization code for access token or refreshes access token")
     @PostMapping(value = "/oauth/token", consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
     public ResponseEntity<AlexaOAuth2TokenResponse> exchangeToken(
-            @ApiParam(value = "Grant type") @RequestParam("grant_type") String grantType,
-            @ApiParam(value = "OAuth2 client ID") @RequestParam("client_id") String clientId,
-            @ApiParam(value = "OAuth2 client secret") @RequestParam("client_secret") String clientSecret,
-            @ApiParam(value = "Authorization code") @RequestParam(value = "code", required = false) String code,
-            @ApiParam(value = "Refresh token") @RequestParam(value = "refresh_token", required = false) String refreshToken,
-            @ApiParam(value = "Redirect URI") @RequestParam(value = "redirect_uri", required = false) String redirectUri
+            @Parameter(description ="Grant type") @RequestParam("grant_type") String grantType,
+            @Parameter(description ="OAuth2 client ID") @RequestParam("client_id") String clientId,
+            @Parameter(description ="OAuth2 client secret") @RequestParam("client_secret") String clientSecret,
+            @Parameter(description ="Authorization code") @RequestParam(value = "code", required = false) String code,
+            @Parameter(description ="Refresh token") @RequestParam(value = "refresh_token", required = false) String refreshToken,
+            @Parameter(description ="Redirect URI") @RequestParam(value = "redirect_uri", required = false) String redirectUri
     ) {
         log.debug("Token exchange request: grantType={}, clientId={}", grantType, clientId);
 
@@ -298,11 +298,11 @@ public class AlexaController extends BaseController {
     /**
      * OAuth2 Token Revocation - revokes access token.
      */
-    @ApiOperation(value = "OAuth2 Token Revocation",
-            notes = "Revokes access token (called when user unlinks account in Alexa app)")
+    @Operation(summary ="OAuth2 Token Revocation",
+            description ="Revokes access token (called when user unlinks account in Alexa app)")
     @PostMapping(value = "/oauth/revoke")
     public ResponseEntity<?> revokeToken(
-            @ApiParam(value = "Access token to revoke") @RequestParam("token") String token
+            @Parameter(description ="Access token to revoke") @RequestParam("token") String token
     ) {
         log.debug("Token revocation request");
 
@@ -323,8 +323,8 @@ public class AlexaController extends BaseController {
      *
      * @return List of devices configured for Alexa control
      */
-    @ApiOperation(value = "Get Alexa-enabled devices",
-            notes = "Returns all devices that have Alexa capabilities enabled. " +
+    @Operation(summary ="Get Alexa-enabled devices",
+            description ="Returns all devices that have Alexa capabilities enabled. " +
                     "Used during Alexa Smart Home skill device discovery.")
     @PreAuthorize("hasAnyAuthority('TENANT_ADMIN', 'CUSTOMER_USER')")
     @GetMapping("/devices")
@@ -344,12 +344,12 @@ public class AlexaController extends BaseController {
      * @param deviceId The device UUID
      * @return The device details in Alexa format
      */
-    @ApiOperation(value = "Get Alexa device by ID",
-            notes = "Returns a specific device with its Alexa capabilities.")
+    @Operation(summary ="Get Alexa device by ID",
+            description ="Returns a specific device with its Alexa capabilities.")
     @PreAuthorize("hasAnyAuthority('TENANT_ADMIN', 'CUSTOMER_USER')")
     @GetMapping("/devices/{deviceId}")
     public AlexaDevice getAlexaDevice(
-            @ApiParam(value = "Device UUID", required = true)
+            @Parameter(description ="Device UUID", required = true)
             @PathVariable UUID deviceId) throws ThingsboardException {
         try {
             log.info("Getting Alexa device: {}", deviceId);
@@ -368,15 +368,15 @@ public class AlexaController extends BaseController {
      * @param command The Alexa command to execute
      * @return Success response or error
      */
-    @ApiOperation(value = "Execute Alexa command",
-            notes = "Executes a command on a device from the Alexa Smart Home skill. " +
+    @Operation(summary ="Execute Alexa command",
+            description ="Executes a command on a device from the Alexa Smart Home skill. " +
                     "Supported commands: setPower, setBrightness, setTemperature.")
     @PreAuthorize("hasAnyAuthority('TENANT_ADMIN', 'CUSTOMER_USER')")
     @PostMapping("/devices/{deviceId}/command")
     public ResponseEntity<?> executeCommand(
-            @ApiParam(value = "Device UUID", required = true)
+            @Parameter(description ="Device UUID", required = true)
             @PathVariable UUID deviceId,
-            @ApiParam(value = "Alexa command to execute", required = true)
+            @Parameter(description ="Alexa command to execute", required = true)
             @RequestBody AlexaCommand command) throws ThingsboardException {
         try {
             log.info("Executing Alexa command on device {}: {}", deviceId, command.getCommand());
@@ -396,16 +396,16 @@ public class AlexaController extends BaseController {
      * @param category The Alexa device category (LIGHT, SWITCH, etc.)
      * @return Updated device
      */
-    @ApiOperation(value = "Configure Alexa capabilities",
-            notes = "Enable or disable Alexa capabilities for a device and set its category.")
+    @Operation(summary ="Configure Alexa capabilities",
+            description ="Enable or disable Alexa capabilities for a device and set its category.")
     @PreAuthorize("hasAnyAuthority('TENANT_ADMIN')")
     @PostMapping("/devices/{deviceId}/configure")
     public AlexaDevice configureAlexaCapabilities(
-            @ApiParam(value = "Device UUID", required = true)
+            @Parameter(description ="Device UUID", required = true)
             @PathVariable UUID deviceId,
-            @ApiParam(value = "Enable Alexa", required = true)
+            @Parameter(description ="Enable Alexa", required = true)
             @RequestParam boolean enabled,
-            @ApiParam(value = "Alexa category", defaultValue = "SWITCH")
+            @Parameter(description ="Alexa category")
             @RequestParam(defaultValue = "SWITCH") String category) throws ThingsboardException {
         try {
             log.info("Configuring Alexa capabilities for device {}: enabled={}, category={}",
