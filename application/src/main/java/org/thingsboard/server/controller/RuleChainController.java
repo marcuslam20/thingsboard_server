@@ -351,14 +351,13 @@ public class RuleChainController extends BaseController {
 
         RuleChain ruleChain = ruleChainService.findRuleChainById(tenantId, ruleChainMetaData.getRuleChainId());
         if (ruleChain == null) {
-            throw new ThingsboardException("Rule Chain not found!",
-                ThingsboardErrorCode.ITEM_NOT_FOUND);
+            throw new ThingsboardException("Rule Chain not found!", ThingsboardErrorCode.ITEM_NOT_FOUND);
         }
         // Kiểm tra quyền sở hữu
         if (!customerId.equals(ruleChain.getCustomerId())) {
             throw new ThingsboardException("You can only modify your own rule chains!", ThingsboardErrorCode.PERMISSION_DENIED);
         }
-
+    
         return tbRuleChainService.saveRuleChainMetaData(tenantId, ruleChain, ruleChainMetaData, true, user);
     }
 
@@ -475,14 +474,13 @@ public class RuleChainController extends BaseController {
 
         SecurityUser user = getCurrentUser();
         if (!user.isCustomerUser()) {
-            throw new ThingsboardException("Only Customer user can delete customer rule chain!",
+            throw new ThingsboardException("Only customer users can delete their rule chains",
                 ThingsboardErrorCode.PERMISSION_DENIED);
         }
 
         RuleChain ruleChain = ruleChainService.findRuleChainById(getTenantId(), ruleChainId);
-        if( ruleChain == null) {
-            throw new ThingsboardException("Rule Chain not found!",
-                ThingsboardErrorCode.ITEM_NOT_FOUND);
+        if (ruleChain == null) {
+            throw new ThingsboardException("Rule Chain not found!", ThingsboardErrorCode.ITEM_NOT_FOUND);
         }
         if (!user.getCustomerId().equals(ruleChain.getCustomerId())) {
             throw new ThingsboardException("You can only delete your own rule chain!", ThingsboardErrorCode.PERMISSION_DENIED);
