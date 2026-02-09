@@ -1,0 +1,25 @@
+service: pachira-alexa-skill
+
+provider:
+  name: aws
+  runtime: nodejs18.x
+  region: us-east-1
+  memorySize: 256
+  timeout: 10
+  environment:
+    TB_URL: ${env:THINGSBOARD_URL}
+    TB_USER: ${env:THINGSBOARD_USER}
+    TB_PASS: ${env:THINGSBOARD_PASS}
+
+functions:
+  alexa:
+    handler: dist/index.handler
+    events:
+      - alexaSmartHome: ${env:ALEXA_SKILL_ID}
+
+plugins:
+  - serverless-plugin-typescript
+
+custom:
+  serverless-plugin-typescript:
+    tsConfigFileLocation: './tsconfig.json'
