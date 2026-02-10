@@ -351,7 +351,7 @@ public class GoogleAssistantServiceImpl implements GoogleAssistantService {
             case "curtain_track":
             case "curtain_robot":
                 googleDeviceType = "action.devices.types.CURTAIN";
-                traits = Collections.singletonList("OnOff");
+                traits = Collections.singletonList("OpenClose");
                 break;
             default:
                 googleDeviceType = "action.devices.types.SWITCH";
@@ -414,6 +414,9 @@ public class GoogleAssistantServiceImpl implements GoogleAssistantService {
             case "action.devices.commands.LockUnlock":
             case "LockUnlock":
                 return "setLocked";
+            case "action.devices.commands.OpenClose":
+            case "OpenClose":
+                return "setOpenPercent";
             default:
                 log.warn("Unknown Google command: {}", googleCommand);
                 return "unknown";
@@ -467,6 +470,12 @@ public class GoogleAssistantServiceImpl implements GoogleAssistantService {
             case "LockUnlock":
                 if (params.has("lock")) {
                     rpcParams.put("locked", params.get("lock").asBoolean());
+                }
+                break;
+            case "action.devices.commands.OpenClose":
+            case "OpenClose":
+                if (params.has("openPercent")) {
+                    rpcParams.put("openPercent", params.get("openPercent").asInt());
                 }
                 break;
         }
@@ -700,10 +709,13 @@ public class GoogleAssistantServiceImpl implements GoogleAssistantService {
 
         // Case 3: Template format - return pre-configured string for on/off states
         // Used for devices that expect complex command strings (e.g., DPS format "001003001000000")
+        // Supports: OnOff (state: true/false), OpenClose (openPercent: 0-100)
         else if ("template".equals(paramFormat)) {
             boolean isOn = false;
             if (standardParams.has("state")) {
                 isOn = standardParams.get("state").asBoolean();
+            } else if (standardParams.has("openPercent")) {
+                isOn = standardParams.get("openPercent").asInt() > 0;
             } else if (standardParams.size() > 0) {
                 String firstKey = standardParams.fieldNames().next();
                 JsonNode firstValue = standardParams.get(firstKey);
