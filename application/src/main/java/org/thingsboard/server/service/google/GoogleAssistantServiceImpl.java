@@ -347,6 +347,12 @@ public class GoogleAssistantServiceImpl implements GoogleAssistantService {
                 googleDeviceType = "action.devices.types.LOCK";
                 traits = Collections.singletonList("LockUnlock");
                 break;
+            case "curtain":
+            case "curtain_track":
+            case "curtain_robot":
+                googleDeviceType = "action.devices.types.CURTAIN";
+                traits = Collections.singletonList("OnOff");
+                break;
             default:
                 googleDeviceType = "action.devices.types.SWITCH";
                 traits = Collections.singletonList("OnOff");
@@ -692,7 +698,25 @@ public class GoogleAssistantServiceImpl implements GoogleAssistantService {
             }
         }
 
-        // Case 3: Object format with custom key mapping
+        // Case 3: Template format - return pre-configured string for on/off states
+        // Used for devices that expect complex command strings (e.g., DPS format "001003001000000")
+        else if ("template".equals(paramFormat)) {
+            boolean isOn = false;
+            if (standardParams.has("state")) {
+                isOn = standardParams.get("state").asBoolean();
+            } else if (standardParams.size() > 0) {
+                String firstKey = standardParams.fieldNames().next();
+                JsonNode firstValue = standardParams.get(firstKey);
+                isOn = firstValue.isBoolean() ? firstValue.asBoolean() : firstValue.asInt() != 0;
+            }
+            String value = isOn ? customMapping.getOnValue() : customMapping.getOffValue();
+            if (value != null) {
+                return objectMapper.getNodeFactory().textNode(value);
+            }
+            return standardParams;
+        }
+
+        // Case 4: Object format with custom key mapping
         else if ("object".equals(paramFormat) && customMapping.getParamMapping() != null) {
             ObjectNode mappedParams = objectMapper.createObjectNode();
             Map<String, String> paramMapping = customMapping.getParamMapping();

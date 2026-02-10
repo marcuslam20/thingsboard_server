@@ -91,6 +91,9 @@ export function mapDeviceType(tbType: string): string {
     fan: 'action.devices.types.FAN',
     lock: 'action.devices.types.LOCK',
     door_lock: 'action.devices.types.LOCK',
+    curtain: 'action.devices.types.CURTAIN',
+    curtain_track: 'action.devices.types.CURTAIN',
+    curtain_robot: 'action.devices.types.CURTAIN',
   };
 
   return typeMap[lowerType] || 'action.devices.types.SWITCH';
