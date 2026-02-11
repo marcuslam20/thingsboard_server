@@ -24,6 +24,8 @@ import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import lombok.Data;
+import org.hibernate.annotations.JdbcType;
+import org.hibernate.dialect.PostgreSQLJsonPGObjectJsonbType;
 import org.thingsboard.server.common.data.id.DeviceId;
 import org.thingsboard.server.common.data.id.DeviceProfileId;
 import org.thingsboard.server.common.data.id.RoomId;
@@ -74,6 +76,7 @@ public class DevicePairingTokenEntity {
     private long expiresAt;
 
     @Convert(converter = JsonConverter.class)
+    @JdbcType(PostgreSQLJsonPGObjectJsonbType.class)
     @Column(name = ModelConstants.DEVICE_PAIRING_TOKEN_PAIRING_DATA_PROPERTY, columnDefinition = "jsonb")
     private JsonNode pairingData;
 

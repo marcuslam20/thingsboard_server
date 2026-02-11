@@ -23,6 +23,8 @@ import org.thingsboard.server.common.data.id.UserId;
 import org.thingsboard.server.common.data.smarthome.DeviceShare;
 import org.thingsboard.server.common.data.smarthome.DeviceShareStatus;
 
+import org.thingsboard.common.util.JacksonUtil;
+
 import java.security.SecureRandom;
 import java.util.List;
 import java.util.Optional;
@@ -46,6 +48,9 @@ public class DeviceShareServiceImpl implements DeviceShareService {
         request.setShareCode(generateRandomCode());
         request.setStatus(DeviceShareStatus.PENDING);
         request.setExpiresAt(System.currentTimeMillis() + SHARE_TTL_MS);
+        if (request.getPermissions() == null) {
+            request.setPermissions(JacksonUtil.toJsonNode("[\"CONTROL\"]"));
+        }
         return deviceShareDao.save(request);
     }
 
