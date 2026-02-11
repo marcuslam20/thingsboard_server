@@ -760,6 +760,126 @@ public class ModelConstants {
     public static final String AI_MODEL_NAME_COLUMN_NAME = NAME_PROPERTY;
     public static final String AI_MODEL_CONFIGURATION_COLUMN_NAME = "configuration";
 
+    /**
+     * Product category constants.
+     */
+    public static final String PRODUCT_CATEGORY_TABLE_NAME = "product_category";
+    public static final String PRODUCT_CATEGORY_CODE_PROPERTY = "code";
+    public static final String PRODUCT_CATEGORY_ICON_PROPERTY = "icon";
+    public static final String PRODUCT_CATEGORY_PARENT_ID_PROPERTY = "parent_id";
+    public static final String PRODUCT_CATEGORY_STANDARD_DP_SET_PROPERTY = "standard_dp_set";
+    public static final String PRODUCT_CATEGORY_SORT_ORDER_PROPERTY = "sort_order";
+
+    /**
+     * Data point constants.
+     */
+    public static final String DATA_POINT_TABLE_NAME = "data_point";
+    public static final String DATA_POINT_DEVICE_PROFILE_ID_PROPERTY = "device_profile_id";
+    public static final String DATA_POINT_DP_ID_PROPERTY = "dp_id";
+    public static final String DATA_POINT_CODE_PROPERTY = "code";
+    public static final String DATA_POINT_DP_TYPE_PROPERTY = "dp_type";
+    public static final String DATA_POINT_MODE_PROPERTY = "mode";
+    public static final String DATA_POINT_CONSTRAINTS_PROPERTY = "constraints";
+    public static final String DATA_POINT_IS_STANDARD_PROPERTY = "is_standard";
+    public static final String DATA_POINT_SORT_ORDER_PROPERTY = "sort_order";
+
+    /**
+     * Device profile smart home extension constants.
+     */
+    public static final String DEVICE_PROFILE_CATEGORY_ID_PROPERTY = "category_id";
+    public static final String DEVICE_PROFILE_PRODUCT_MODEL_PROPERTY = "product_model";
+    public static final String DEVICE_PROFILE_CONNECTIVITY_TYPE_PROPERTY = "connectivity_type";
+    public static final String DEVICE_PROFILE_DP_LIST_PROPERTY = "dp_list";
+
+    /**
+     * Smart home constants.
+     */
+    public static final String SMART_HOME_TABLE_NAME = "smart_home";
+    public static final String SMART_HOME_OWNER_USER_ID_PROPERTY = "owner_user_id";
+    public static final String SMART_HOME_GEO_NAME_PROPERTY = "geo_name";
+    public static final String SMART_HOME_LATITUDE_PROPERTY = "latitude";
+    public static final String SMART_HOME_LONGITUDE_PROPERTY = "longitude";
+    public static final String SMART_HOME_TIMEZONE_PROPERTY = "timezone";
+
+    /**
+     * Smart home member constants.
+     */
+    public static final String SMART_HOME_MEMBER_TABLE_NAME = "smart_home_member";
+    public static final String SMART_HOME_MEMBER_SMART_HOME_ID_PROPERTY = "smart_home_id";
+    public static final String SMART_HOME_MEMBER_USER_ID_PROPERTY = "user_id";
+    public static final String SMART_HOME_MEMBER_ROLE_PROPERTY = "role";
+    public static final String SMART_HOME_MEMBER_STATUS_PROPERTY = "status";
+    public static final String SMART_HOME_MEMBER_INVITED_BY_PROPERTY = "invited_by";
+
+    /**
+     * Room constants.
+     */
+    public static final String ROOM_TABLE_NAME = "room";
+    public static final String ROOM_SMART_HOME_ID_PROPERTY = "smart_home_id";
+    public static final String ROOM_ICON_PROPERTY = "icon";
+    public static final String ROOM_SORT_ORDER_PROPERTY = "sort_order";
+
+    /**
+     * Room device constants.
+     */
+    public static final String ROOM_DEVICE_TABLE_NAME = "room_device";
+    public static final String ROOM_DEVICE_ROOM_ID_PROPERTY = "room_id";
+    public static final String ROOM_DEVICE_DEVICE_ID_PROPERTY = "device_id";
+    public static final String ROOM_DEVICE_SORT_ORDER_PROPERTY = "sort_order";
+
+    /**
+     * Device pairing token constants.
+     */
+    public static final String DEVICE_PAIRING_TOKEN_TABLE_NAME = "device_pairing_token";
+    public static final String DEVICE_PAIRING_TOKEN_DEVICE_PROFILE_ID_PROPERTY = "device_profile_id";
+    public static final String DEVICE_PAIRING_TOKEN_SMART_HOME_ID_PROPERTY = "smart_home_id";
+    public static final String DEVICE_PAIRING_TOKEN_ROOM_ID_PROPERTY = "room_id";
+    public static final String DEVICE_PAIRING_TOKEN_TOKEN_PROPERTY = "token";
+    public static final String DEVICE_PAIRING_TOKEN_STATUS_PROPERTY = "status";
+    public static final String DEVICE_PAIRING_TOKEN_DEVICE_ID_PROPERTY = "device_id";
+    public static final String DEVICE_PAIRING_TOKEN_EXPIRES_AT_PROPERTY = "expires_at";
+    public static final String DEVICE_PAIRING_TOKEN_PAIRING_DATA_PROPERTY = "pairing_data";
+
+    /**
+     * Device share constants.
+     */
+    public static final String DEVICE_SHARE_TABLE_NAME = "device_share";
+    public static final String DEVICE_SHARE_DEVICE_ID_PROPERTY = "device_id";
+    public static final String DEVICE_SHARE_SHARED_BY_USER_ID_PROPERTY = "shared_by_user_id";
+    public static final String DEVICE_SHARE_SHARED_TO_USER_ID_PROPERTY = "shared_to_user_id";
+    public static final String DEVICE_SHARE_SHARE_CODE_PROPERTY = "share_code";
+    public static final String DEVICE_SHARE_PERMISSIONS_PROPERTY = "permissions";
+    public static final String DEVICE_SHARE_STATUS_PROPERTY = "status";
+    public static final String DEVICE_SHARE_EXPIRES_AT_PROPERTY = "expires_at";
+
+    /**
+     * Device group constants.
+     */
+    public static final String DEVICE_GROUP_TABLE_NAME = "device_group";
+    public static final String DEVICE_GROUP_SMART_HOME_ID_PROPERTY = "smart_home_id";
+    public static final String DEVICE_GROUP_DEVICE_PROFILE_ID_PROPERTY = "device_profile_id";
+    public static final String DEVICE_GROUP_ICON_PROPERTY = "icon";
+
+    /**
+     * Device group member constants.
+     */
+    public static final String DEVICE_GROUP_MEMBER_TABLE_NAME = "device_group_member";
+    public static final String DEVICE_GROUP_MEMBER_GROUP_ID_PROPERTY = "group_id";
+    public static final String DEVICE_GROUP_MEMBER_DEVICE_ID_PROPERTY = "device_id";
+
+    /**
+     * Smart scene constants.
+     */
+    public static final String SMART_SCENE_TABLE_NAME = "smart_scene";
+    public static final String SMART_SCENE_SMART_HOME_ID_PROPERTY = "smart_home_id";
+    public static final String SMART_SCENE_SCENE_TYPE_PROPERTY = "scene_type";
+    public static final String SMART_SCENE_ENABLED_PROPERTY = "enabled";
+    public static final String SMART_SCENE_ICON_PROPERTY = "icon";
+    public static final String SMART_SCENE_CONDITIONS_PROPERTY = "conditions";
+    public static final String SMART_SCENE_CONDITION_LOGIC_PROPERTY = "condition_logic";
+    public static final String SMART_SCENE_ACTIONS_PROPERTY = "actions";
+    public static final String SMART_SCENE_EFFECTIVE_TIME_PROPERTY = "effective_time";
+
     protected static final String[] NONE_AGGREGATION_COLUMNS = new String[]{LONG_VALUE_COLUMN, DOUBLE_VALUE_COLUMN, BOOLEAN_VALUE_COLUMN, STRING_VALUE_COLUMN, JSON_VALUE_COLUMN, KEY_COLUMN, TS_COLUMN};
 
     protected static final String[] COUNT_AGGREGATION_COLUMNS = new String[]{count(LONG_VALUE_COLUMN), count(DOUBLE_VALUE_COLUMN), count(BOOLEAN_VALUE_COLUMN), count(STRING_VALUE_COLUMN), count(JSON_VALUE_COLUMN), max(TS_COLUMN)};

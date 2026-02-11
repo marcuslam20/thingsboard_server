@@ -48,6 +48,10 @@ public class CustomerUserPermissions extends AbstractPermissions {
         put(Resource.ASSET_PROFILE, profilePermissionChecker);
         put(Resource.TB_RESOURCE, customerResourcePermissionChecker);
         put(Resource.MOBILE_APP_SETTINGS, new PermissionChecker.GenericPermissionChecker(Operation.READ));
+        put(Resource.PRODUCT_CATEGORY, profilePermissionChecker);
+        put(Resource.DATA_POINT, profilePermissionChecker);
+        put(Resource.SMART_HOME, smartHomePermissionChecker);
+        put(Resource.ROOM, smartHomePermissionChecker);
     }
 
     private static final PermissionChecker customerAlarmPermissionChecker = new PermissionChecker() {
@@ -200,6 +204,17 @@ public class CustomerUserPermissions extends AbstractPermissions {
                 return true;
             }
             return user.getTenantId().equals(entity.getTenantId());
+        }
+    };
+
+    private static final PermissionChecker smartHomePermissionChecker = new PermissionChecker() {
+
+        @Override
+        public boolean hasPermission(SecurityUser user, Operation operation, EntityId entityId, HasTenantId entity) {
+            if (!user.getTenantId().equals(entity.getTenantId())) {
+                return false;
+            }
+            return true;
         }
     };
 }

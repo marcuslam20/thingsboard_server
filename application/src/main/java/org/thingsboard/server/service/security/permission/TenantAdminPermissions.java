@@ -59,6 +59,10 @@ public class TenantAdminPermissions extends AbstractPermissions {
         put(Resource.MOBILE_APP_BUNDLE, tenantEntityPermissionChecker);
         put(Resource.JOB, tenantEntityPermissionChecker);
         put(Resource.AI_MODEL, aiModelPermissionChecker);
+        put(Resource.PRODUCT_CATEGORY, tenantEntityPermissionChecker);
+        put(Resource.DATA_POINT, tenantEntityPermissionChecker);
+        put(Resource.SMART_HOME, tenantEntityPermissionChecker);
+        put(Resource.ROOM, tenantEntityPermissionChecker);
     }
 
     public static final PermissionChecker tenantEntityPermissionChecker = new PermissionChecker() {

@@ -31,8 +31,10 @@ import org.thingsboard.server.common.data.device.profile.DeviceProfileData;
 import org.thingsboard.server.common.data.id.DashboardId;
 import org.thingsboard.server.common.data.id.DeviceProfileId;
 import org.thingsboard.server.common.data.id.OtaPackageId;
+import org.thingsboard.server.common.data.id.ProductCategoryId;
 import org.thingsboard.server.common.data.id.RuleChainId;
 import org.thingsboard.server.common.data.id.TenantId;
+import org.thingsboard.server.common.data.smarthome.ConnectivityType;
 import org.thingsboard.server.common.data.validation.Length;
 import org.thingsboard.server.common.data.validation.NoXss;
 
@@ -100,9 +102,19 @@ public class DeviceProfile extends BaseData<DeviceProfileId> implements HasName,
 
     private DeviceProfileId externalId;
     private Long version;
-     // THÊM DP List giống Tuya
+
+    @Schema(description = "Product category for this device profile (Tuya-style).")
+    private ProductCategoryId categoryId;
+    @NoXss
+    @Length(fieldName = "productModel", max = 255)
+    @Schema(description = "Product model identifier.", example = "ESP32-S3-LIGHT")
+    private String productModel;
+    @Schema(description = "Device connectivity type.", example = "WIFI")
+    private ConnectivityType connectivityType;
+
+    @Schema(description = "Tuya-style DP List (JSON array of data point definitions).")
     private JsonNode dpListJson;
-    /////////////////////////////////////////
+
     public DeviceProfile() {
         super();
     }
@@ -128,9 +140,10 @@ public class DeviceProfile extends BaseData<DeviceProfileId> implements HasName,
         this.defaultEdgeRuleChainId = deviceProfile.getDefaultEdgeRuleChainId();
         this.externalId = deviceProfile.getExternalId();
         this.version = deviceProfile.getVersion();
-        /////// Copy dpListJson từ source
+        this.categoryId = deviceProfile.getCategoryId();
+        this.productModel = deviceProfile.getProductModel();
+        this.connectivityType = deviceProfile.getConnectivityType();
         this.dpListJson = deviceProfile.getDpListJson();
-        ////////////////////////////////////////
     }
 
     @Schema(description = "JSON object with the device profile Id. " +
@@ -180,7 +193,6 @@ public class DeviceProfile extends BaseData<DeviceProfileId> implements HasName,
             log.warn("Can't serialize device profile data: ", e);
         }
     }
-    /// Getter & Setter cho DP List (giống Tuya)
     public JsonNode getDpListJson() {
         return dpListJson;
     }
@@ -188,6 +200,5 @@ public class DeviceProfile extends BaseData<DeviceProfileId> implements HasName,
     public void setDpListJson(JsonNode dpListJson) {
         this.dpListJson = dpListJson;
     }
-    ////////////////////////////////////////
 
 }

@@ -37,8 +37,10 @@ import org.thingsboard.server.common.data.device.profile.DeviceProfileData;
 import org.thingsboard.server.common.data.id.DashboardId;
 import org.thingsboard.server.common.data.id.DeviceProfileId;
 import org.thingsboard.server.common.data.id.OtaPackageId;
+import org.thingsboard.server.common.data.id.ProductCategoryId;
 import org.thingsboard.server.common.data.id.RuleChainId;
 import org.thingsboard.server.common.data.id.TenantId;
+import org.thingsboard.server.common.data.smarthome.ConnectivityType;
 import org.thingsboard.server.dao.model.BaseVersionedEntity;
 import org.thingsboard.server.dao.model.ModelConstants;
 import org.thingsboard.server.dao.util.mapping.JsonConverter;
@@ -108,12 +110,20 @@ public final class DeviceProfileEntity extends BaseVersionedEntity<DeviceProfile
     @Column(name = ModelConstants.EXTERNAL_ID_PROPERTY)
     private UUID externalId;
 
-    // THÊM: Lưu DP List giống Tuya (JSONB - tối ưu cho PostgreSQL)
+    @Column(name = ModelConstants.DEVICE_PROFILE_CATEGORY_ID_PROPERTY, columnDefinition = "uuid")
+    private UUID categoryId;
+
+    @Column(name = ModelConstants.DEVICE_PROFILE_PRODUCT_MODEL_PROPERTY)
+    private String productModel;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = ModelConstants.DEVICE_PROFILE_CONNECTIVITY_TYPE_PROPERTY)
+    private ConnectivityType connectivityType;
+
     @Convert(converter = JsonConverter.class)
     @JdbcType(PostgreSQLJsonPGObjectJsonbType.class)
-    @Column(name = "dp_list", columnDefinition = "jsonb")
+    @Column(name = ModelConstants.DEVICE_PROFILE_DP_LIST_PROPERTY, columnDefinition = "jsonb")
     private JsonNode dpListJson;
-    ////////////////////////////////////////
 
     public DeviceProfileEntity() {
         super();
@@ -152,21 +162,16 @@ public final class DeviceProfileEntity extends BaseVersionedEntity<DeviceProfile
         if (deviceProfile.getExternalId() != null) {
             this.externalId = deviceProfile.getExternalId().getId();
         }
-        // THÊM: Lấy dpList từ DeviceProfile (nếu có)
+        if (deviceProfile.getCategoryId() != null) {
+            this.categoryId = deviceProfile.getCategoryId().getId();
+        }
+        this.productModel = deviceProfile.getProductModel();
+        this.connectivityType = deviceProfile.getConnectivityType();
         if (deviceProfile.getDpListJson() != null) {
             this.dpListJson = deviceProfile.getDpListJson();
         }
     }
 
-    // THÊM: Getter & Setter cho dpListJson
-    public JsonNode getDpListJson() {
-        return dpListJson;
-    }
-
-    public void setDpListJson(JsonNode dpListJson) {
-        this.dpListJson = dpListJson;
-    }
-    ////////////////////////////////////////
     @Override
     public DeviceProfile toData() {
         DeviceProfile deviceProfile = new DeviceProfile(new DeviceProfileId(this.getUuid()));
@@ -204,9 +209,12 @@ public final class DeviceProfileEntity extends BaseVersionedEntity<DeviceProfile
         if (externalId != null) {
             deviceProfile.setExternalId(new DeviceProfileId(externalId));
         }
-        /////////
-        deviceProfile.setDpListJson(this.dpListJson);
-        ////////////////////////////////////////
+        if (categoryId != null) {
+            deviceProfile.setCategoryId(new ProductCategoryId(categoryId));
+        }
+        deviceProfile.setProductModel(productModel);
+        deviceProfile.setConnectivityType(connectivityType);
+        deviceProfile.setDpListJson(dpListJson);
         return deviceProfile;
     }
 
