@@ -880,6 +880,15 @@ public class ModelConstants {
     public static final String SMART_SCENE_ACTIONS_PROPERTY = "actions";
     public static final String SMART_SCENE_EFFECTIVE_TIME_PROPERTY = "effective_time";
 
+    /**
+     * Smart scene log constants.
+     */
+    public static final String SMART_SCENE_LOG_TABLE_NAME = "smart_scene_log";
+    public static final String SMART_SCENE_LOG_SCENE_ID_PROPERTY = "scene_id";
+    public static final String SMART_SCENE_LOG_TRIGGER_TYPE_PROPERTY = "trigger_type";
+    public static final String SMART_SCENE_LOG_STATUS_PROPERTY = "status";
+    public static final String SMART_SCENE_LOG_EXECUTION_DETAILS_PROPERTY = "execution_details";
+
     protected static final String[] NONE_AGGREGATION_COLUMNS = new String[]{LONG_VALUE_COLUMN, DOUBLE_VALUE_COLUMN, BOOLEAN_VALUE_COLUMN, STRING_VALUE_COLUMN, JSON_VALUE_COLUMN, KEY_COLUMN, TS_COLUMN};
 
     protected static final String[] COUNT_AGGREGATION_COLUMNS = new String[]{count(LONG_VALUE_COLUMN), count(DOUBLE_VALUE_COLUMN), count(BOOLEAN_VALUE_COLUMN), count(STRING_VALUE_COLUMN), count(JSON_VALUE_COLUMN), max(TS_COLUMN)};

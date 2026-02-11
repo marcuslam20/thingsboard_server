@@ -51,6 +51,7 @@ public class CustomerUserPermissions extends AbstractPermissions {
         put(Resource.PRODUCT_CATEGORY, profilePermissionChecker);
         put(Resource.DATA_POINT, profilePermissionChecker);
         put(Resource.SMART_HOME, smartHomePermissionChecker);
+        put(Resource.SMART_SCENE, smartHomePermissionChecker);
         put(Resource.ROOM, smartHomePermissionChecker);
     }
 

@@ -62,6 +62,7 @@ public class TenantAdminPermissions extends AbstractPermissions {
         put(Resource.PRODUCT_CATEGORY, tenantEntityPermissionChecker);
         put(Resource.DATA_POINT, tenantEntityPermissionChecker);
         put(Resource.SMART_HOME, tenantEntityPermissionChecker);
+        put(Resource.SMART_SCENE, tenantEntityPermissionChecker);
         put(Resource.ROOM, tenantEntityPermissionChecker);
     }
 

@@ -57,6 +57,7 @@ public enum Resource {
     PRODUCT_CATEGORY(EntityType.PRODUCT_CATEGORY),
     DATA_POINT(EntityType.DATA_POINT),
     SMART_HOME(EntityType.SMART_HOME),
+    SMART_SCENE(EntityType.SMART_SCENE),
     ROOM(EntityType.ROOM);
 
     private final Set<EntityType> entityTypes;
