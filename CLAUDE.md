@@ -193,7 +193,7 @@ The mobile app team will clone these screens. Backend APIs must support every sc
 │    Tap-to-Run → one-tap execute multiple actions        │
 │    Automation → if condition then action                 │
 │    Schedule → time-based triggers                       │
-│    (Phase 4: Scene APIs)                                │
+│    (Phase 4: Scene APIs DONE)                           │
 ├─────────────────────────────────────────────────────────┤
 │ 6. HOME MANAGEMENT                                      │
 │    Invite members → Manage roles → Share devices        │
@@ -302,35 +302,41 @@ Device pairing, sharing, and grouping.
 | DELETE | `/api/smarthome/groups/{groupId}/devices/{deviceId}` | TENANT_ADMIN, CUSTOMER_USER |
 | GET | `/api/smarthome/groups/{groupId}/devices` | TENANT_ADMIN, CUSTOMER_USER |
 
-#### Phase 4: Smart Scenes & Automation — TODO (NEXT)
+#### Phase 4: Smart Scenes & Automation — DONE
 
-Scene management, condition/action engine, execution logging.
+Scene management, manual execution, and execution logging. CRUD + enable/disable for Tuya-style Tap-to-Run and Automation scenes.
 
-**SQL tables already defined:** `smart_scene`, `smart_scene_log`
+**Note:** Automated triggers (schedule-based, device-status-based) and actual RPC execution to devices will be implemented in Phase 7 (Device Control & Services).
 
-**Needs implementation:**
+**Completed files:**
+- Enums: `SceneType.java` (TAP_TO_RUN, AUTOMATION), `TriggerType.java` (MANUAL, SCHEDULE, DEVICE_STATUS)
 - Data models: `SmartScene.java`, `SmartSceneLog.java`
-- Enums: `SceneType` (TAP_TO_RUN, AUTOMATION), `TriggerType` (MANUAL, SCHEDULE, DEVICE_STATUS)
-- Condition/Action JSON schemas
-- DAO layer: Full stack
-- Controller: `SmartSceneController.java`
-- Scene execution engine (integrate with ThingsBoard Rule Engine)
-- Endpoints needed:
-  - `POST /api/smarthome/homes/{homeId}/scenes` — Create scene
-  - `GET /api/smarthome/homes/{homeId}/scenes` — List scenes
-  - `GET /api/smarthome/scenes/{sceneId}` — Get scene details
-  - `PUT /api/smarthome/scenes/{sceneId}` — Update scene
-  - `DELETE /api/smarthome/scenes/{sceneId}` — Delete scene
-  - `POST /api/smarthome/scenes/{sceneId}/execute` — Execute scene manually
-  - `GET /api/smarthome/scenes/{sceneId}/logs` — Get execution logs
-  - `PUT /api/smarthome/scenes/{sceneId}/enable` — Enable automation
-  - `PUT /api/smarthome/scenes/{sceneId}/disable` — Disable automation
+- JPA entities: `SmartSceneEntity.java`, `SmartSceneLogEntity.java`
+- Repositories: `SmartSceneRepository.java`, `SmartSceneLogRepository.java`
+- DAO: `SmartSceneDao.java`, `SmartSceneLogDao.java` (interfaces + JPA impls)
+- Services: `SmartSceneService.java`, `SmartSceneLogService.java` (+ impls)
+- Controller: `SmartSceneController.java` — 9 endpoints under `/api/smarthome/`
+- Permissions: Updated `Resource.java`, `TenantAdminPermissions.java`, `CustomerUserPermissions.java`
+- Modified: `ModelConstants.java` (added smart_scene_log constants)
+
+**API Endpoints (Phase 4):**
+| Method | Endpoint | Auth |
+|--------|----------|------|
+| POST | `/api/smarthome/homes/{homeId}/scenes` | TENANT_ADMIN, CUSTOMER_USER |
+| GET | `/api/smarthome/homes/{homeId}/scenes?sceneType=` | TENANT_ADMIN, CUSTOMER_USER |
+| GET | `/api/smarthome/scenes/{sceneId}` | TENANT_ADMIN, CUSTOMER_USER |
+| PUT | `/api/smarthome/scenes/{sceneId}` | TENANT_ADMIN, CUSTOMER_USER |
+| DELETE | `/api/smarthome/scenes/{sceneId}` | TENANT_ADMIN, CUSTOMER_USER |
+| POST | `/api/smarthome/scenes/{sceneId}/execute` | TENANT_ADMIN, CUSTOMER_USER |
+| GET | `/api/smarthome/scenes/{sceneId}/logs` | TENANT_ADMIN, CUSTOMER_USER |
+| PUT | `/api/smarthome/scenes/{sceneId}/enable` | TENANT_ADMIN, CUSTOMER_USER |
+| PUT | `/api/smarthome/scenes/{sceneId}/disable` | TENANT_ADMIN, CUSTOMER_USER |
 
 #### Phase 5: Voice Assistant Integration — DONE
 
 Already implemented in `alexa-skill/` and `google-assistant-skill/`. Will need updates to use new Smart Home data model (rooms, scenes) for richer voice control.
 
-#### Phase 6: Enhanced Authentication — TODO
+#### Phase 6: Enhanced Authentication — TODO (NEXT)
 
 - Phone registration + SMS OTP verification
 - Social login (Facebook, Google, Apple) via TB OAuth2 framework
