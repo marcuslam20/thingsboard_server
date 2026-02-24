@@ -784,3 +784,120 @@ This is the most complex single feature — Angular uses a custom canvas-based e
 3. **Routing:** Flat route structure in `App.tsx`. No lazy loading yet — will add when bundle size becomes an issue.
 4. **Forms:** React Hook Form for all dialogs. No shared form components yet (TODO).
 5. **Widget System:** Registry pattern — `WidgetRegistry.ts` maps widget type strings to React components. New widgets register themselves at import time.
+
+---
+
+## Tuya UI Migration — Branch `feature/tuya-ui`
+
+### Goal
+
+Redesign the React admin-ui to match **Tuya IoT Platform** (platform.tuya.com) look and feel, while keeping all existing ThingsBoard functionality working.
+
+### Key Principle
+
+**UI truoc, features sau** — Change the visual appearance using existing features first. Add new Tuya-specific features later when the UI framework is stable.
+
+### Backend Connection
+
+```bash
+# Vite dev server proxy
+Backend: http://192.168.1.14:8080
+Frontend: http://localhost:3000 (npm run dev)
+```
+
+### Screenshots Reference
+
+Tuya Platform screenshots stored in `docs/tuya-platform-design/`:
+
+| File | Content |
+|------|---------|
+| `01-home-dashboard.png` | Home page — welcome banner, tutorial steps, developer console cards |
+| `02-ai-products.png` | Product Development — product list table with status/tags |
+| `ai-products-tab.png` | Sidebar expanded — All Products, Devices, Logs, Firmware, Voice |
+| `04-device-details.png` | Devices — summary cards, advanced filters, device table |
+| `05-devices-debug.png` | Device Debug — product selector, real/virtual device debug |
+
+### Tuya → ThingsBoard Concept Mapping
+
+| Tuya Concept | ThingsBoard Equivalent |
+|---|---|
+| Product (on platform.tuya.com) | Device Profile |
+| Device (individual hardware) | Device |
+| Company (registered on platform) | Tenant |
+| Company employee | TENANT_ADMIN |
+| End user (Tuya Smart mobile app only) | CUSTOMER_USER |
+| Tuya system admin | SYS_ADMIN |
+
+### Sidebar Module Mapping
+
+```
+Tuya Module → ThingsBoard Route
+──────────────────────────────────
+Overview    → /home
+Product
+  All Products → /profiles/deviceProfiles
+  Devices      → /entities/devices
+  Device Logs  → /security-settings/auditLogs
+  Firmware     → /otaUpdates
+  Voice        → /entities/entityViews
+App
+  Dashboards   → /dashboards
+  Widgets      → /widgets-bundles
+Cloud
+  Rule Chains  → /ruleChains
+  Edges        → /edgeManagement/edges
+  Gateways     → /gateways
+AI Agent
+  Assets       → /entities/assets
+  Asset Prof.  → /profiles/assetProfiles
+Data
+  Alarms       → /alarms
+  API Usage    → /usage
+Operation
+  Settings     → /settings/general
+  Security     → /security-settings/general
+  Customers    → /customers
+  Users        → /users
+  Tenants      → /tenants (SYS_ADMIN)
+  Queues       → /queues (SYS_ADMIN)
+  Notifications→ /notifications
+  Resources    → /resources
+Purchase       → /usage
+VAS            → /resources
+```
+
+### Completed (2026-02-24)
+
+| File | Change |
+|------|--------|
+| `src/theme/theme.ts` | Tuya orange `#FF6A00`, white sidebar, clean typography, rounded components |
+| `src/components/layout/Sidebar.tsx` | Narrow 72px icon-based sidebar, 9 module groups, expand on click, orange active |
+| `src/components/layout/TopBar.tsx` | Help/Documents/Tech Support + Language selector + Notifications + Profile menu |
+| `src/components/layout/MainLayout.tsx` | Fixed sidebar + sticky topbar + max-width 1440px content |
+| `src/pages/home/HomePage.tsx` | Welcome banner + tutorial stepper + Developer Console cards + My Space sidebar |
+
+### Pending Decision
+
+**Who can login to web platform?**
+- **Option 1 (recommended, matches Tuya):** Web = SYS_ADMIN + TENANT_ADMIN only. CUSTOMER_USER = mobile app only.
+- **Option 2:** All roles login web, but show different UI per role.
+
+### TODO — Next Steps (Priority Order)
+
+1. **Decide CUSTOMER_USER access** — block from web or keep?
+2. **Product Development page** — redesign DeviceProfilesPage to match `02-ai-products.png`
+3. **Devices page** — add summary cards, advanced filters to match `04-device-details.png`
+4. **Device Debug tab** — add to DeviceDetailPage to match `05-devices-debug.png`
+5. **Page headers** — standardize all pages with Tuya-style title + description + breadcrumbs
+6. **Table style** — standardize to Tuya-style tables (hover, status chips, action buttons)
+7. **Login page** — redesign to match Tuya (need screenshot)
+8. **More screenshots** — capture Product Detail, Cloud Projects, Data Analytics from Tuya
+
+### Git History
+
+```
+feature/tuya-ui
+├── 3ade91f2 docs: Add Tuya UI migration progress tracking file
+└── 0e61fd40 feat(admin-ui): Redesign UI framework to match Tuya IoT Platform
+    └── a00d03ea (from feature/smart-home)
+```
