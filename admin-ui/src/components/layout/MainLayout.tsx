@@ -1,6 +1,6 @@
 import { Outlet } from 'react-router-dom';
 import Box from '@mui/material/Box';
-import Sidebar, { SIDEBAR_WIDTH_COLLAPSED } from './Sidebar';
+import Sidebar, { SIDEBAR_WIDTH } from './Sidebar';
 import TopBar from './TopBar';
 import { tuyaColors } from '@/theme/theme';
 
@@ -16,7 +16,7 @@ export default function MainLayout() {
           flexGrow: 1,
           display: 'flex',
           flexDirection: 'column',
-          ml: `${SIDEBAR_WIDTH_COLLAPSED}px`,
+          ml: `${SIDEBAR_WIDTH}px`,
           transition: 'margin-left 200ms ease',
           minHeight: '100vh',
         }}

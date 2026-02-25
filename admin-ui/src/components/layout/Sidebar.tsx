@@ -1,15 +1,10 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import Box from '@mui/material/Box';
-import Tooltip from '@mui/material/Tooltip';
-import List from '@mui/material/List';
-import ListItemButton from '@mui/material/ListItemButton';
-import ListItemIcon from '@mui/material/ListItemIcon';
-import ListItemText from '@mui/material/ListItemText';
 import Typography from '@mui/material/Typography';
-import ExpandLess from '@mui/icons-material/ExpandLess';
+import Divider from '@mui/material/Divider';
 
-// Module icons - matching Tuya Platform sidebar
+// Module icons
 import HomeOutlinedIcon from '@mui/icons-material/HomeOutlined';
 import DevicesOtherIcon from '@mui/icons-material/DevicesOther';
 import DashboardOutlinedIcon from '@mui/icons-material/DashboardOutlined';
@@ -20,374 +15,467 @@ import SettingsOutlinedIcon from '@mui/icons-material/SettingsOutlined';
 import ShoppingCartOutlinedIcon from '@mui/icons-material/ShoppingCartOutlined';
 import StorefrontOutlinedIcon from '@mui/icons-material/StorefrontOutlined';
 
-// Sub-menu icons
-import CategoryIcon from '@mui/icons-material/Category';
-import ListAltIcon from '@mui/icons-material/ListAlt';
-import DescriptionIcon from '@mui/icons-material/Description';
-import SystemUpdateIcon from '@mui/icons-material/SystemUpdate';
-import RecordVoiceOverIcon from '@mui/icons-material/RecordVoiceOver';
-import WidgetsIcon from '@mui/icons-material/Widgets';
-import AccountTreeIcon from '@mui/icons-material/AccountTree';
-import RouterIcon from '@mui/icons-material/Router';
-import WarningAmberIcon from '@mui/icons-material/WarningAmber';
-import DataUsageIcon from '@mui/icons-material/DataUsage';
-import SecurityIcon from '@mui/icons-material/Security';
-import PeopleOutlinedIcon from '@mui/icons-material/PeopleOutlined';
-import BusinessIcon from '@mui/icons-material/Business';
-import QueueIcon from '@mui/icons-material/Queue';
-import FolderOutlinedIcon from '@mui/icons-material/FolderOutlined';
-import AssessmentIcon from '@mui/icons-material/Assessment';
-import NotificationsOutlinedIcon from '@mui/icons-material/NotificationsOutlined';
-
 import { useAppSelector } from '@/store/store';
 import { selectAuthority } from '@/store/auth.slice';
 import { Authority } from '@/models/authority.model';
 import { tuyaColors } from '@/theme/theme';
 
+// --- Types ---
+
 interface SubMenuItem {
   id: string;
   label: string;
-  icon: React.ReactNode;
   path: string;
   authorities?: Authority[];
+}
+
+interface CategoryItem {
+  id: string;
+  label: string;
+  children: SubMenuItem[];
 }
 
 interface ModuleItem {
   id: string;
   label: string;
   icon: React.ReactNode;
-  path?: string;
-  children?: SubMenuItem[];
+  path?: string; // direct navigation (no flyout)
+  categories?: CategoryItem[];
   authorities?: Authority[];
 }
 
-const SIDEBAR_WIDTH_COLLAPSED = 72;
-const SIDEBAR_WIDTH_EXPANDED = 240;
+// --- Constants ---
 
-export { SIDEBAR_WIDTH_COLLAPSED, SIDEBAR_WIDTH_EXPANDED };
+export const SIDEBAR_WIDTH = 72;
+const FLYOUT_WIDTH = 200;
+
+// --- Module definitions matching Tuya Platform ---
+
+const modules: ModuleItem[] = [
+  {
+    id: 'overview',
+    label: 'Overview',
+    icon: <HomeOutlinedIcon />,
+    path: '/home',
+  },
+  {
+    id: 'ai-product',
+    label: 'AI Product',
+    icon: <DevicesOtherIcon />,
+    authorities: [Authority.TENANT_ADMIN, Authority.CUSTOMER_USER],
+    categories: [
+      {
+        id: 'product',
+        label: 'Product',
+        children: [
+          { id: 'development', label: 'Development', path: '/profiles/deviceProfiles' },
+        ],
+      },
+      {
+        id: 'device',
+        label: 'Device',
+        children: [
+          { id: 'all-devices', label: 'Sold Device Details', path: '/entities/devices' },
+          { id: 'device-logs', label: 'Device Logs', path: '/security-settings/auditLogs' },
+          { id: 'firmware-update', label: 'Firmware Update', path: '/otaUpdates' },
+          { id: 'device-debug', label: 'Device Debug', path: '/entities/devices' },
+        ],
+      },
+      {
+        id: 'voice',
+        label: 'Voice Platform',
+        children: [
+          { id: 'voice-integration', label: 'Voice Integration', path: '/entities/entityViews' },
+        ],
+      },
+    ],
+  },
+  {
+    id: 'app',
+    label: 'App',
+    icon: <DashboardOutlinedIcon />,
+    authorities: [Authority.TENANT_ADMIN, Authority.CUSTOMER_USER],
+    categories: [
+      {
+        id: 'app-dev',
+        label: 'App Development',
+        children: [
+          { id: 'dashboards', label: 'Dashboards', path: '/dashboards' },
+          { id: 'widgets', label: 'Widget Library', path: '/widgets-bundles', authorities: [Authority.SYS_ADMIN, Authority.TENANT_ADMIN] },
+        ],
+      },
+    ],
+  },
+  {
+    id: 'cloud',
+    label: 'Cloud',
+    icon: <CloudOutlinedIcon />,
+    authorities: [Authority.TENANT_ADMIN],
+    categories: [
+      {
+        id: 'cloud-dev',
+        label: 'Cloud Development',
+        children: [
+          { id: 'rule-chains', label: 'Rule Chains', path: '/ruleChains' },
+          { id: 'edges', label: 'Edge Management', path: '/edgeManagement/edges' },
+          { id: 'gateways', label: 'Gateways', path: '/gateways' },
+        ],
+      },
+    ],
+  },
+  {
+    id: 'ai-agent',
+    label: 'AI Agent',
+    icon: <SmartToyOutlinedIcon />,
+    authorities: [Authority.TENANT_ADMIN],
+    categories: [
+      {
+        id: 'assets-mgmt',
+        label: 'Asset Management',
+        children: [
+          { id: 'assets', label: 'Assets', path: '/entities/assets' },
+          { id: 'asset-profiles', label: 'Asset Profiles', path: '/profiles/assetProfiles' },
+        ],
+      },
+    ],
+  },
+  {
+    id: 'data',
+    label: 'Data',
+    icon: <BarChartOutlinedIcon />,
+    authorities: [Authority.TENANT_ADMIN, Authority.CUSTOMER_USER],
+    categories: [
+      {
+        id: 'analytics',
+        label: 'Analytics',
+        children: [
+          { id: 'alarms', label: 'Alarms', path: '/alarms' },
+          { id: 'api-usage', label: 'API Usage', path: '/usage', authorities: [Authority.TENANT_ADMIN] },
+        ],
+      },
+    ],
+  },
+  {
+    id: 'operation',
+    label: 'Operation',
+    icon: <SettingsOutlinedIcon />,
+    authorities: [Authority.SYS_ADMIN, Authority.TENANT_ADMIN],
+    categories: [
+      {
+        id: 'system',
+        label: 'System',
+        children: [
+          { id: 'settings', label: 'Settings', path: '/settings/general', authorities: [Authority.SYS_ADMIN] },
+          { id: 'security', label: 'Security', path: '/security-settings/general', authorities: [Authority.SYS_ADMIN] },
+          { id: 'queues', label: 'Queues', path: '/queues', authorities: [Authority.SYS_ADMIN] },
+          { id: 'resources', label: 'Resources', path: '/resources', authorities: [Authority.SYS_ADMIN, Authority.TENANT_ADMIN] },
+          { id: 'notifications', label: 'Notifications', path: '/notifications' },
+        ],
+      },
+      {
+        id: 'user-mgmt',
+        label: 'User Management',
+        children: [
+          { id: 'tenants', label: 'Tenants', path: '/tenants', authorities: [Authority.SYS_ADMIN] },
+          { id: 'tenant-profiles', label: 'Tenant Profiles', path: '/tenantProfiles', authorities: [Authority.SYS_ADMIN] },
+          { id: 'customers', label: 'Customers', path: '/customers', authorities: [Authority.TENANT_ADMIN] },
+          { id: 'users', label: 'Users', path: '/users' },
+        ],
+      },
+    ],
+  },
+  {
+    id: 'purchase',
+    label: 'Purchase',
+    icon: <ShoppingCartOutlinedIcon />,
+    path: '/usage',
+    authorities: [Authority.TENANT_ADMIN],
+  },
+  {
+    id: 'vas',
+    label: 'VAS',
+    icon: <StorefrontOutlinedIcon />,
+    path: '/resources',
+    authorities: [Authority.TENANT_ADMIN],
+  },
+];
+
+// --- Component ---
 
 export default function Sidebar() {
   const navigate = useNavigate();
   const location = useLocation();
   const authority = useAppSelector(selectAuthority);
-  const [expandedModule, setExpandedModule] = useState<string | null>(null);
   const [hoveredModule, setHoveredModule] = useState<string | null>(null);
+  const flyoutTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const sidebarRef = useRef<HTMLDivElement>(null);
 
-  // Tuya-style module grouping - maps existing pages to Tuya structure
-  const modules: ModuleItem[] = [
-    {
-      id: 'overview',
-      label: 'Overview',
-      icon: <HomeOutlinedIcon />,
-      path: '/home',
-    },
-    {
-      id: 'product',
-      label: 'Product',
-      icon: <DevicesOtherIcon />,
-      authorities: [Authority.TENANT_ADMIN, Authority.CUSTOMER_USER],
-      children: [
-        { id: 'all-products', label: 'All Products', icon: <CategoryIcon />, path: '/profiles/deviceProfiles' },
-        { id: 'devices', label: 'Devices', icon: <ListAltIcon />, path: '/entities/devices' },
-        { id: 'device-logs', label: 'Device Logs', icon: <DescriptionIcon />, path: '/security-settings/auditLogs' },
-        { id: 'firmware-update', label: 'Firmware Update', icon: <SystemUpdateIcon />, path: '/otaUpdates' },
-        { id: 'voice-integration', label: 'Voice Integration', icon: <RecordVoiceOverIcon />, path: '/entities/entityViews' },
-      ],
-    },
-    {
-      id: 'app',
-      label: 'App',
-      icon: <DashboardOutlinedIcon />,
-      authorities: [Authority.TENANT_ADMIN, Authority.CUSTOMER_USER],
-      children: [
-        { id: 'dashboards', label: 'Dashboards', icon: <DashboardOutlinedIcon />, path: '/dashboards' },
-        { id: 'widgets', label: 'Widget Library', icon: <WidgetsIcon />, path: '/widgets-bundles', authorities: [Authority.SYS_ADMIN, Authority.TENANT_ADMIN] },
-      ],
-    },
-    {
-      id: 'cloud',
-      label: 'Cloud',
-      icon: <CloudOutlinedIcon />,
-      authorities: [Authority.TENANT_ADMIN],
-      children: [
-        { id: 'rule-chains', label: 'Rule Chains', icon: <AccountTreeIcon />, path: '/ruleChains' },
-        { id: 'edges', label: 'Edge Management', icon: <RouterIcon />, path: '/edgeManagement/edges' },
-        { id: 'gateways', label: 'Gateways', icon: <RouterIcon />, path: '/gateways' },
-      ],
-    },
-    {
-      id: 'ai-agent',
-      label: 'AI Agent',
-      icon: <SmartToyOutlinedIcon />,
-      authorities: [Authority.TENANT_ADMIN],
-      children: [
-        { id: 'assets', label: 'Assets', icon: <CategoryIcon />, path: '/entities/assets' },
-        { id: 'asset-profiles', label: 'Asset Profiles', icon: <AssessmentIcon />, path: '/profiles/assetProfiles' },
-      ],
-    },
-    {
-      id: 'data',
-      label: 'Data',
-      icon: <BarChartOutlinedIcon />,
-      authorities: [Authority.TENANT_ADMIN, Authority.CUSTOMER_USER],
-      children: [
-        { id: 'alarms', label: 'Alarms', icon: <WarningAmberIcon />, path: '/alarms' },
-        { id: 'api-usage', label: 'API Usage', icon: <DataUsageIcon />, path: '/usage', authorities: [Authority.TENANT_ADMIN] },
-      ],
-    },
-    {
-      id: 'operation',
-      label: 'Operation',
-      icon: <SettingsOutlinedIcon />,
-      authorities: [Authority.SYS_ADMIN, Authority.TENANT_ADMIN],
-      children: [
-        { id: 'settings', label: 'Settings', icon: <SettingsOutlinedIcon />, path: '/settings/general', authorities: [Authority.SYS_ADMIN] },
-        { id: 'security', label: 'Security', icon: <SecurityIcon />, path: '/security-settings/general', authorities: [Authority.SYS_ADMIN] },
-        { id: 'customers', label: 'Customers', icon: <PeopleOutlinedIcon />, path: '/customers', authorities: [Authority.TENANT_ADMIN] },
-        { id: 'users', label: 'Users', icon: <PeopleOutlinedIcon />, path: '/users' },
-        { id: 'tenants', label: 'Tenants', icon: <BusinessIcon />, path: '/tenants', authorities: [Authority.SYS_ADMIN] },
-        { id: 'tenant-profiles', label: 'Tenant Profiles', icon: <BusinessIcon />, path: '/tenantProfiles', authorities: [Authority.SYS_ADMIN] },
-        { id: 'queues', label: 'Queues', icon: <QueueIcon />, path: '/queues', authorities: [Authority.SYS_ADMIN] },
-        { id: 'notifications', label: 'Notifications', icon: <NotificationsOutlinedIcon />, path: '/notifications' },
-        { id: 'resources', label: 'Resources', icon: <FolderOutlinedIcon />, path: '/resources', authorities: [Authority.SYS_ADMIN, Authority.TENANT_ADMIN] },
-      ],
-    },
-    {
-      id: 'purchase',
-      label: 'Purchase',
-      icon: <ShoppingCartOutlinedIcon />,
-      path: '/usage',
-      authorities: [Authority.TENANT_ADMIN],
-    },
-    {
-      id: 'vas',
-      label: 'VAS',
-      icon: <StorefrontOutlinedIcon />,
-      path: '/resources',
-      authorities: [Authority.TENANT_ADMIN],
-    },
-  ];
+  // Close flyout when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (sidebarRef.current && !sidebarRef.current.contains(e.target as Node)) {
+        setHoveredModule(null);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
-  const filterByAuthority = (items: ModuleItem[]): ModuleItem[] =>
+  // Filter by authority
+  const filterModules = (items: ModuleItem[]): ModuleItem[] =>
     items
       .filter((item) => {
         if (!item.authorities) return true;
         return authority ? item.authorities.includes(authority) : false;
       })
-      .map((item) =>
-        item.children
-          ? {
-              ...item,
-              children: item.children.filter((child) => {
+      .map((item) => {
+        if (!item.categories) return item;
+        return {
+          ...item,
+          categories: item.categories
+            .map((cat) => ({
+              ...cat,
+              children: cat.children.filter((child) => {
                 if (!child.authorities) return true;
                 return authority ? child.authorities.includes(authority) : false;
               }),
-            }
-          : item,
-      )
-      .filter((item) => !item.children || item.children.length > 0);
+            }))
+            .filter((cat) => cat.children.length > 0),
+        };
+      })
+      .filter((item) => !item.categories || item.categories.length > 0);
 
-  const filteredModules = filterByAuthority(modules);
+  const filteredModules = filterModules(modules);
 
   const isModuleActive = (mod: ModuleItem): boolean => {
-    if (mod.path && (location.pathname === mod.path || location.pathname.startsWith(mod.path + '/'))) {
-      return true;
+    if (mod.path) {
+      return location.pathname === mod.path || location.pathname.startsWith(mod.path + '/');
     }
-    return mod.children?.some(
-      (child) => location.pathname === child.path || location.pathname.startsWith(child.path + '/'),
+    return mod.categories?.some((cat) =>
+      cat.children.some(
+        (child) => location.pathname === child.path || location.pathname.startsWith(child.path + '/'),
+      ),
     ) || false;
   };
 
-  const isSubItemActive = (path: string): boolean => {
-    return location.pathname === path || location.pathname.startsWith(path + '/');
+  const isSubItemActive = (path: string): boolean =>
+    location.pathname === path || location.pathname.startsWith(path + '/');
+
+  const handleModuleEnter = (modId: string, hasFlyout: boolean) => {
+    if (flyoutTimer.current) clearTimeout(flyoutTimer.current);
+    if (hasFlyout) {
+      setHoveredModule(modId);
+    }
+  };
+
+  const handleModuleLeave = () => {
+    flyoutTimer.current = setTimeout(() => setHoveredModule(null), 150);
+  };
+
+  const handleFlyoutEnter = () => {
+    if (flyoutTimer.current) clearTimeout(flyoutTimer.current);
+  };
+
+  const handleFlyoutLeave = () => {
+    flyoutTimer.current = setTimeout(() => setHoveredModule(null), 150);
   };
 
   const handleModuleClick = (mod: ModuleItem) => {
-    if (mod.path && !mod.children) {
+    if (mod.path && !mod.categories) {
       navigate(mod.path);
-      setExpandedModule(null);
-      return;
+      setHoveredModule(null);
     }
-    setExpandedModule(expandedModule === mod.id ? null : mod.id);
   };
 
   const handleSubItemClick = (path: string) => {
     navigate(path);
+    setHoveredModule(null);
   };
 
-  const isExpanded = expandedModule !== null;
+  const activeModule = filteredModules.find((m) => m.id === hoveredModule);
 
   return (
-    <Box
-      sx={{
-        width: isExpanded ? SIDEBAR_WIDTH_EXPANDED : SIDEBAR_WIDTH_COLLAPSED,
-        minWidth: isExpanded ? SIDEBAR_WIDTH_EXPANDED : SIDEBAR_WIDTH_COLLAPSED,
-        height: '100vh',
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        zIndex: 1200,
-        bgcolor: 'background.paper',
-        borderRight: `1px solid ${tuyaColors.border}`,
-        display: 'flex',
-        flexDirection: 'column',
-        transition: 'width 200ms ease, min-width 200ms ease',
-        overflow: 'hidden',
-      }}
-    >
-      {/* Logo area */}
+    <Box ref={sidebarRef} sx={{ position: 'fixed', top: 0, left: 0, zIndex: 1300, display: 'flex', height: '100vh' }}>
+      {/* Icon sidebar */}
       <Box
         sx={{
-          height: 56,
+          width: SIDEBAR_WIDTH,
+          height: '100%',
+          bgcolor: 'background.paper',
+          borderRight: `1px solid ${tuyaColors.border}`,
           display: 'flex',
+          flexDirection: 'column',
           alignItems: 'center',
-          justifyContent: isExpanded ? 'flex-start' : 'center',
-          px: isExpanded ? 2 : 0,
-          borderBottom: `1px solid ${tuyaColors.border}`,
-          flexShrink: 0,
+          zIndex: 1301,
         }}
       >
+        {/* Logo */}
         <Box
           sx={{
-            width: 32,
-            height: 32,
-            borderRadius: '8px',
-            background: `linear-gradient(135deg, ${tuyaColors.orange} 0%, ${tuyaColors.orangeLight} 100%)`,
+            width: '100%',
+            height: 56,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            color: '#fff',
-            fontWeight: 700,
-            fontSize: 14,
+            borderBottom: `1px solid ${tuyaColors.border}`,
             flexShrink: 0,
           }}
         >
-          TB
-        </Box>
-        {isExpanded && (
-          <Typography
-            variant="subtitle1"
+          <Box
             sx={{
-              ml: 1.5,
-              fontWeight: 600,
-              color: tuyaColors.textPrimary,
-              whiteSpace: 'nowrap',
+              width: 32,
+              height: 32,
+              borderRadius: '8px',
+              background: `linear-gradient(135deg, ${tuyaColors.orange} 0%, ${tuyaColors.orangeLight} 100%)`,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: '#fff',
+              fontWeight: 700,
+              fontSize: 14,
             }}
           >
-            Developer Platform
-          </Typography>
-        )}
+            TB
+          </Box>
+        </Box>
+
+        {/* Module icons */}
+        <Box sx={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', py: 0.5, width: '100%' }}>
+          {filteredModules.map((mod) => {
+            const active = isModuleActive(mod);
+            const isHovered = hoveredModule === mod.id;
+            const hasFlyout = !!mod.categories && mod.categories.length > 0;
+
+            return (
+              <Box
+                key={mod.id}
+                onClick={() => handleModuleClick(mod)}
+                onMouseEnter={() => handleModuleEnter(mod.id, hasFlyout)}
+                onMouseLeave={handleModuleLeave}
+                sx={{
+                  width: '100%',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  py: 1,
+                  cursor: 'pointer',
+                  transition: 'all 150ms ease',
+                  color: active || isHovered ? tuyaColors.orange : tuyaColors.textSecondary,
+                  bgcolor: isHovered ? tuyaColors.sidebarActive : 'transparent',
+                  '& .MuiSvgIcon-root': { fontSize: 22 },
+                  '&:hover': {
+                    color: tuyaColors.orange,
+                    bgcolor: tuyaColors.sidebarActive,
+                  },
+                }}
+              >
+                {mod.icon}
+                <Typography
+                  sx={{
+                    fontSize: '0.6rem',
+                    mt: 0.25,
+                    lineHeight: 1.2,
+                    fontWeight: active ? 600 : 400,
+                    color: 'inherit',
+                    textAlign: 'center',
+                    px: 0.25,
+                  }}
+                >
+                  {mod.label}
+                </Typography>
+              </Box>
+            );
+          })}
+        </Box>
       </Box>
 
-      {/* Module list */}
-      <Box sx={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', py: 1 }}>
-        {!isExpanded ? (
-          // Collapsed: icon-only vertical module list
-          <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0.5, px: 0.5 }}>
-            {filteredModules.map((mod) => {
-              const active = isModuleActive(mod);
-              return (
-                <Tooltip key={mod.id} title={mod.label} placement="right" arrow>
-                  <Box
-                    onClick={() => handleModuleClick(mod)}
-                    onMouseEnter={() => setHoveredModule(mod.id)}
-                    onMouseLeave={() => setHoveredModule(null)}
-                    sx={{
-                      width: 56,
-                      height: 56,
-                      display: 'flex',
-                      flexDirection: 'column',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      borderRadius: '12px',
-                      cursor: 'pointer',
-                      transition: 'all 150ms ease',
-                      color: active ? tuyaColors.sidebarActiveText : tuyaColors.textSecondary,
-                      bgcolor: active
-                        ? tuyaColors.sidebarActive
-                        : hoveredModule === mod.id
-                          ? '#F5F5F5'
-                          : 'transparent',
-                      '& .MuiSvgIcon-root': {
-                        fontSize: 22,
-                      },
-                    }}
-                  >
-                    {mod.icon}
-                    <Typography
+      {/* Flyout panel — appears on hover */}
+      {activeModule && activeModule.categories && (
+        <Box
+          onMouseEnter={handleFlyoutEnter}
+          onMouseLeave={handleFlyoutLeave}
+          sx={{
+            width: FLYOUT_WIDTH,
+            height: '100%',
+            bgcolor: 'background.paper',
+            borderRight: `1px solid ${tuyaColors.border}`,
+            boxShadow: '4px 0 12px rgba(0,0,0,0.06)',
+            overflowY: 'auto',
+            zIndex: 1300,
+          }}
+        >
+          {/* Flyout header */}
+          <Box
+            sx={{
+              height: 56,
+              display: 'flex',
+              alignItems: 'center',
+              px: 2,
+              borderBottom: `1px solid ${tuyaColors.border}`,
+              flexShrink: 0,
+            }}
+          >
+            <Typography variant="subtitle1" sx={{ fontWeight: 600, color: tuyaColors.textPrimary }}>
+              {activeModule.label}
+            </Typography>
+          </Box>
+
+          {/* Categories + sub-items */}
+          <Box sx={{ py: 1 }}>
+            {activeModule.categories.map((category, catIdx) => (
+              <Box key={category.id}>
+                {catIdx > 0 && <Divider sx={{ my: 0.5, mx: 2 }} />}
+
+                {/* Category label */}
+                <Typography
+                  sx={{
+                    px: 2,
+                    py: 0.75,
+                    fontSize: '0.6875rem',
+                    fontWeight: 600,
+                    color: tuyaColors.textHint,
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.05em',
+                  }}
+                >
+                  {category.label}
+                </Typography>
+
+                {/* Sub-items */}
+                {category.children.map((item) => {
+                  const active = isSubItemActive(item.path);
+                  return (
+                    <Box
+                      key={item.id}
+                      onClick={() => handleSubItemClick(item.path)}
                       sx={{
-                        fontSize: '0.625rem',
-                        mt: 0.25,
-                        lineHeight: 1.2,
+                        px: 2,
+                        py: 0.75,
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        fontSize: '0.8125rem',
+                        color: active ? tuyaColors.orange : tuyaColors.textPrimary,
                         fontWeight: active ? 600 : 400,
-                        color: 'inherit',
+                        bgcolor: active ? tuyaColors.sidebarActive : 'transparent',
+                        borderRadius: '0',
+                        transition: 'all 100ms ease',
+                        '&:hover': {
+                          color: tuyaColors.orange,
+                          bgcolor: '#FFF7F0',
+                        },
                       }}
                     >
-                      {mod.label}
-                    </Typography>
-                  </Box>
-                </Tooltip>
-              );
-            })}
+                      {item.label}
+                    </Box>
+                  );
+                })}
+              </Box>
+            ))}
           </Box>
-        ) : (
-          // Expanded: show sub-menu of selected module
-          <List component="nav" disablePadding sx={{ px: 1 }}>
-            {/* Back to collapsed view */}
-            <ListItemButton
-              onClick={() => setExpandedModule(null)}
-              sx={{
-                borderRadius: '8px',
-                mb: 1,
-                py: 0.75,
-                color: tuyaColors.textSecondary,
-              }}
-            >
-              <ListItemIcon sx={{ minWidth: 32 }}>
-                <ExpandLess sx={{ transform: 'rotate(-90deg)' }} />
-              </ListItemIcon>
-              <ListItemText
-                primary={filteredModules.find((m) => m.id === expandedModule)?.label || 'Back'}
-                primaryTypographyProps={{ fontWeight: 600, fontSize: '0.9375rem' }}
-              />
-            </ListItemButton>
-
-            {/* Sub-items */}
-            {filteredModules
-              .find((m) => m.id === expandedModule)
-              ?.children?.map((child) => {
-                const active = isSubItemActive(child.path);
-                return (
-                  <ListItemButton
-                    key={child.id}
-                    onClick={() => handleSubItemClick(child.path)}
-                    selected={active}
-                    sx={{
-                      borderRadius: '8px',
-                      mb: 0.5,
-                      py: 0.75,
-                      pl: 2,
-                      color: active ? tuyaColors.sidebarActiveText : tuyaColors.textPrimary,
-                      bgcolor: active ? tuyaColors.sidebarActive : 'transparent',
-                      '&.Mui-selected': {
-                        bgcolor: tuyaColors.sidebarActive,
-                        color: tuyaColors.sidebarActiveText,
-                      },
-                    }}
-                  >
-                    <ListItemIcon sx={{ minWidth: 32, color: 'inherit' }}>
-                      {child.icon}
-                    </ListItemIcon>
-                    <ListItemText
-                      primary={child.label}
-                      primaryTypographyProps={{ fontSize: '0.8125rem' }}
-                    />
-                  </ListItemButton>
-                );
-              })}
-          </List>
-        )}
-      </Box>
+        </Box>
+      )}
     </Box>
   );
 }
