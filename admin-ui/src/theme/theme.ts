@@ -8,9 +8,9 @@ const TUYA_SIDEBAR_BG = '#FFFFFF';
 const TUYA_SIDEBAR_ACTIVE = '#FFF3EB';
 const TUYA_SIDEBAR_ACTIVE_TEXT = '#FF6A00';
 const TUYA_TOP_BAR_BG = '#FFFFFF';
-const TUYA_BODY_BG = '#F5F7FA';
+const TUYA_BODY_BG = '#FFFFFF';
 const TUYA_BORDER = '#E8E8E8';
-const TUYA_TEXT_PRIMARY = '#333333';
+const TUYA_TEXT_PRIMARY = '#272e3b';
 const TUYA_TEXT_SECONDARY = '#666666';
 const TUYA_TEXT_HINT = '#999999';
 
@@ -62,15 +62,16 @@ export const theme = createTheme({
     info: { main: '#1890FF' },
   },
   typography: {
-    fontFamily: '"PingFang SC", "Helvetica Neue", Roboto, Arial, sans-serif',
-    h4: { fontWeight: 600, fontSize: '1.5rem', color: TUYA_TEXT_PRIMARY },
-    h5: { fontWeight: 600, fontSize: '1.25rem', color: TUYA_TEXT_PRIMARY },
-    h6: { fontWeight: 600, fontSize: '1rem', color: TUYA_TEXT_PRIMARY },
-    subtitle1: { fontWeight: 500, fontSize: '0.9375rem' },
-    subtitle2: { fontWeight: 500, fontSize: '0.8125rem' },
-    body1: { fontSize: '0.875rem', color: TUYA_TEXT_PRIMARY },
-    body2: { fontSize: '0.8125rem', color: TUYA_TEXT_SECONDARY },
-    button: { fontSize: '0.875rem', fontWeight: 500, textTransform: 'none' },
+    fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", Helvetica, Arial, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif',
+    h4: { fontWeight: 400, fontSize: '28px', lineHeight: '38px', color: TUYA_TEXT_PRIMARY },
+    h5: { fontWeight: 400, fontSize: '28px', lineHeight: '38px', color: TUYA_TEXT_PRIMARY },
+    h6: { fontWeight: 500, fontSize: '18px', lineHeight: '26px', color: TUYA_TEXT_PRIMARY },
+    subtitle1: { fontWeight: 500, fontSize: '14px' },
+    subtitle2: { fontWeight: 500, fontSize: '13px' },
+    body1: { fontSize: '14px', color: TUYA_TEXT_PRIMARY },
+    body2: { fontSize: '13px', color: TUYA_TEXT_SECONDARY },
+    caption: { fontSize: '12px', color: TUYA_TEXT_HINT },
+    button: { fontSize: '14px', fontWeight: 500, textTransform: 'none' },
   },
   shape: {
     borderRadius: 8,
@@ -105,7 +106,7 @@ export const theme = createTheme({
     MuiPaper: {
       styleOverrides: {
         root: {
-          boxShadow: '0 1px 4px rgba(0, 0, 0, 0.08)',
+          boxShadow: 'none',
         },
       },
     },
@@ -130,24 +131,31 @@ export const theme = createTheme({
     },
     MuiTableCell: {
       styleOverrides: {
-        head: {
-          fontWeight: 600,
-          backgroundColor: '#FAFAFA',
-          color: TUYA_TEXT_SECONDARY,
-          fontSize: '0.8125rem',
-          borderBottom: `1px solid ${TUYA_BORDER}`,
+        root: {
+          padding: '8px 12px',
+          fontSize: '13px',
+          lineHeight: '20px',
+          borderBottom: `1px solid #e0e0e0`,
+          whiteSpace: 'nowrap',
+          backgroundColor: '#ffffff',
         },
-        body: {
-          fontSize: '0.8125rem',
-          borderBottom: `1px solid ${TUYA_BORDER}`,
+        head: {
+          fontWeight: 400,
+          backgroundColor: '#f4f4f4',
+          color: TUYA_TEXT_SECONDARY,
+          fontSize: '12px',
+          lineHeight: '17px',
+          padding: '8px 12px',
+          borderTop: `1px solid #e0e0e0`,
+          borderBottom: `1px solid #e0e0e0`,
         },
       },
     },
     MuiTableRow: {
       styleOverrides: {
         root: {
-          '&:hover': {
-            backgroundColor: '#FAFAFA',
+          '&:hover td': {
+            backgroundColor: '#fafafa',
           },
         },
       },

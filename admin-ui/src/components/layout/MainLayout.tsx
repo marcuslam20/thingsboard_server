@@ -29,10 +29,9 @@ export default function MainLayout() {
           component="main"
           sx={{
             flexGrow: 1,
-            p: 3,
-            maxWidth: '1440px',
+            px: 5,
+            py: 2.5,
             width: '100%',
-            mx: 'auto',
           }}
         >
           <Outlet />
