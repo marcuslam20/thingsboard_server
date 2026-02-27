@@ -16,7 +16,6 @@ import IconButton from '@mui/material/IconButton';
 import Tooltip from '@mui/material/Tooltip';
 import CircularProgress from '@mui/material/CircularProgress';
 import InputAdornment from '@mui/material/InputAdornment';
-import AddIcon from '@mui/icons-material/Add';
 import SearchIcon from '@mui/icons-material/Search';
 import DeleteIcon from '@mui/icons-material/Delete';
 import DevicesOtherIcon from '@mui/icons-material/DevicesOther';
@@ -146,15 +145,15 @@ export default function DeviceProfilesPage() {
                 </InputAdornment>
               ),
             }}
-            sx={{ width: 260 }}
+            sx={{ width: 200 }}
           />
-          <Button variant="contained" onClick={handleSearch} sx={{ minWidth: 80 }}>
+          <Button variant="outlined" onClick={handleSearch} sx={{ minWidth: 64, height: 32, color: tuyaColors.textSecondary, borderColor: tuyaColors.border }}>
             Search
           </Button>
           <Button
             variant="outlined"
             onClick={handleReset}
-            sx={{ minWidth: 80, color: tuyaColors.textSecondary, borderColor: tuyaColors.border }}
+            sx={{ minWidth: 64, height: 32, color: tuyaColors.textSecondary, borderColor: tuyaColors.border }}
           >
             Reset
           </Button>
@@ -163,8 +162,8 @@ export default function DeviceProfilesPage() {
 
           <Button
             variant="contained"
-            startIcon={<AddIcon />}
             onClick={() => { setEditProfile(null); setDialogOpen(true); }}
+            sx={{ height: 32 }}
           >
             Create
           </Button>

@@ -136,8 +136,9 @@ export default function DevicesPage() {
         <Button
           variant="contained"
           onClick={() => { setEditDevice(null); setDialogOpen(true); }}
+          sx={{ height: 32 }}
         >
-          + Cloud Data Center
+          Cloud Data Center
         </Button>
       </Box>
 
@@ -180,28 +181,28 @@ export default function DevicesPage() {
             value={searchName}
             onChange={(e) => setSearchName(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-            sx={{ width: 200 }}
+            sx={{ width: 160 }}
           />
           <TextField
             size="small"
             placeholder="UUID"
             value={searchDeviceId}
             onChange={(e) => setSearchDeviceId(e.target.value)}
-            sx={{ width: 140 }}
+            sx={{ width: 110 }}
           />
           <TextField
             size="small"
             placeholder="Product ID / Product Name"
-            sx={{ width: 200 }}
+            sx={{ width: 160 }}
           />
 
-          <Button variant="contained" onClick={handleSearch} sx={{ minWidth: 80 }}>
+          <Button variant="outlined" onClick={handleSearch} sx={{ minWidth: 64, height: 32, color: tuyaColors.textSecondary, borderColor: tuyaColors.border }}>
             Search
           </Button>
           <Button
             variant="outlined"
             onClick={handleReset}
-            sx={{ minWidth: 80, color: tuyaColors.textSecondary, borderColor: tuyaColors.border }}
+            sx={{ minWidth: 64, height: 32, color: tuyaColors.textSecondary, borderColor: tuyaColors.border }}
           >
             Reset
           </Button>

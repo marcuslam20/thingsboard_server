@@ -321,22 +321,11 @@ export default function Sidebar() {
             flexShrink: 0,
           }}
         >
-          <Box
-            sx={{
-              width: 32,
-              height: 32,
-              borderRadius: '8px',
-              background: `linear-gradient(135deg, ${tuyaColors.orange} 0%, ${tuyaColors.orangeLight} 100%)`,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: '#fff',
-              fontWeight: 700,
-              fontSize: 14,
-            }}
-          >
-            TB
-          </Box>
+          <img
+            src="/osprey-logo.svg"
+            alt="Osprey"
+            style={{ width: 52, height: 52, objectFit: 'contain' }}
+          />
         </Box>
 
         {/* Module icons */}
@@ -361,12 +350,11 @@ export default function Sidebar() {
                   py: 1,
                   cursor: 'pointer',
                   transition: 'all 150ms ease',
-                  color: active || isHovered ? tuyaColors.orange : tuyaColors.textSecondary,
-                  bgcolor: isHovered ? tuyaColors.sidebarActive : 'transparent',
+                  color: active ? tuyaColors.orangeDark : tuyaColors.sidebarText,
+                  bgcolor: isHovered && !active ? tuyaColors.sidebarHoverBg : 'transparent',
                   '& .MuiSvgIcon-root': { fontSize: 22 },
                   '&:hover': {
-                    color: tuyaColors.orange,
-                    bgcolor: tuyaColors.sidebarActive,
+                    bgcolor: active ? 'transparent' : tuyaColors.sidebarHoverBg,
                   },
                 }}
               >
@@ -459,11 +447,10 @@ export default function Sidebar() {
                         color: active ? tuyaColors.orange : tuyaColors.textPrimary,
                         fontWeight: active ? 600 : 400,
                         bgcolor: active ? tuyaColors.sidebarActive : 'transparent',
-                        borderRadius: '0',
                         transition: 'all 100ms ease',
                         '&:hover': {
-                          color: tuyaColors.orange,
-                          bgcolor: '#FFF7F0',
+                          color: active ? tuyaColors.orange : tuyaColors.textPrimary,
+                          bgcolor: active ? tuyaColors.sidebarActive : tuyaColors.sidebarHoverBg,
                         },
                       }}
                     >

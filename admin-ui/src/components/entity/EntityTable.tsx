@@ -20,7 +20,6 @@ import Tooltip from '@mui/material/Tooltip';
 import CircularProgress from '@mui/material/CircularProgress';
 import SearchIcon from '@mui/icons-material/Search';
 import RefreshIcon from '@mui/icons-material/Refresh';
-import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
 import { PageData, PageLink } from '@/models/page.model';
 
@@ -183,7 +182,7 @@ export default function EntityTable<T>({
               </IconButton>
             </Tooltip>
             {onAdd && (
-              <Button variant="contained" startIcon={<AddIcon />} onClick={onAdd} size="small">
+              <Button variant="contained" onClick={onAdd} size="small">
                 {addLabel}
               </Button>
             )}

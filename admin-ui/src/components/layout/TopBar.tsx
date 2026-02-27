@@ -54,7 +54,14 @@ export default function TopBar() {
       }}
     >
       <Toolbar sx={{ minHeight: '56px !important', px: 2, gap: 0.5 }}>
-        {/* Left: nav links */}
+        {/* Left: platform name */}
+        <Typography variant="subtitle1" sx={{ fontWeight: 600, color: tuyaColors.textPrimary }}>
+          Developer Platform
+        </Typography>
+
+        <Box sx={{ flexGrow: 1 }} />
+
+        {/* Right: nav links + actions */}
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
           <Button
             size="small"
@@ -89,12 +96,8 @@ export default function TopBar() {
           >
             Tech Support
           </Button>
-        </Box>
 
-        <Box sx={{ flexGrow: 1 }} />
-
-        {/* Right: actions */}
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+          <Divider orientation="vertical" flexItem sx={{ mx: 0.5, my: 1.5 }} />
           {/* Language */}
           <Tooltip title="Language">
             <Button

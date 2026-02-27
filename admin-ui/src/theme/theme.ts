@@ -1,12 +1,14 @@
 import { createTheme } from '@mui/material/styles';
 
-// Tuya Platform color scheme
-const TUYA_ORANGE = '#FF6A00';
-const TUYA_ORANGE_LIGHT = '#FF8533';
-const TUYA_ORANGE_DARK = '#E05500';
+// Osprey Platform color scheme — from logo gradient #008BD5 → #202A6B
+const TUYA_ORANGE = '#008BD5';
+const TUYA_ORANGE_LIGHT = '#33A2DD';
+const TUYA_ORANGE_DARK = '#00498E';
 const TUYA_SIDEBAR_BG = '#FFFFFF';
-const TUYA_SIDEBAR_ACTIVE = '#FFF3EB';
-const TUYA_SIDEBAR_ACTIVE_TEXT = '#FF6A00';
+const TUYA_SIDEBAR_ACTIVE = '#E6F3FB';
+const TUYA_SIDEBAR_ACTIVE_TEXT = '#008BD5';
+const TUYA_SIDEBAR_TEXT = '#999999';
+const TUYA_SIDEBAR_HOVER_BG = '#F0F0F0';
 const TUYA_TOP_BAR_BG = '#FFFFFF';
 const TUYA_BODY_BG = '#FFFFFF';
 const TUYA_BORDER = '#E8E8E8';
@@ -21,6 +23,8 @@ export const tuyaColors = {
   sidebarBg: TUYA_SIDEBAR_BG,
   sidebarActive: TUYA_SIDEBAR_ACTIVE,
   sidebarActiveText: TUYA_SIDEBAR_ACTIVE_TEXT,
+  sidebarText: TUYA_SIDEBAR_TEXT,
+  sidebarHoverBg: TUYA_SIDEBAR_HOVER_BG,
   topBarBg: TUYA_TOP_BAR_BG,
   bodyBg: TUYA_BODY_BG,
   border: TUYA_BORDER,
@@ -30,7 +34,7 @@ export const tuyaColors = {
   success: '#52C41A',
   warning: '#FAAD14',
   error: '#FF4D4F',
-  info: '#1890FF',
+  info: '#008BD5',
 };
 
 export const theme = createTheme({
@@ -42,9 +46,9 @@ export const theme = createTheme({
       contrastText: '#ffffff',
     },
     secondary: {
-      main: '#1890FF',
-      light: '#40A9FF',
-      dark: '#096DD9',
+      main: '#044488',
+      light: '#1A6BB5',
+      dark: '#202A6B',
       contrastText: '#ffffff',
     },
     background: {
@@ -59,7 +63,7 @@ export const theme = createTheme({
     success: { main: '#52C41A' },
     warning: { main: '#FAAD14' },
     error: { main: '#FF4D4F' },
-    info: { main: '#1890FF' },
+    info: { main: '#008BD5' },
   },
   typography: {
     fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", Helvetica, Arial, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif',
@@ -80,16 +84,16 @@ export const theme = createTheme({
     MuiButton: {
       styleOverrides: {
         root: {
-          borderRadius: 6,
+          borderRadius: 4,
           textTransform: 'none',
           fontWeight: 500,
           boxShadow: 'none',
           '&:hover': { boxShadow: 'none' },
         },
         containedPrimary: {
-          background: `linear-gradient(135deg, ${TUYA_ORANGE} 0%, ${TUYA_ORANGE_LIGHT} 100%)`,
+          background: TUYA_ORANGE_DARK,
           '&:hover': {
-            background: `linear-gradient(135deg, ${TUYA_ORANGE_DARK} 0%, ${TUYA_ORANGE} 100%)`,
+            background: '#003A70',
           },
         },
       },
@@ -116,10 +120,19 @@ export const theme = createTheme({
         size: 'small',
       },
     },
+    MuiInputBase: {
+      styleOverrides: {
+        sizeSmall: {
+          height: 32,
+          fontSize: '13px',
+        },
+      },
+    },
     MuiOutlinedInput: {
       styleOverrides: {
         root: {
-          borderRadius: 6,
+          borderRadius: 4,
+          fontSize: '13px',
           '&:hover .MuiOutlinedInput-notchedOutline': {
             borderColor: TUYA_ORANGE,
           },
