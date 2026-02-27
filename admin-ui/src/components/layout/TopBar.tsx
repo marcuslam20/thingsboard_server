@@ -44,20 +44,23 @@ export default function TopBar() {
 
   return (
     <AppBar
-      position="sticky"
+      position="fixed"
       elevation={0}
       sx={{
         bgcolor: tuyaColors.topBarBg,
         color: tuyaColors.textPrimary,
-        borderBottom: `1px solid ${tuyaColors.border}`,
-        zIndex: 1100,
+        boxShadow: '0 2px 8px rgba(0,0,0,0.12)',
+        zIndex: 1302,
       }}
     >
-      <Toolbar sx={{ minHeight: '56px !important', px: 2, gap: 0.5 }}>
-        {/* Left: platform name */}
-        <Typography variant="subtitle1" sx={{ fontWeight: 600, color: tuyaColors.textPrimary }}>
-          Developer Platform
-        </Typography>
+      <Toolbar disableGutters sx={{ minHeight: '44px !important', px: 1.5, pl: '12px', gap: 0.5 }}>
+        {/* Left: logo + platform name */}
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <img src="/osprey-logo.svg" alt="Osprey" style={{ height: 28, objectFit: 'contain' }} />
+          <Typography variant="subtitle1" sx={{ fontWeight: 600, color: tuyaColors.textPrimary }}>
+            Developer Platform
+          </Typography>
+        </Box>
 
         <Box sx={{ flexGrow: 1 }} />
 
@@ -154,17 +157,7 @@ export default function TopBar() {
 
           {/* Profile */}
           <IconButton size="small" onClick={(e) => setProfileAnchor(e.currentTarget)}>
-            <Avatar
-              sx={{
-                width: 30,
-                height: 30,
-                bgcolor: tuyaColors.orange,
-                fontSize: 12,
-                fontWeight: 600,
-              }}
-            >
-              {userInitials}
-            </Avatar>
+            <PersonOutlineIcon sx={{ fontSize: 20, color: tuyaColors.textSecondary }} />
           </IconButton>
 
           <Menu

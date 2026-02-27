@@ -117,13 +117,13 @@ export default function DeviceProfilesPage() {
         <Box
           sx={{
             display: 'inline-block',
-            px: 2,
+            px: 0,
             py: 1,
             borderBottom: `2px solid ${tuyaColors.orange}`,
             mb: '-2px',
           }}
         >
-          <Typography variant="subtitle1" sx={{ color: tuyaColors.orange, fontWeight: 600 }}>
+          <Typography variant="subtitle1" sx={{ color: tuyaColors.orange, fontWeight: 500 }}>
             My Products
           </Typography>
         </Box>
@@ -215,7 +215,7 @@ export default function DeviceProfilesPage() {
                         </Box>
                         <Box>
                           <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                            <Typography variant="body1" sx={{ fontWeight: 500 }}>
+                            <Typography variant="body1" sx={{ fontWeight: 400, color: tuyaColors.orange }}>
                               {profile.name}
                             </Typography>
                             {profile.default && <StarIcon sx={{ fontSize: 16, color: tuyaColors.warning }} />}

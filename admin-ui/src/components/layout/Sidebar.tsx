@@ -295,7 +295,7 @@ export default function Sidebar() {
   const activeModule = filteredModules.find((m) => m.id === hoveredModule);
 
   return (
-    <Box ref={sidebarRef} sx={{ position: 'fixed', top: 0, left: 0, zIndex: 1300, display: 'flex', height: '100vh' }}>
+    <Box ref={sidebarRef} sx={{ position: 'fixed', top: 44, left: 0, zIndex: 1200, display: 'flex', height: 'calc(100vh - 44px)' }}>
       {/* Icon sidebar */}
       <Box
         sx={{
@@ -306,28 +306,9 @@ export default function Sidebar() {
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
-          zIndex: 1301,
+          zIndex: 1201,
         }}
       >
-        {/* Logo */}
-        <Box
-          sx={{
-            width: '100%',
-            height: 56,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            borderBottom: `1px solid ${tuyaColors.border}`,
-            flexShrink: 0,
-          }}
-        >
-          <img
-            src="/osprey-logo.svg"
-            alt="Osprey"
-            style={{ width: 52, height: 52, objectFit: 'contain' }}
-          />
-        </Box>
-
         {/* Module icons */}
         <Box sx={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', py: 0.5, width: '100%' }}>
           {filteredModules.map((mod) => {
@@ -390,16 +371,16 @@ export default function Sidebar() {
             borderRight: `1px solid ${tuyaColors.border}`,
             boxShadow: '4px 0 12px rgba(0,0,0,0.06)',
             overflowY: 'auto',
-            zIndex: 1300,
+            zIndex: 1200,
           }}
         >
           {/* Flyout header */}
           <Box
             sx={{
-              height: 56,
               display: 'flex',
               alignItems: 'center',
               px: 2,
+              py: 1.5,
               borderBottom: `1px solid ${tuyaColors.border}`,
               flexShrink: 0,
             }}

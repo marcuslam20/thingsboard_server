@@ -153,10 +153,10 @@ export const theme = createTheme({
           backgroundColor: '#ffffff',
         },
         head: {
-          fontWeight: 400,
+          fontWeight: 500,
           backgroundColor: '#f4f4f4',
-          color: TUYA_TEXT_SECONDARY,
-          fontSize: '12px',
+          color: '#1a1a1a',
+          fontSize: '13px',
           lineHeight: '17px',
           padding: '8px 12px',
           borderTop: `1px solid #e0e0e0`,
@@ -247,8 +247,7 @@ export const theme = createTheme({
         root: {
           backgroundColor: TUYA_TOP_BAR_BG,
           color: TUYA_TEXT_PRIMARY,
-          boxShadow: 'none',
-          borderBottom: `1px solid ${TUYA_BORDER}`,
+          boxShadow: '0 1px 4px rgba(0,0,0,0.08)',
         },
       },
     },
