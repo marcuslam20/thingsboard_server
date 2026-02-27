@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import Button from '@mui/material/Button';
@@ -13,11 +14,14 @@ import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
 import TablePagination from '@mui/material/TablePagination';
 import IconButton from '@mui/material/IconButton';
-import Tooltip from '@mui/material/Tooltip';
 import CircularProgress from '@mui/material/CircularProgress';
 import InputAdornment from '@mui/material/InputAdornment';
+import Menu from '@mui/material/Menu';
+import MenuItem from '@mui/material/MenuItem';
+import Link from '@mui/material/Link';
 import SearchIcon from '@mui/icons-material/Search';
-import DeleteIcon from '@mui/icons-material/Delete';
+import MoreHorizIcon from '@mui/icons-material/MoreHoriz';
+import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import DevicesOtherIcon from '@mui/icons-material/DevicesOther';
 import StarIcon from '@mui/icons-material/Star';
 import ConfirmDialog from '@/components/entity/ConfirmDialog';
@@ -27,6 +31,7 @@ import { deviceProfileApi } from '@/api/device-profile.api';
 import { tuyaColors } from '@/theme/theme';
 
 export default function DeviceProfilesPage() {
+  const navigate = useNavigate();
   const [data, setData] = useState<DeviceProfile[]>([]);
   const [totalElements, setTotalElements] = useState(0);
   const [page, setPage] = useState(0);
@@ -40,6 +45,10 @@ export default function DeviceProfilesPage() {
   const [editProfile, setEditProfile] = useState<DeviceProfile | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [toDelete, setToDelete] = useState<DeviceProfile | null>(null);
+
+  // More menu ("...")
+  const [menuAnchor, setMenuAnchor] = useState<HTMLElement | null>(null);
+  const [menuProfile, setMenuProfile] = useState<DeviceProfile | null>(null);
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -119,11 +128,11 @@ export default function DeviceProfilesPage() {
             display: 'inline-block',
             px: 0,
             py: 1,
-            borderBottom: `2px solid ${tuyaColors.orange}`,
+            borderBottom: `2px solid ${tuyaColors.orangeDark}`,
             mb: '-2px',
           }}
         >
-          <Typography variant="subtitle1" sx={{ color: tuyaColors.orange, fontWeight: 500 }}>
+          <Typography variant="subtitle1" sx={{ color: tuyaColors.orangeDark, fontWeight: 500 }}>
             My Products
           </Typography>
         </Box>
@@ -181,7 +190,7 @@ export default function DeviceProfilesPage() {
                 <TableCell sx={{ width: '14%' }}>Device Type</TableCell>
                 <TableCell sx={{ width: '12%' }}>Status</TableCell>
                 <TableCell sx={{ width: '14%' }}>Enabled At</TableCell>
-                <TableCell sx={{ width: '14%', textAlign: 'right' }}>Operation</TableCell>
+                <TableCell sx={{ width: '14%', textAlign: 'center' }}>Operation</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -215,7 +224,7 @@ export default function DeviceProfilesPage() {
                         </Box>
                         <Box>
                           <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                            <Typography variant="body1" sx={{ fontWeight: 400, color: tuyaColors.orange }}>
+                            <Typography variant="body1" sx={{ fontWeight: 400, color: tuyaColors.orangeDark }}>
                               {profile.name}
                             </Typography>
                             {profile.default && <StarIcon sx={{ fontSize: 16, color: tuyaColors.warning }} />}
@@ -257,27 +266,53 @@ export default function DeviceProfilesPage() {
                       </Typography>
                     </TableCell>
 
-                    {/* Operation */}
-                    <TableCell sx={{ textAlign: 'right' }}>
-                      <Button
-                        variant="text"
-                        size="small"
-                        onClick={() => { setEditProfile(profile); setDialogOpen(true); }}
-                        sx={{ color: tuyaColors.info, fontWeight: 500, mr: 0.5 }}
-                      >
-                        Manage
-                      </Button>
-                      {!profile.default && (
-                        <Tooltip title="Delete">
-                          <IconButton
-                            size="small"
-                            onClick={() => { setToDelete(profile); setDeleteDialogOpen(true); }}
-                            sx={{ color: tuyaColors.error }}
-                          >
-                            <DeleteIcon fontSize="small" />
-                          </IconButton>
-                        </Tooltip>
-                      )}
+                    {/* Operation — stacked: Develop / Manage ∨ / ... */}
+                    <TableCell sx={{ textAlign: 'right', verticalAlign: 'top', pt: 3 }}>
+                      <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 0.75 }}>
+                        {/* Row 1: Develop button (or Details if completed) */}
+                        <Button
+                          variant="contained"
+                          size="small"
+                          onClick={() => navigate(`/profiles/deviceProfiles/${profile.id.id}`)}
+                          sx={{
+                            fontSize: '12px',
+                            fontWeight: 500,
+                            height: 24,
+                            minWidth: 0,
+                            px: 1.2,
+                          }}
+                        >
+                          {profile.default ? 'Details' : 'Develop'}
+                        </Button>
+
+                        {/* Row 2: Manage ∨ */}
+                        <Link
+                          component="button"
+                          variant="body2"
+                          onClick={() => { setEditProfile(profile); setDialogOpen(true); }}
+                          sx={{
+                            color: tuyaColors.orangeDark,
+                            fontSize: '12px',
+                            textDecoration: 'none',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            cursor: 'pointer',
+                            '&:hover': { textDecoration: 'underline' },
+                          }}
+                        >
+                          Manage
+                          <KeyboardArrowDownIcon sx={{ fontSize: 14, ml: 0.25 }} />
+                        </Link>
+
+                        {/* Row 3: ... more menu */}
+                        <IconButton
+                          size="small"
+                          onClick={(e) => { setMenuAnchor(e.currentTarget); setMenuProfile(profile); }}
+                          sx={{ color: tuyaColors.textHint, p: 0.25 }}
+                        >
+                          <MoreHorizIcon sx={{ fontSize: 18 }} />
+                        </IconButton>
+                      </Box>
                     </TableCell>
                   </TableRow>
                 ))
@@ -296,6 +331,29 @@ export default function DeviceProfilesPage() {
           rowsPerPageOptions={[10, 20, 50]}
         />
       </Paper>
+
+      {/* More menu (triggered by "...") */}
+      <Menu
+        anchorEl={menuAnchor}
+        open={Boolean(menuAnchor)}
+        onClose={() => { setMenuAnchor(null); setMenuProfile(null); }}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+        transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+        slotProps={{ paper: { sx: { minWidth: 120, boxShadow: '0 2px 8px rgba(0,0,0,0.15)' } } }}
+      >
+        <MenuItem
+          onClick={() => {
+            setToDelete(menuProfile);
+            setDeleteDialogOpen(true);
+            setMenuAnchor(null);
+            setMenuProfile(null);
+          }}
+          disabled={menuProfile?.default}
+          sx={{ fontSize: '13px', color: menuProfile?.default ? tuyaColors.textHint : tuyaColors.textPrimary }}
+        >
+          Delete
+        </MenuItem>
+      </Menu>
 
       {/* Dialogs */}
       <DeviceProfileDialog

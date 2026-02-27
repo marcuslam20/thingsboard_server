@@ -16,6 +16,7 @@ import HomePage from '@/pages/home/HomePage';
 import DevicesPage from '@/pages/devices/DevicesPage';
 import DeviceDetailPage from '@/pages/devices/DeviceDetailPage';
 import DeviceProfilesPage from '@/pages/device-profiles/DeviceProfilesPage';
+import DeviceProfileDetailPage from '@/pages/device-profiles/DeviceProfileDetailPage';
 import AssetsPage from '@/pages/assets/AssetsPage';
 import AssetDetailPage from '@/pages/assets/AssetDetailPage';
 import AssetProfilesPage from '@/pages/asset-profiles/AssetProfilesPage';
@@ -91,6 +92,7 @@ function App() {
 
           {/* Profiles */}
           <Route path="/profiles/deviceProfiles" element={<DeviceProfilesPage />} />
+          <Route path="/profiles/deviceProfiles/:profileId" element={<DeviceProfileDetailPage />} />
           <Route path="/profiles/assetProfiles" element={<AssetProfilesPage />} />
 
           {/* Dashboards */}
