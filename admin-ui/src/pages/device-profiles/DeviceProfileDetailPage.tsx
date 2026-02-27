@@ -86,11 +86,11 @@ export default function DeviceProfileDetailPage() {
             <IconButton
               size="small"
               onClick={() => navigate('/profiles/deviceProfiles')}
-              sx={{ color: tuyaColors.textPrimary }}
+              sx={{ color: tuyaColors.orangeDark }}
             >
               <ArrowBackIcon fontSize="small" />
             </IconButton>
-            <Typography variant="h5" sx={{ fontWeight: 400 }}>
+            <Typography variant="h6" sx={{ fontWeight: 400 }}>
               {profile.name}
             </Typography>
           </Box>
