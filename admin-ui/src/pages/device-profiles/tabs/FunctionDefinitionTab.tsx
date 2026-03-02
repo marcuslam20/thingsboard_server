@@ -26,6 +26,7 @@ import { tuyaColors } from '@/theme/theme';
 
 interface Props {
   deviceProfileId: string;
+  categoryId?: string;
 }
 
 function getModeLabel(mode: DpMode): string {
@@ -75,14 +76,18 @@ function DpTable({
   title,
   dataPoints,
   onAdd,
+  addLabel,
   onEdit,
   onDelete,
+  loading: tableLoading,
 }: {
   title: string;
   dataPoints: DataPoint[];
   onAdd: () => void;
+  addLabel?: string;
   onEdit: (dp: DataPoint) => void;
   onDelete: (dp: DataPoint) => void;
+  loading?: boolean;
 }) {
   return (
     <Box sx={{ mb: 3 }}>
@@ -98,11 +103,12 @@ function DpTable({
         <Button
           variant="contained"
           size="small"
-          startIcon={<AddIcon />}
+          startIcon={tableLoading ? <CircularProgress size={14} sx={{ color: '#fff' }} /> : <AddIcon />}
           onClick={onAdd}
+          disabled={tableLoading || addLabel === 'No Category'}
           sx={{ height: 28, fontSize: '12px' }}
         >
-          Add
+          {addLabel || 'Add'}
         </Button>
       </Box>
 
@@ -225,9 +231,10 @@ function SummaryCard({ label, count, suffix, linkText, highlighted }: {
   );
 }
 
-export default function FunctionDefinitionTab({ deviceProfileId }: Props) {
+export default function FunctionDefinitionTab({ deviceProfileId, categoryId }: Props) {
   const [dataPoints, setDataPoints] = useState<DataPoint[]>([]);
   const [loading, setLoading] = useState(true);
+  const [applyingStandard, setApplyingStandard] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editDp, setEditDp] = useState<DataPoint | null>(null);
   const [deleteDp, setDeleteDp] = useState<DataPoint | null>(null);
@@ -252,7 +259,28 @@ export default function FunctionDefinitionTab({ deviceProfileId }: Props) {
   const standardDps = dataPoints.filter((dp) => dp.standard);
   const customDps = dataPoints.filter((dp) => !dp.standard);
 
-  const handleAdd = () => {
+  const handleApplyStandard = async () => {
+    if (!categoryId) {
+      console.error('No category assigned to this product. Please assign a category first.');
+      return;
+    }
+    setApplyingStandard(true);
+    try {
+      const cat = await smartHomeProductApi.getCategory(categoryId);
+      if (!cat.standardDpSet || !Array.isArray(cat.standardDpSet) || cat.standardDpSet.length === 0) {
+        console.error('No standard DP set defined for category:', cat.name);
+        return;
+      }
+      await smartHomeProductApi.applyStandardDps(deviceProfileId, cat.standardDpSet);
+      loadData();
+    } catch (err) {
+      console.error('Failed to apply standard DPs:', err);
+    } finally {
+      setApplyingStandard(false);
+    }
+  };
+
+  const handleAddCustom = () => {
     setEditDp(null);
     setDialogOpen(true);
   };
@@ -368,7 +396,9 @@ export default function FunctionDefinitionTab({ deviceProfileId }: Props) {
           <DpTable
             title="Product Standard Functions"
             dataPoints={standardDps}
-            onAdd={handleAdd}
+            onAdd={handleApplyStandard}
+            addLabel={categoryId ? 'Apply Standard' : 'No Category'}
+            loading={applyingStandard}
             onEdit={handleEdit}
             onDelete={(dp) => setDeleteDp(dp)}
           />
@@ -377,7 +407,7 @@ export default function FunctionDefinitionTab({ deviceProfileId }: Props) {
           <DpTable
             title="Product Custom Functions"
             dataPoints={customDps}
-            onAdd={handleAdd}
+            onAdd={handleAddCustom}
             onEdit={handleEdit}
             onDelete={(dp) => setDeleteDp(dp)}
           />

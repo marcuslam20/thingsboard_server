@@ -245,7 +245,7 @@ export default function DeviceProfileDetailPage() {
 
       {/* Tab Content */}
       <Box sx={{ pt: 2.5 }}>
-        {activeTab === 0 && <FunctionDefinitionTab deviceProfileId={profileId} />}
+        {activeTab === 0 && <FunctionDefinitionTab deviceProfileId={profileId} categoryId={profile.categoryId?.id} />}
         {activeTab === 1 && <ComingSoon label="Device Interaction" />}
         {activeTab === 2 && <ComingSoon label="Hardware Development" />}
         {activeTab === 3 && <ComingSoon label="Product Configuration" />}
