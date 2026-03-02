@@ -99,6 +99,7 @@ public class GoogleCapabilities {
      * - "object": Standard object format {"key": value}
      * - "numeric": Single numeric value (0/1 for boolean)
      * - "string": Single string value
+     * - "template": Pre-configured string values for on/off states (uses onValue/offValue)
      */
     @JsonProperty("rpcMapping")
     private Map<String, RpcMethodMapping> rpcMapping;
@@ -116,7 +117,7 @@ public class GoogleCapabilities {
         private String method;
 
         /**
-         * Parameter format: "object", "numeric", or "string"
+         * Parameter format: "object", "numeric", "string", or "template"
          */
         @JsonProperty("paramFormat")
         @Builder.Default
@@ -128,5 +129,19 @@ public class GoogleCapabilities {
          */
         @JsonProperty("paramMapping")
         private Map<String, String> paramMapping;
+
+        /**
+         * Pre-configured string value sent when state is ON (used with paramFormat="template")
+         * Example: "001003001000000" (DPS command to open curtain)
+         */
+        @JsonProperty("onValue")
+        private String onValue;
+
+        /**
+         * Pre-configured string value sent when state is OFF (used with paramFormat="template")
+         * Example: "001003001000002" (DPS command to close curtain)
+         */
+        @JsonProperty("offValue")
+        private String offValue;
     }
 }
