@@ -12,6 +12,10 @@ import Paper from '@mui/material/Paper';
 import CircularProgress from '@mui/material/CircularProgress';
 import AddIcon from '@mui/icons-material/Add';
 import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
+import FileDownloadOutlinedIcon from '@mui/icons-material/FileDownloadOutlined';
+import DescriptionOutlinedIcon from '@mui/icons-material/DescriptionOutlined';
+import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
+import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import Tooltip from '@mui/material/Tooltip';
 import Link from '@mui/material/Link';
 import ConfirmDialog from '@/components/entity/ConfirmDialog';
@@ -106,19 +110,26 @@ function DpTable({
         <Table size="small">
           <TableHead>
             <TableRow>
-              <TableCell sx={{ width: '8%' }}>DP ID</TableCell>
-              <TableCell sx={{ width: '14%' }}>DP Name</TableCell>
-              <TableCell sx={{ width: '12%' }}>Identifier</TableCell>
-              <TableCell sx={{ width: '14%' }}>Data Transfer Type</TableCell>
-              <TableCell sx={{ width: '10%' }}>Data Type</TableCell>
-              <TableCell sx={{ width: '28%' }}>Properties</TableCell>
-              <TableCell sx={{ width: '14%', textAlign: 'right' }}>Operation</TableCell>
+              <TableCell sx={{ width: '6%' }}>DP ID</TableCell>
+              <TableCell sx={{ width: '12%' }}>DP Name</TableCell>
+              <TableCell sx={{ width: '10%' }}>Identifier</TableCell>
+              <TableCell sx={{ width: '12%' }}>Data Transfer Type</TableCell>
+              <TableCell sx={{ width: '8%' }}>Data Type</TableCell>
+              <TableCell sx={{ width: '22%' }}>Properties</TableCell>
+              <TableCell sx={{ width: '10%' }}>Report frequency limit</TableCell>
+              <TableCell sx={{ width: '8%' }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                  Remarks
+                  <AutoAwesomeIcon sx={{ fontSize: 14, color: tuyaColors.info }} />
+                </Box>
+              </TableCell>
+              <TableCell sx={{ width: '12%', textAlign: 'right' }}>Operation</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
             {dataPoints.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={7} align="center" sx={{ py: 4 }}>
+                <TableCell colSpan={9} align="center" sx={{ py: 4 }}>
                   <Typography variant="body2" sx={{ color: tuyaColors.textHint }}>
                     No data points defined
                   </Typography>
@@ -140,6 +151,12 @@ function DpTable({
                     <Typography variant="body2" sx={{ whiteSpace: 'normal', lineHeight: 1.5 }}>
                       {getPropertiesDisplay(dp)}
                     </Typography>
+                  </TableCell>
+                  <TableCell>
+                    <Typography variant="body2" sx={{ color: tuyaColors.textHint }}>—</Typography>
+                  </TableCell>
+                  <TableCell>
+                    <Typography variant="body2" sx={{ color: tuyaColors.textHint }}>—</Typography>
                   </TableCell>
                   <TableCell sx={{ textAlign: 'right' }}>
                     <Link
@@ -169,12 +186,52 @@ function DpTable({
   );
 }
 
+function SummaryCard({ label, count, suffix, linkText, highlighted }: {
+  label: string;
+  count: number;
+  suffix?: string;
+  linkText?: string;
+  highlighted?: boolean;
+}) {
+  return (
+    <Box sx={{
+      px: 3, py: 1.5, bgcolor: '#FAFAFA', borderRadius: 1,
+      border: `1px solid ${tuyaColors.border}`, minWidth: 140,
+    }}>
+      <Typography variant="caption" sx={{ color: tuyaColors.textHint }}>{label}</Typography>
+      <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 0.5, mt: 0.25 }}>
+        <Typography variant="h6" sx={{ fontWeight: 600 }}>{count}</Typography>
+        {suffix && (
+          <Typography variant="caption" sx={{ color: tuyaColors.textHint }}>{suffix}</Typography>
+        )}
+        {linkText && (
+          <Link
+            href="#"
+            sx={{ fontSize: '12px', color: tuyaColors.info, ml: 0.5, textDecoration: 'none', '&:hover': { textDecoration: 'underline' } }}
+          >
+            {linkText}
+          </Link>
+        )}
+        {highlighted && (
+          <Box sx={{
+            ml: 0.5, px: 0.5, py: 0, bgcolor: tuyaColors.info, color: '#fff',
+            borderRadius: '4px', fontSize: '10px', lineHeight: '16px', fontWeight: 600,
+          }}>
+            AI
+          </Box>
+        )}
+      </Box>
+    </Box>
+  );
+}
+
 export default function FunctionDefinitionTab({ deviceProfileId }: Props) {
   const [dataPoints, setDataPoints] = useState<DataPoint[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editDp, setEditDp] = useState<DataPoint | null>(null);
   const [deleteDp, setDeleteDp] = useState<DataPoint | null>(null);
+  const [activeSubTab, setActiveSubTab] = useState(0);
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -238,35 +295,112 @@ export default function FunctionDefinitionTab({ deviceProfileId }: Props) {
         <Link href="#" sx={{ color: tuyaColors.info }}>How to define product functions?</Link>
       </Typography>
 
-      {/* Summary Cards */}
-      <Box sx={{ display: 'flex', gap: 3, mb: 3 }}>
-        <Box sx={{ px: 3, py: 1.5, bgcolor: '#FAFAFA', borderRadius: 1, border: `1px solid ${tuyaColors.border}` }}>
-          <Typography variant="caption" sx={{ color: tuyaColors.textHint }}>Standard functions</Typography>
-          <Typography variant="h6" sx={{ fontWeight: 600, mt: 0.25 }}>{standardDps.length}</Typography>
+      {/* Summary Cards + Action Buttons */}
+      <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', mb: 3 }}>
+        <Box sx={{ display: 'flex', gap: 2 }}>
+          <SummaryCard label="Standard functions" count={standardDps.length} />
+          <SummaryCard label="Custom functions" count={customDps.length} />
+          <SummaryCard label="Advanced functions" count={0} suffix="/6" linkText="View" />
+          <SummaryCard label="AI functions" count={0} linkText="View" highlighted />
         </Box>
-        <Box sx={{ px: 3, py: 1.5, bgcolor: '#FAFAFA', borderRadius: 1, border: `1px solid ${tuyaColors.border}` }}>
-          <Typography variant="caption" sx={{ color: tuyaColors.textHint }}>Custom functions</Typography>
-          <Typography variant="h6" sx={{ fontWeight: 600, mt: 0.25 }}>{customDps.length}</Typography>
+        <Box sx={{ display: 'flex', gap: 1 }}>
+          <Button
+            variant="outlined"
+            size="small"
+            startIcon={<DescriptionOutlinedIcon sx={{ fontSize: 16 }} />}
+            sx={{
+              height: 32, fontSize: '12px', color: tuyaColors.textSecondary,
+              borderColor: tuyaColors.border, '&:hover': { borderColor: tuyaColors.info },
+            }}
+          >
+            Generate Product Card
+          </Button>
+          <Button
+            variant="outlined"
+            size="small"
+            startIcon={<FileDownloadOutlinedIcon sx={{ fontSize: 16 }} />}
+            sx={{
+              height: 32, fontSize: '12px', color: tuyaColors.textSecondary,
+              borderColor: tuyaColors.border, '&:hover': { borderColor: tuyaColors.info },
+            }}
+          >
+            Export
+          </Button>
         </Box>
       </Box>
 
-      {/* Standard Functions Table */}
-      <DpTable
-        title="Product Standard Functions"
-        dataPoints={standardDps}
-        onAdd={handleAdd}
-        onEdit={handleEdit}
-        onDelete={(dp) => setDeleteDp(dp)}
-      />
+      {/* Sub-tabs: Product functions | Product AI Capabilities */}
+      <Box sx={{ display: 'flex', alignItems: 'center', borderBottom: `1px solid ${tuyaColors.border}`, mb: 2.5 }}>
+        <Box
+          onClick={() => setActiveSubTab(0)}
+          sx={{
+            px: 2, py: 1, cursor: 'pointer', fontSize: '13px', fontWeight: 500,
+            color: activeSubTab === 0 ? tuyaColors.info : tuyaColors.textSecondary,
+            borderBottom: activeSubTab === 0 ? `2px solid ${tuyaColors.info}` : '2px solid transparent',
+            mb: '-1px',
+          }}
+        >
+          Product functions
+        </Box>
+        <Box
+          onClick={() => setActiveSubTab(1)}
+          sx={{
+            px: 2, py: 1, cursor: 'pointer', fontSize: '13px', fontWeight: 500,
+            color: activeSubTab === 1 ? tuyaColors.info : tuyaColors.textSecondary,
+            borderBottom: activeSubTab === 1 ? `2px solid ${tuyaColors.info}` : '2px solid transparent',
+            mb: '-1px', display: 'flex', alignItems: 'center', gap: 0.5,
+          }}
+        >
+          Product AI Capabilities
+          <Box sx={{
+            px: 0.5, py: 0, bgcolor: tuyaColors.error, color: '#fff',
+            borderRadius: '4px', fontSize: '10px', lineHeight: '16px', fontWeight: 600,
+          }}>
+            New
+          </Box>
+        </Box>
+      </Box>
 
-      {/* Custom Functions Table */}
-      <DpTable
-        title="Product Custom Functions"
-        dataPoints={customDps}
-        onAdd={handleAdd}
-        onEdit={handleEdit}
-        onDelete={(dp) => setDeleteDp(dp)}
-      />
+      {/* Tab Content */}
+      {activeSubTab === 0 ? (
+        <>
+          {/* Standard Functions Table */}
+          <DpTable
+            title="Product Standard Functions"
+            dataPoints={standardDps}
+            onAdd={handleAdd}
+            onEdit={handleEdit}
+            onDelete={(dp) => setDeleteDp(dp)}
+          />
+
+          {/* Custom Functions Table */}
+          <DpTable
+            title="Product Custom Functions"
+            dataPoints={customDps}
+            onAdd={handleAdd}
+            onEdit={handleEdit}
+            onDelete={(dp) => setDeleteDp(dp)}
+          />
+        </>
+      ) : (
+        <Box sx={{ py: 8, textAlign: 'center' }}>
+          <AutoAwesomeIcon sx={{ fontSize: 48, color: tuyaColors.textHint, mb: 1 }} />
+          <Typography variant="body2" sx={{ color: tuyaColors.textHint }}>
+            AI Capabilities coming soon
+          </Typography>
+        </Box>
+      )}
+
+      {/* Next Step Button */}
+      <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4, mb: 2 }}>
+        <Button
+          variant="contained"
+          endIcon={<ArrowForwardIcon />}
+          sx={{ px: 4, height: 40 }}
+        >
+          Next Step: Device Interaction
+        </Button>
+      </Box>
 
       {/* Dialogs */}
       <DataPointDialog

@@ -4,6 +4,8 @@ import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import Button from '@mui/material/Button';
 import TextField from '@mui/material/TextField';
+import Select from '@mui/material/Select';
+import MenuItem from '@mui/material/MenuItem';
 import Paper from '@mui/material/Paper';
 import Table from '@mui/material/Table';
 import TableBody from '@mui/material/TableBody';
@@ -14,19 +16,52 @@ import TableRow from '@mui/material/TableRow';
 import TablePagination from '@mui/material/TablePagination';
 import TableSortLabel from '@mui/material/TableSortLabel';
 import IconButton from '@mui/material/IconButton';
-import Tooltip from '@mui/material/Tooltip';
 import CircularProgress from '@mui/material/CircularProgress';
-import EditIcon from '@mui/icons-material/Edit';
-import DeleteIcon from '@mui/icons-material/Delete';
-import VpnKeyIcon from '@mui/icons-material/VpnKey';
+import Link from '@mui/material/Link';
 import FileDownloadOutlinedIcon from '@mui/icons-material/FileDownloadOutlined';
 import DevicesOtherIcon from '@mui/icons-material/DevicesOther';
+import SettingsOutlinedIcon from '@mui/icons-material/SettingsOutlined';
 import ConfirmDialog from '@/components/entity/ConfirmDialog';
 import DeviceDialog from './DeviceDialog';
 import DeviceCredentialsDialog from './DeviceCredentialsDialog';
 import { DeviceInfo, Device } from '@/models/device.model';
 import { deviceApi } from '@/api/device.api';
+import { deviceProfileApi, DeviceProfileInfo } from '@/api/device-profile.api';
 import { tuyaColors } from '@/theme/theme';
+
+// Compact input style — matching DeviceProfilesPage 11px pattern
+const compactInputSx = {
+  '& .MuiInputBase-root': { height: 24, fontSize: '11px' },
+  '& .MuiInputBase-input': { py: '2px', px: '8px' },
+};
+
+const compactSelectSx = {
+  height: 24,
+  fontSize: '11px',
+  '& .MuiSelect-select': { py: '2px', px: '8px' },
+  '& .MuiOutlinedInput-notchedOutline': { borderColor: tuyaColors.border },
+};
+
+const compactBtnSx = {
+  minWidth: 0,
+  px: 1,
+  height: 24,
+  fontSize: '11px',
+  color: tuyaColors.textSecondary,
+  borderColor: tuyaColors.border,
+};
+
+function maskUuid(uuid: string): string {
+  if (uuid.length < 12) return uuid;
+  return uuid.substring(0, 4) + '****' + uuid.substring(uuid.length - 4);
+}
+
+function formatDateTime(ts: number): string {
+  const d = new Date(ts);
+  const date = d.toLocaleDateString('en-CA'); // YYYY-MM-DD
+  const time = d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+  return `${date} ${time}`;
+}
 
 export default function DevicesPage() {
   const navigate = useNavigate();
@@ -39,14 +74,23 @@ export default function DevicesPage() {
   const [sortOrder, setSortOrder] = useState<'ASC' | 'DESC'>('DESC');
 
   // Filters
+  const [activateFilter, setActivateFilter] = useState<string>('all');
   const [searchName, setSearchName] = useState('');
-  const [searchDeviceId, setSearchDeviceId] = useState('');
-  const [appliedSearch, setAppliedSearch] = useState('');
+  const [searchUuid, setSearchUuid] = useState('');
+  const [productFilter, setProductFilter] = useState<string>('all');
+  const [searchProductId, setSearchProductId] = useState('');
+
+  // Applied filters (applied on Search click)
+  const [appliedName, setAppliedName] = useState('');
+  const [appliedActive, setAppliedActive] = useState<boolean | undefined>(undefined);
+  const [appliedProfileId, setAppliedProfileId] = useState<string | undefined>(undefined);
+
+  // Device profile infos for Product dropdown
+  const [profileInfos, setProfileInfos] = useState<DeviceProfileInfo[]>([]);
 
   // Stats
   const [totalDevices, setTotalDevices] = useState(0);
   const [activeDevices, setActiveDevices] = useState(0);
-  const [inactiveDevices, setInactiveDevices] = useState(0);
 
   // Dialogs
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -56,44 +100,62 @@ export default function DevicesPage() {
   const [credentialsDialogOpen, setCredentialsDialogOpen] = useState(false);
   const [credentialsDeviceId, setCredentialsDeviceId] = useState('');
 
+  // Load device profile infos for Product dropdown
+  useEffect(() => {
+    deviceProfileApi.getDeviceProfileInfos({ page: 0, pageSize: 100, sortProperty: 'name', sortOrder: 'ASC' })
+      .then((result) => setProfileInfos(result.data))
+      .catch(() => setProfileInfos([]));
+  }, []);
+
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
-      const result = await deviceApi.getTenantDeviceInfos({
-        page,
-        pageSize,
-        textSearch: appliedSearch || undefined,
-        sortProperty,
-        sortOrder,
-      });
+      const result = await deviceApi.getTenantDeviceInfos(
+        {
+          page,
+          pageSize,
+          textSearch: appliedName || undefined,
+          sortProperty,
+          sortOrder,
+        },
+        undefined,
+        appliedProfileId,
+        appliedActive,
+      );
       setData(result.data);
       setTotalElements(result.totalElements);
       setTotalDevices(result.totalElements);
 
-      // Count active/inactive from current page (approximate)
+      // Count active from current page (approximate)
       const active = result.data.filter((d) => d.active).length;
       setActiveDevices(active);
-      setInactiveDevices(result.data.length - active);
     } catch (err) {
       console.error('Failed to load data:', err);
     } finally {
       setLoading(false);
     }
-  }, [page, pageSize, appliedSearch, sortProperty, sortOrder]);
+  }, [page, pageSize, appliedName, appliedActive, appliedProfileId, sortProperty, sortOrder]);
 
   useEffect(() => {
     loadData();
   }, [loadData]);
 
   const handleSearch = () => {
-    setAppliedSearch(searchName);
+    setAppliedName(searchName);
+    setAppliedActive(activateFilter === 'all' ? undefined : activateFilter === 'activated');
+    setAppliedProfileId(productFilter === 'all' ? undefined : productFilter);
     setPage(0);
   };
 
   const handleReset = () => {
     setSearchName('');
-    setSearchDeviceId('');
-    setAppliedSearch('');
+    setSearchUuid('');
+    setSearchProductId('');
+    setActivateFilter('all');
+    setProductFilter('all');
+    setAppliedName('');
+    setAppliedActive(undefined);
+    setAppliedProfileId(undefined);
     setPage(0);
   };
 
@@ -124,7 +186,7 @@ export default function DevicesPage() {
   return (
     <Box>
       {/* Page Header */}
-      <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', mb: 2.5 }}>
+      <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', mb: 2 }}>
         <Box>
           <Typography variant="h5" sx={{ mb: 0.5 }}>
             Devices
@@ -134,242 +196,325 @@ export default function DevicesPage() {
           </Typography>
         </Box>
         <Button
-          variant="contained"
-          onClick={() => { setEditDevice(null); setDialogOpen(true); }}
-          sx={{ height: 32 }}
+          variant="outlined"
+          sx={{
+            height: 24,
+            fontSize: '11px',
+            px: 1.5,
+            color: tuyaColors.info,
+            borderColor: tuyaColors.info,
+            '&:hover': { borderColor: tuyaColors.info, bgcolor: 'rgba(0,139,213,0.04)' },
+          }}
         >
-          Cloud Data Center
+          Choose Data Center
         </Button>
       </Box>
 
-      {/* Divider + Stat row — label on top, number below, inline like Tuya */}
-      <Box sx={{ borderTop: '1px solid #e0e0e0', pt: 2, mt: 1.5 }} />
-      <Box sx={{ display: 'flex', alignItems: 'flex-end', gap: 10, mb: 2.5 }}>
-        <Box>
-          <Typography sx={{ fontSize: '12px', color: tuyaColors.textHint, mb: 0.25 }}>Total Devices</Typography>
-          <Typography sx={{ fontSize: '28px', fontWeight: 400, color: tuyaColors.textPrimary, lineHeight: '38px' }}>
-            {totalDevices}
-          </Typography>
-        </Box>
-        <Box>
-          <Typography sx={{ fontSize: '12px', color: tuyaColors.textHint, mb: 0.25 }}>Device Bounds</Typography>
-          <Typography sx={{ fontSize: '28px', fontWeight: 400, color: tuyaColors.textPrimary, lineHeight: '38px' }}>
-            {activeDevices}
-          </Typography>
-        </Box>
-        <Box>
-          <Typography sx={{ fontSize: '12px', color: tuyaColors.textHint, mb: 0.25 }}>Device Online</Typography>
-          <Typography sx={{ fontSize: '28px', fontWeight: 400, color: tuyaColors.textPrimary, lineHeight: '38px' }}>
-            {inactiveDevices}
-          </Typography>
-        </Box>
-        <Box sx={{ flex: 1 }} />
-        <Typography sx={{ fontSize: '12px', color: tuyaColors.textHint, mb: 1 }}>
-          Total usage: <Typography component="span" sx={{ color: tuyaColors.info, cursor: 'pointer', fontSize: '12px' }}>View details</Typography>
-        </Typography>
-      </Box>
+      {/* Stats Row */}
+          <Box sx={{ display: 'flex', alignItems: 'flex-end', gap: 6, mb: 2.5, pt: 1 }}>
+            <Box>
+              <Typography sx={{ fontSize: '11px', color: tuyaColors.textHint, mb: 0.25 }}>Total Devices</Typography>
+              <Typography sx={{ fontSize: '24px', fontWeight: 400, color: tuyaColors.textPrimary, lineHeight: '32px' }}>
+                {totalDevices}
+              </Typography>
+            </Box>
+            <Box>
+              <Typography sx={{ fontSize: '11px', color: tuyaColors.textHint, mb: 0.25 }}>Device Bounds</Typography>
+              <Typography sx={{ fontSize: '24px', fontWeight: 400, color: tuyaColors.textPrimary, lineHeight: '32px' }}>
+                {activeDevices}
+              </Typography>
+            </Box>
+            <Box>
+              <Typography sx={{ fontSize: '11px', color: tuyaColors.textHint, mb: 0.25 }}>Device Online</Typography>
+              <Typography sx={{ fontSize: '24px', fontWeight: 400, color: tuyaColors.textPrimary, lineHeight: '32px' }}>
+                {activeDevices}
+              </Typography>
+            </Box>
+            <Box>
+              <Typography sx={{ fontSize: '11px', color: tuyaColors.textHint, mb: 0.25 }}>Firmware Update Times</Typography>
+              <Typography sx={{ fontSize: '24px', fontWeight: 400, color: tuyaColors.textPrimary, lineHeight: '32px' }}>
+                0
+              </Typography>
+            </Box>
+            <Box>
+              <Typography sx={{ fontSize: '11px', color: tuyaColors.textHint, mb: 0.25 }}>Message Amounts</Typography>
+              <Typography sx={{ fontSize: '24px', fontWeight: 400, color: tuyaColors.textPrimary, lineHeight: '32px' }}>
+                0
+              </Typography>
+            </Box>
+            <Box sx={{ flex: 1 }} />
+            <Typography sx={{ fontSize: '11px', color: tuyaColors.textHint, mb: 1 }}>
+              Total usage:{' '}
+              <Typography component="span" sx={{ color: tuyaColors.info, cursor: 'pointer', fontSize: '11px' }}>
+                View details
+              </Typography>
+            </Typography>
+          </Box>
 
-      {/* Filter Bar */}
-      <Paper elevation={0} sx={{ p: '12px 0', mb: 0, boxShadow: 'none', borderRadius: 0 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap' }}>
-          <Typography variant="body2" sx={{ color: tuyaColors.textSecondary, mr: 0.5 }}>
-            Enter:
-          </Typography>
-          <TextField
-            size="small"
-            placeholder="Device ID / Device name"
-            value={searchName}
-            onChange={(e) => setSearchName(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-            sx={{ width: 160 }}
-          />
-          <TextField
-            size="small"
-            placeholder="UUID"
-            value={searchDeviceId}
-            onChange={(e) => setSearchDeviceId(e.target.value)}
-            sx={{ width: 110 }}
-          />
-          <TextField
-            size="small"
-            placeholder="Product ID / Product Name"
-            sx={{ width: 160 }}
-          />
+          {/* Filter Bar */}
+          <Paper elevation={0} sx={{ p: '8px 0', mb: 0, boxShadow: 'none', borderRadius: 0 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, flexWrap: 'wrap' }}>
+              <Typography sx={{ fontSize: '11px', color: tuyaColors.textSecondary, mr: 0.5 }}>
+                Enter:
+              </Typography>
 
-          <Button variant="outlined" onClick={handleSearch} sx={{ minWidth: 64, height: 32, color: tuyaColors.textSecondary, borderColor: tuyaColors.border }}>
-            Search
-          </Button>
-          <Button
-            variant="outlined"
-            onClick={handleReset}
-            sx={{ minWidth: 64, height: 32, color: tuyaColors.textSecondary, borderColor: tuyaColors.border }}
-          >
-            Reset
-          </Button>
+              {/* Activate dropdown */}
+              <Select
+                size="small"
+                value={activateFilter}
+                onChange={(e) => setActivateFilter(e.target.value)}
+                sx={{ ...compactSelectSx, minWidth: 90 }}
+              >
+                <MenuItem value="all" sx={{ fontSize: '11px' }}>Activate</MenuItem>
+                <MenuItem value="activated" sx={{ fontSize: '11px' }}>Activated</MenuItem>
+                <MenuItem value="unactivated" sx={{ fontSize: '11px' }}>Unactivated</MenuItem>
+              </Select>
 
-          <Box sx={{ flex: 1 }} />
+              {/* Device name */}
+              <TextField
+                size="small"
+                placeholder="Device name"
+                value={searchName}
+                onChange={(e) => setSearchName(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                sx={{ width: 140, ...compactInputSx }}
+              />
 
-          <Button
-            variant="outlined"
-            startIcon={<FileDownloadOutlinedIcon />}
-            sx={{ color: tuyaColors.textSecondary, borderColor: tuyaColors.border }}
-          >
-            Export data
-          </Button>
-        </Box>
-      </Paper>
+              {/* UUID */}
+              <TextField
+                size="small"
+                placeholder="UUID"
+                value={searchUuid}
+                onChange={(e) => setSearchUuid(e.target.value)}
+                sx={{ width: 110, ...compactInputSx }}
+              />
 
-      {/* Device Table */}
-      <Paper elevation={0} sx={{ borderRadius: 0, boxShadow: 'none' }}>
-        <TableContainer>
-          <Table>
-            <TableHead>
-              <TableRow>
-                <TableCell sx={{ width: '22%' }}>
-                  <TableSortLabel
-                    active={sortProperty === 'name'}
-                    direction={sortProperty === 'name' ? (sortOrder === 'ASC' ? 'asc' : 'desc') : 'asc'}
-                    onClick={() => handleSort('name')}
-                  >
-                    Device Name/ID
-                  </TableSortLabel>
-                </TableCell>
-                <TableCell sx={{ width: '10%' }}>UUID</TableCell>
-                <TableCell sx={{ width: '15%' }}>Product</TableCell>
-                <TableCell sx={{ width: '12%' }}>Device Type</TableCell>
-                <TableCell sx={{ width: '8%' }}>Status</TableCell>
-                <TableCell sx={{ width: '13%' }}>
-                  <TableSortLabel
-                    active={sortProperty === 'createdTime'}
-                    direction={sortProperty === 'createdTime' ? (sortOrder === 'ASC' ? 'asc' : 'desc') : 'asc'}
-                    onClick={() => handleSort('createdTime')}
-                  >
-                    Created
-                  </TableSortLabel>
-                </TableCell>
-                <TableCell sx={{ width: '20%', textAlign: 'right' }}>Operation</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {loading && data.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={7} align="center" sx={{ py: 6 }}>
-                    <CircularProgress size={32} sx={{ color: tuyaColors.orange }} />
-                  </TableCell>
-                </TableRow>
-              ) : data.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={7} align="center" sx={{ py: 6 }}>
-                    <DevicesOtherIcon sx={{ fontSize: 48, color: tuyaColors.textHint, mb: 1, display: 'block', mx: 'auto' }} />
-                    <Typography color="text.secondary">No devices found</Typography>
-                  </TableCell>
-                </TableRow>
-              ) : (
-                data.map((device) => (
-                  <TableRow
-                    key={device.id.id}
-                    hover
-                    onClick={() => navigate(`/entities/devices/${device.id.id}`)}
-                    sx={{ cursor: 'pointer' }}
-                  >
-                    {/* Device Name/ID */}
-                    <TableCell>
-                      <Box>
-                        <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                          {device.name}
+              {/* Product dropdown */}
+              <Select
+                size="small"
+                value={productFilter}
+                onChange={(e) => setProductFilter(e.target.value)}
+                sx={{ ...compactSelectSx, minWidth: 130 }}
+                displayEmpty
+              >
+                <MenuItem value="all" sx={{ fontSize: '11px' }}>Product</MenuItem>
+                {profileInfos.map((pi) => (
+                  <MenuItem key={pi.id.id} value={pi.id.id} sx={{ fontSize: '11px' }}>
+                    {pi.name}
+                  </MenuItem>
+                ))}
+              </Select>
+
+              {/* Product ID */}
+              <TextField
+                size="small"
+                placeholder="Product ID"
+                value={searchProductId}
+                onChange={(e) => setSearchProductId(e.target.value)}
+                sx={{ width: 140, ...compactInputSx }}
+              />
+
+              <Button variant="outlined" onClick={handleSearch} sx={compactBtnSx}>
+                Search
+              </Button>
+              <Button variant="outlined" onClick={handleReset} sx={compactBtnSx}>
+                Reset
+              </Button>
+
+              <Box sx={{ flex: 1 }} />
+
+              <Button
+                variant="outlined"
+                startIcon={<FileDownloadOutlinedIcon sx={{ fontSize: 14 }} />}
+                sx={{ ...compactBtnSx, px: 1.5 }}
+              >
+                Export data
+              </Button>
+            </Box>
+          </Paper>
+
+          {/* Device Table — 9 columns */}
+          <Paper elevation={0} sx={{ borderRadius: 0, boxShadow: 'none' }}>
+            <TableContainer>
+              <Table sx={{ '& td': { fontSize: '11px' }, '& th': { fontSize: '12px' } }}>
+                <TableHead>
+                  <TableRow>
+                    <TableCell sx={{ width: '18%' }}>
+                      <TableSortLabel
+                        active={sortProperty === 'name'}
+                        direction={sortProperty === 'name' ? (sortOrder === 'ASC' ? 'asc' : 'desc') : 'asc'}
+                        onClick={() => handleSort('name')}
+                      >
+                        Device Name/ID
+                      </TableSortLabel>
+                    </TableCell>
+                    <TableCell sx={{ width: '10%' }}>UUID</TableCell>
+                    <TableCell sx={{ width: '14%' }}>Product</TableCell>
+                    <TableCell sx={{ width: '10%' }}>Device Type</TableCell>
+                    <TableCell sx={{ width: '12%' }}>Product ID</TableCell>
+                    <TableCell sx={{ width: '8%' }}>Firmware Version</TableCell>
+                    <TableCell sx={{ width: '8%' }}>Device Status</TableCell>
+                    <TableCell sx={{ width: '10%' }}>
+                      <TableSortLabel
+                        active={sortProperty === 'createdTime'}
+                        direction={sortProperty === 'createdTime' ? (sortOrder === 'ASC' ? 'asc' : 'desc') : 'asc'}
+                        onClick={() => handleSort('createdTime')}
+                      >
+                        Created
+                      </TableSortLabel>
+                    </TableCell>
+                    <TableCell sx={{ width: '10%' }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end' }}>
+                        <Typography sx={{ fontWeight: 500, color: '#1a1a1a', fontSize: '12px', mr: 'auto', pl: 1 }}>
+                          Operation
                         </Typography>
-                        <Typography variant="caption" sx={{ color: tuyaColors.textHint }}>
-                          {device.id.id}
-                        </Typography>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+                          <Box sx={{ width: '1px', height: 14, bgcolor: tuyaColors.border }} />
+                          <IconButton size="small" sx={{ p: 0.25, color: tuyaColors.textHint }}>
+                            <SettingsOutlinedIcon sx={{ fontSize: 15 }} />
+                          </IconButton>
+                        </Box>
                       </Box>
                     </TableCell>
-
-                    {/* UUID */}
-                    <TableCell>
-                      <Typography variant="caption" sx={{ color: tuyaColors.textHint }}>
-                        {device.id.id.substring(0, 8)}...
-                      </Typography>
-                    </TableCell>
-
-                    {/* Product (Device Profile) */}
-                    <TableCell>
-                      <Typography variant="body2">{device.deviceProfileName}</Typography>
-                    </TableCell>
-
-                    {/* Device Type */}
-                    <TableCell>
-                      <Typography variant="body2">{device.type || 'Common Device'}</Typography>
-                    </TableCell>
-
-                    {/* Status */}
-                    <TableCell>
-                      <Typography
-                        variant="body2"
-                        sx={{
-                          color: device.active ? tuyaColors.success : tuyaColors.textHint,
-                          fontWeight: 500,
-                        }}
-                      >
-                        {device.active ? 'Online' : 'Offline'}
-                      </Typography>
-                    </TableCell>
-
-                    {/* Created */}
-                    <TableCell>
-                      <Typography variant="body2">
-                        {new Date(device.createdTime).toLocaleDateString('en-CA')}{' '}
-                        {new Date(device.createdTime).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}
-                      </Typography>
-                    </TableCell>
-
-                    {/* Operation */}
-                    <TableCell sx={{ textAlign: 'right' }} onClick={(e) => e.stopPropagation()}>
-                      <Tooltip title="Credentials">
-                        <IconButton
-                          size="small"
-                          onClick={() => { setCredentialsDeviceId(device.id.id); setCredentialsDialogOpen(true); }}
-                          sx={{ color: tuyaColors.info }}
-                        >
-                          <VpnKeyIcon fontSize="small" />
-                        </IconButton>
-                      </Tooltip>
-                      <Tooltip title="Edit">
-                        <IconButton
-                          size="small"
-                          onClick={() => {
-                            deviceApi.getDevice(device.id.id).then((d) => { setEditDevice(d); setDialogOpen(true); });
-                          }}
-                          sx={{ color: tuyaColors.textSecondary }}
-                        >
-                          <EditIcon fontSize="small" />
-                        </IconButton>
-                      </Tooltip>
-                      <Tooltip title="Delete">
-                        <IconButton
-                          size="small"
-                          onClick={() => { setDeviceToDelete(device); setDeleteDialogOpen(true); }}
-                          sx={{ color: tuyaColors.error }}
-                        >
-                          <DeleteIcon fontSize="small" />
-                        </IconButton>
-                      </Tooltip>
-                    </TableCell>
                   </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </TableContainer>
+                </TableHead>
+                <TableBody>
+                  {loading && data.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={9} align="center" sx={{ py: 6 }}>
+                        <CircularProgress size={32} sx={{ color: tuyaColors.orange }} />
+                      </TableCell>
+                    </TableRow>
+                  ) : data.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={9} align="center" sx={{ py: 6 }}>
+                        <DevicesOtherIcon sx={{ fontSize: 48, color: tuyaColors.textHint, mb: 1, display: 'block', mx: 'auto' }} />
+                        <Typography color="text.secondary">No devices found</Typography>
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    data.map((device) => (
+                      <TableRow
+                        key={device.id.id}
+                        hover
+                        onClick={() => navigate(`/entities/devices/${device.id.id}`)}
+                        sx={{ cursor: 'pointer' }}
+                      >
+                        {/* Device Name/ID */}
+                        <TableCell>
+                          <Box>
+                            <Typography sx={{ fontWeight: 500, fontSize: '11px', color: tuyaColors.textPrimary }}>
+                              {device.name}
+                            </Typography>
+                            <Typography sx={{ fontSize: '10px', color: tuyaColors.textHint }}>
+                              {device.id.id}
+                            </Typography>
+                          </Box>
+                        </TableCell>
 
-        <TablePagination
-          component="div"
-          count={totalElements}
-          page={page}
-          onPageChange={(_, p) => setPage(p)}
-          rowsPerPage={pageSize}
-          onRowsPerPageChange={(e) => { setPageSize(parseInt(e.target.value, 10)); setPage(0); }}
-          rowsPerPageOptions={[10, 20, 50]}
-        />
+                        {/* UUID (masked) */}
+                        <TableCell>
+                          <Typography sx={{ fontSize: '11px', color: tuyaColors.textSecondary }}>
+                            {maskUuid(device.id.id)}
+                          </Typography>
+                        </TableCell>
+
+                        {/* Product */}
+                        <TableCell>
+                          <Typography sx={{ fontSize: '11px' }}>{device.deviceProfileName}</Typography>
+                        </TableCell>
+
+                        {/* Device Type */}
+                        <TableCell>
+                          <Typography sx={{ fontSize: '11px' }}>{device.type || 'Common Device'}</Typography>
+                        </TableCell>
+
+                        {/* Product ID */}
+                        <TableCell>
+                          <Typography sx={{ fontSize: '10px', color: tuyaColors.textHint, fontFamily: 'monospace' }}>
+                            {device.deviceProfileId.id.substring(0, 16)}
+                          </Typography>
+                        </TableCell>
+
+                        {/* Firmware Version */}
+                        <TableCell>
+                          <Typography sx={{ fontSize: '11px', color: tuyaColors.textHint }}>—</Typography>
+                        </TableCell>
+
+                        {/* Device Status (dot + text) */}
+                        <TableCell>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                            <Box
+                              sx={{
+                                width: 6,
+                                height: 6,
+                                borderRadius: '50%',
+                                bgcolor: device.active ? tuyaColors.success : tuyaColors.textHint,
+                                flexShrink: 0,
+                              }}
+                            />
+                            <Typography
+                              sx={{
+                                fontSize: '11px',
+                                color: device.active ? tuyaColors.success : tuyaColors.textHint,
+                              }}
+                            >
+                              {device.active ? 'Online' : 'Offline'}
+                            </Typography>
+                          </Box>
+                        </TableCell>
+
+                        {/* Created */}
+                        <TableCell>
+                          <Typography sx={{ fontSize: '11px' }}>
+                            {formatDateTime(device.createdTime)}
+                          </Typography>
+                        </TableCell>
+
+                        {/* Operation — text links */}
+                        <TableCell onClick={(e) => e.stopPropagation()}>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                            <Link
+                              component="button"
+                              onClick={() => navigate(`/entities/devices/${device.id.id}`)}
+                              sx={{
+                                color: tuyaColors.info,
+                                fontSize: '11px',
+                                textDecoration: 'none',
+                                cursor: 'pointer',
+                                '&:hover': { textDecoration: 'underline' },
+                              }}
+                            >
+                              Debug
+                            </Link>
+                            <IconButton
+                              size="small"
+                              onClick={() => {
+                                setCredentialsDeviceId(device.id.id);
+                                setCredentialsDialogOpen(true);
+                              }}
+                              sx={{ p: 0.25, color: tuyaColors.textHint }}
+                            >
+                              <SettingsOutlinedIcon sx={{ fontSize: 14 }} />
+                            </IconButton>
+                          </Box>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </TableContainer>
+
+            <TablePagination
+              component="div"
+              count={totalElements}
+              page={page}
+              onPageChange={(_, p) => setPage(p)}
+              rowsPerPage={pageSize}
+              onRowsPerPageChange={(e) => { setPageSize(parseInt(e.target.value, 10)); setPage(0); }}
+              rowsPerPageOptions={[10, 20, 50]}
+            />
       </Paper>
 
       {/* Dialogs */}

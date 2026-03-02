@@ -1,5 +1,6 @@
 import { BaseData, ExportableEntity } from './base-data.model';
 import { DeviceId, DeviceProfileId, TenantId, CustomerId } from './id.model';
+import { ProductCategoryId } from './datapoint.model';
 
 export interface Device extends ExportableEntity<DeviceId> {
   tenantId: TenantId;
@@ -32,6 +33,13 @@ export enum DeviceTransportType {
   SNMP = 'SNMP',
 }
 
+export enum ConnectivityType {
+  WIFI = 'WIFI',
+  BLUETOOTH_LE = 'BLUETOOTH_LE',
+  ZIGBEE = 'ZIGBEE',
+  WIFI_BLUETOOTH = 'WIFI_BLUETOOTH',
+}
+
 export interface DeviceProfile extends BaseData<DeviceProfileId> {
   tenantId: TenantId;
   description?: string;
@@ -42,6 +50,9 @@ export interface DeviceProfile extends BaseData<DeviceProfileId> {
   defaultRuleChainId?: { id: string; entityType: string };
   defaultDashboardId?: { id: string; entityType: string };
   profileData?: Record<string, unknown>;
+  categoryId?: ProductCategoryId;
+  productModel?: string;
+  connectivityType?: ConnectivityType;
 }
 
 export enum DeviceCredentialsType {
