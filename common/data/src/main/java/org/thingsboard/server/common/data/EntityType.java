@@ -69,7 +69,12 @@ public enum EntityType {
         public String getNormalName() {
             return "AI model";
         }
-    };
+    },
+    PRODUCT_CATEGORY(44),
+    DATA_POINT(45),
+    SMART_HOME(46),
+    ROOM(47),
+    SMART_SCENE(48);
 
     @Getter
     private final int protoNumber; // Corresponds to EntityTypeProto

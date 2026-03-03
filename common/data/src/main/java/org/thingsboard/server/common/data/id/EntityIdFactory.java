@@ -84,6 +84,11 @@ public class EntityIdFactory {
             case JOB -> new JobId(uuid);
             case ADMIN_SETTINGS -> new AdminSettingsId(uuid);
             case AI_MODEL -> new AiModelId(uuid);
+            case PRODUCT_CATEGORY -> new ProductCategoryId(uuid);
+            case DATA_POINT -> new DataPointId(uuid);
+            case SMART_HOME -> new SmartHomeId(uuid);
+            case ROOM -> new RoomId(uuid);
+            case SMART_SCENE -> new SmartSceneId(uuid);
         };
     }
 

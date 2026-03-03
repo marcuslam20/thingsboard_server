@@ -1,0 +1,141 @@
+{
+  "login": {
+    "title": "Login",
+    "username": "Email",
+    "password": "Password",
+    "login": "Log In",
+    "forgot-password": "Forgot Password?",
+    "reset-password": "Reset Password",
+    "no-account": "Don't have an account?",
+    "signup": "Sign Up",
+    "or": "OR",
+    "invalid-credentials": "Invalid email or password",
+    "logout": "Log Out"
+  },
+  "signup": {
+    "title": "Sign Up",
+    "first-name": "First Name",
+    "last-name": "Last Name",
+    "email": "Email",
+    "password": "Password",
+    "confirm-password": "Confirm Password",
+    "tenant-id": "Tenant ID",
+    "tenant-id-hint": "Enter the Tenant ID provided by your admin",
+    "signup": "Sign Up",
+    "already-have-account": "Already have an account?",
+    "login": "Login",
+    "success": "Sign up successful!",
+    "password-mismatch": "Passwords do not match",
+    "first-name-required": "First name is required",
+    "last-name-required": "Last name is required",
+    "email-required": "Email is required",
+    "email-invalid": "Invalid email address",
+    "password-required": "Password is required",
+    "tenant-id-required": "Tenant ID is required",
+    "tenant-id-invalid": "Invalid Tenant ID format (UUID expected)"
+  },
+  "reset-password": {
+    "title": "Reset Password",
+    "email": "Email",
+    "send-link": "Send Reset Link",
+    "back-to-login": "Back to Login",
+    "success": "Password reset link sent to your email"
+  },
+  "home": {
+    "home": "Home"
+  },
+  "device": {
+    "devices": "Devices",
+    "device": "Device",
+    "add": "Add Device",
+    "name": "Name",
+    "type": "Type",
+    "label": "Label",
+    "profile": "Device Profile",
+    "active": "Active",
+    "inactive": "Inactive",
+    "no-devices": "No devices found"
+  },
+  "device-profile": {
+    "device-profiles": "Device Profiles"
+  },
+  "asset": {
+    "assets": "Assets",
+    "asset-profiles": "Asset Profiles"
+  },
+  "customer": {
+    "customers": "Customers"
+  },
+  "user": {
+    "users": "Users"
+  },
+  "tenant": {
+    "tenants": "Tenants",
+    "tenant-profiles": "Tenant Profiles"
+  },
+  "alarm": {
+    "alarms": "Alarms"
+  },
+  "audit-log": {
+    "audit-logs": "Audit Logs"
+  },
+  "dashboard": {
+    "dashboards": "Dashboards"
+  },
+  "rulechain": {
+    "rulechains": "Rule Chains"
+  },
+  "widget": {
+    "widget-library": "Widget Library"
+  },
+  "edge": {
+    "edges": "Edge Instances"
+  },
+  "entity-view": {
+    "entity-views": "Entity Views"
+  },
+  "gateway": {
+    "gateways": "Gateways"
+  },
+  "ota-update": {
+    "ota-updates": "OTA Updates"
+  },
+  "notification": {
+    "notifications": "Notifications"
+  },
+  "admin": {
+    "settings": "Settings",
+    "general": "General Settings",
+    "system": "System"
+  },
+  "security": {
+    "security": "Security",
+    "security-settings": "Security Settings"
+  },
+  "api-usage": {
+    "api-usage": "API Usage"
+  },
+  "profile": {
+    "profile": "Profile"
+  },
+  "action": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "add": "Add",
+    "close": "Close",
+    "search": "Search",
+    "refresh": "Refresh",
+    "confirm": "Confirm"
+  },
+  "common": {
+    "loading": "Loading...",
+    "no-data": "No data available",
+    "error": "An error occurred",
+    "created-time": "Created Time",
+    "name": "Name",
+    "description": "Description",
+    "type": "Type"
+  }
+}

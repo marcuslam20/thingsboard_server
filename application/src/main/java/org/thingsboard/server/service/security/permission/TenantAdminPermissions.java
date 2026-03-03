@@ -25,7 +25,7 @@ import org.thingsboard.server.common.data.id.UserId;
 import org.thingsboard.server.common.data.security.Authority;
 import org.thingsboard.server.service.security.model.SecurityUser;
 
-@Component(value = "tenantAdminPermissions")
+@Component
 public class TenantAdminPermissions extends AbstractPermissions {
 
     public TenantAdminPermissions() {
@@ -59,6 +59,11 @@ public class TenantAdminPermissions extends AbstractPermissions {
         put(Resource.MOBILE_APP_BUNDLE, tenantEntityPermissionChecker);
         put(Resource.JOB, tenantEntityPermissionChecker);
         put(Resource.AI_MODEL, aiModelPermissionChecker);
+        put(Resource.PRODUCT_CATEGORY, tenantEntityPermissionChecker);
+        put(Resource.DATA_POINT, tenantEntityPermissionChecker);
+        put(Resource.SMART_HOME, tenantEntityPermissionChecker);
+        put(Resource.SMART_SCENE, tenantEntityPermissionChecker);
+        put(Resource.ROOM, tenantEntityPermissionChecker);
     }
 
     public static final PermissionChecker tenantEntityPermissionChecker = new PermissionChecker() {
@@ -73,7 +78,7 @@ public class TenantAdminPermissions extends AbstractPermissions {
     };
 
     private static final PermissionChecker tenantPermissionChecker =
-            new PermissionChecker.GenericPermissionChecker(Operation.READ, Operation.READ_ATTRIBUTES, Operation.READ_TELEMETRY) {
+            new PermissionChecker.GenericPermissionChecker(Operation.READ, Operation.READ_ATTRIBUTES, Operation.READ_TELEMETRY, Operation.DELETE) {
 
                 @Override
                 @SuppressWarnings("unchecked")
