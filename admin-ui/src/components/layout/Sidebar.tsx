@@ -77,15 +77,16 @@ const modules: ModuleItem[] = [
         children: [
           { id: 'all-devices', label: 'Sold Device Details', path: '/entities/devices' },
           { id: 'device-logs', label: 'Device Logs', path: '/security-settings/auditLogs' },
-          { id: 'firmware-update', label: 'Firmware Update', path: '/otaUpdates' },
-          { id: 'device-debug', label: 'Device Debug', path: '/entities/devices' },
+          { id: 'firmware-mgmt', label: 'Firmware Mgmt', path: '/firmware/management' },
+          { id: 'firmware-update', label: 'Firmware Update', path: '/firmware/update' },
+          { id: 'device-debug', label: 'Device Debug', path: '/devices/debug' },
         ],
       },
       {
         id: 'voice',
         label: 'Voice Platform',
         children: [
-          { id: 'voice-integration', label: 'Voice Integration', path: '/entities/entityViews' },
+          { id: 'voice-integration', label: 'Voice Integration', path: '/voice/integration' },
         ],
       },
     ],

@@ -14,6 +14,7 @@ import LinkExpiredPage from '@/pages/login/LinkExpiredPage';
 import ResetPasswordConfirmPage from '@/pages/login/ResetPasswordConfirmPage';
 import HomePage from '@/pages/home/HomePage';
 import DevicesPage from '@/pages/devices/DevicesPage';
+import DeviceDebugPage from '@/pages/devices/DeviceDebugPage';
 import DeviceDetailPage from '@/pages/devices/DeviceDetailPage';
 import DeviceProfilesPage from '@/pages/device-profiles/DeviceProfilesPage';
 import DeviceProfileDetailPage from '@/pages/device-profiles/DeviceProfileDetailPage';
@@ -39,6 +40,9 @@ import EdgeDetailPage from '@/pages/edge/EdgeDetailPage';
 import EntityViewsPage from '@/pages/entity-views/EntityViewsPage';
 import GatewaysPage from '@/pages/gateways/GatewaysPage';
 import OtaUpdatesPage from '@/pages/ota-updates/OtaUpdatesPage';
+import FirmwareManagementPage from '@/pages/ota-updates/FirmwareManagementPage';
+import FirmwareUpdatePage from '@/pages/ota-updates/FirmwareUpdatePage';
+import VoiceIntegrationPage from '@/pages/voice/VoiceIntegrationPage';
 import NotificationsPage from '@/pages/notifications/NotificationsPage';
 import SecurityPage from '@/pages/security/SecurityPage';
 import ApiUsagePage from '@/pages/api-usage/ApiUsagePage';
@@ -84,6 +88,7 @@ function App() {
           <Route path="/profile" element={<ProfilePage />} />
 
           {/* Entities */}
+          <Route path="/devices/debug" element={<DeviceDebugPage />} />
           <Route path="/entities/devices" element={<DevicesPage />} />
           <Route path="/entities/devices/:deviceId" element={<DeviceDetailPage />} />
           <Route path="/entities/assets" element={<AssetsPage />} />
@@ -128,8 +133,13 @@ function App() {
           <Route path="/widgets-bundles" element={<WidgetsPage />} />
           <Route path="/widgets-bundles/:bundleId" element={<WidgetBundleDetailPage />} />
 
-          {/* OTA */}
+          {/* Firmware / OTA */}
+          <Route path="/firmware/management" element={<FirmwareManagementPage />} />
+          <Route path="/firmware/update" element={<FirmwareUpdatePage />} />
           <Route path="/otaUpdates" element={<OtaUpdatesPage />} />
+
+          {/* Voice Integration */}
+          <Route path="/voice/integration" element={<VoiceIntegrationPage />} />
 
           {/* Notifications */}
           <Route path="/notifications" element={<NotificationsPage />} />
