@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
@@ -33,6 +33,7 @@ import TableSortLabel from '@mui/material/TableSortLabel';
 import IconButton from '@mui/material/IconButton';
 import CircularProgress from '@mui/material/CircularProgress';
 import Link from '@mui/material/Link';
+import AddIcon from '@mui/icons-material/Add';
 import FileDownloadOutlinedIcon from '@mui/icons-material/FileDownloadOutlined';
 import DevicesOtherIcon from '@mui/icons-material/DevicesOther';
 import SettingsOutlinedIcon from '@mui/icons-material/SettingsOutlined';
@@ -78,6 +79,29 @@ function formatDateTime(ts: number): string {
   return `${date} ${time}`;
 }
 
+function exportToCsv(devices: DeviceInfo[]) {
+  const headers = ['Device Name', 'Device ID', 'UUID', 'Product', 'Device Type', 'Product ID', 'Firmware Version', 'Device Status', 'Created'];
+  const rows = devices.map((d) => [
+    d.name,
+    d.id.id,
+    d.id.id,
+    d.deviceProfileName,
+    d.type || 'Common Device',
+    d.deviceProfileId.id,
+    '',
+    d.active ? 'Online' : 'Offline',
+    formatDateTime(d.createdTime),
+  ]);
+  const csvContent = [headers, ...rows].map((row) => row.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\n');
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `devices_${new Date().toISOString().split('T')[0]}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
 export default function DevicesPage() {
   const navigate = useNavigate();
   const [data, setData] = useState<DeviceInfo[]>([]);
@@ -99,13 +123,15 @@ export default function DevicesPage() {
   const [appliedName, setAppliedName] = useState('');
   const [appliedActive, setAppliedActive] = useState<boolean | undefined>(undefined);
   const [appliedProfileId, setAppliedProfileId] = useState<string | undefined>(undefined);
+  const [appliedUuid, setAppliedUuid] = useState('');
+  const [appliedProductId, setAppliedProductId] = useState('');
 
   // Device profile infos for Product dropdown
   const [profileInfos, setProfileInfos] = useState<DeviceProfileInfo[]>([]);
 
-  // Stats
+  // Stats — accurate counts from separate API calls
   const [totalDevices, setTotalDevices] = useState(0);
-  const [activeDevices, setActiveDevices] = useState(0);
+  const [onlineDevices, setOnlineDevices] = useState(0);
 
   // Dialogs
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -120,6 +146,18 @@ export default function DevicesPage() {
     deviceProfileApi.getDeviceProfileInfos({ page: 0, pageSize: 100, sortProperty: 'name', sortOrder: 'ASC' })
       .then((result) => setProfileInfos(result.data))
       .catch(() => setProfileInfos([]));
+  }, []);
+
+  // Load accurate stats on mount
+  useEffect(() => {
+    // Total devices
+    deviceApi.getTenantDeviceInfos({ page: 0, pageSize: 1, sortProperty: 'createdTime', sortOrder: 'DESC' })
+      .then((r) => setTotalDevices(r.totalElements))
+      .catch(() => {});
+    // Online devices
+    deviceApi.getTenantDeviceInfos({ page: 0, pageSize: 1, sortProperty: 'createdTime', sortOrder: 'DESC' }, undefined, undefined, true)
+      .then((r) => setOnlineDevices(r.totalElements))
+      .catch(() => {});
   }, []);
 
   const loadData = useCallback(async () => {
@@ -139,11 +177,6 @@ export default function DevicesPage() {
       );
       setData(result.data);
       setTotalElements(result.totalElements);
-      setTotalDevices(result.totalElements);
-
-      // Count active from current page (approximate)
-      const active = result.data.filter((d) => d.active).length;
-      setActiveDevices(active);
     } catch (err) {
       console.error('Failed to load data:', err);
     } finally {
@@ -155,10 +188,26 @@ export default function DevicesPage() {
     loadData();
   }, [loadData]);
 
+  // Client-side filtering for UUID and Product ID
+  const filteredData = useMemo(() => {
+    let result = data;
+    if (appliedUuid) {
+      const lower = appliedUuid.toLowerCase();
+      result = result.filter((d) => d.id.id.toLowerCase().includes(lower));
+    }
+    if (appliedProductId) {
+      const lower = appliedProductId.toLowerCase();
+      result = result.filter((d) => d.deviceProfileId.id.toLowerCase().includes(lower));
+    }
+    return result;
+  }, [data, appliedUuid, appliedProductId]);
+
   const handleSearch = () => {
     setAppliedName(searchName);
     setAppliedActive(activateFilter === 'all' ? undefined : activateFilter === 'activated');
     setAppliedProfileId(productFilter === 'all' ? undefined : productFilter);
+    setAppliedUuid(searchUuid);
+    setAppliedProductId(searchProductId);
     setPage(0);
   };
 
@@ -171,6 +220,8 @@ export default function DevicesPage() {
     setAppliedName('');
     setAppliedActive(undefined);
     setAppliedProfileId(undefined);
+    setAppliedUuid('');
+    setAppliedProductId('');
     setPage(0);
   };
 
@@ -226,7 +277,7 @@ export default function DevicesPage() {
       </Box>
 
       {/* Stats Row */}
-          <Box sx={{ display: 'flex', alignItems: 'flex-end', gap: 6, mb: 2.5, pt: 1 }}>
+          <Box sx={{ display: 'flex', alignItems: 'flex-end', gap: 6, mb: 2.5, pt: 1, borderTop: `1px solid ${tuyaColors.border}` }}>
             <Box>
               <Typography sx={{ fontSize: '11px', color: tuyaColors.textHint, mb: 0.25 }}>Total Devices</Typography>
               <Typography sx={{ fontSize: '24px', fontWeight: 400, color: tuyaColors.textPrimary, lineHeight: '32px' }}>
@@ -236,13 +287,13 @@ export default function DevicesPage() {
             <Box>
               <Typography sx={{ fontSize: '11px', color: tuyaColors.textHint, mb: 0.25 }}>Device Bounds</Typography>
               <Typography sx={{ fontSize: '24px', fontWeight: 400, color: tuyaColors.textPrimary, lineHeight: '32px' }}>
-                {activeDevices}
+                {totalDevices}
               </Typography>
             </Box>
             <Box>
               <Typography sx={{ fontSize: '11px', color: tuyaColors.textHint, mb: 0.25 }}>Device Online</Typography>
               <Typography sx={{ fontSize: '24px', fontWeight: 400, color: tuyaColors.textPrimary, lineHeight: '32px' }}>
-                {activeDevices}
+                {onlineDevices}
               </Typography>
             </Box>
             <Box>
@@ -301,6 +352,7 @@ export default function DevicesPage() {
                 placeholder="UUID"
                 value={searchUuid}
                 onChange={(e) => setSearchUuid(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
                 sx={{ width: 110, ...compactInputSx }}
               />
 
@@ -326,6 +378,7 @@ export default function DevicesPage() {
                 placeholder="Product ID"
                 value={searchProductId}
                 onChange={(e) => setSearchProductId(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
                 sx={{ width: 140, ...compactInputSx }}
               />
 
@@ -339,8 +392,18 @@ export default function DevicesPage() {
               <Box sx={{ flex: 1 }} />
 
               <Button
+                variant="contained"
+                startIcon={<AddIcon sx={{ fontSize: 14 }} />}
+                onClick={() => { setEditDevice(null); setDialogOpen(true); }}
+                sx={{ minWidth: 0, px: 1.5, height: 24, fontSize: '11px' }}
+              >
+                Add Device
+              </Button>
+
+              <Button
                 variant="outlined"
                 startIcon={<FileDownloadOutlinedIcon sx={{ fontSize: 14 }} />}
+                onClick={() => exportToCsv(filteredData)}
                 sx={{ ...compactBtnSx, px: 1.5 }}
               >
                 Export data
@@ -400,7 +463,7 @@ export default function DevicesPage() {
                         <CircularProgress size={32} sx={{ color: tuyaColors.orange }} />
                       </TableCell>
                     </TableRow>
-                  ) : data.length === 0 ? (
+                  ) : filteredData.length === 0 ? (
                     <TableRow>
                       <TableCell colSpan={9} align="center" sx={{ py: 6 }}>
                         <DevicesOtherIcon sx={{ fontSize: 48, color: tuyaColors.textHint, mb: 1, display: 'block', mx: 'auto' }} />
@@ -408,7 +471,7 @@ export default function DevicesPage() {
                       </TableCell>
                     </TableRow>
                   ) : (
-                    data.map((device) => (
+                    filteredData.map((device) => (
                       <TableRow
                         key={device.id.id}
                         hover
@@ -530,7 +593,7 @@ export default function DevicesPage() {
               onRowsPerPageChange={(e) => { setPageSize(parseInt(e.target.value, 10)); setPage(0); }}
               rowsPerPageOptions={[10, 20, 50]}
             />
-      </Paper>
+          </Paper>
 
       {/* Dialogs */}
       <DeviceDialog
