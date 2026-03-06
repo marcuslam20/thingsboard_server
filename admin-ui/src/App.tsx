@@ -1,18 +1,3 @@
-/*
- * Copyright © 2016-2025 The Thingsboard Authors
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
 import { useEffect } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useAppDispatch, useAppSelector } from '@/store/store';
@@ -29,6 +14,7 @@ import LinkExpiredPage from '@/pages/login/LinkExpiredPage';
 import ResetPasswordConfirmPage from '@/pages/login/ResetPasswordConfirmPage';
 import HomePage from '@/pages/home/HomePage';
 import DevicesPage from '@/pages/devices/DevicesPage';
+import DeviceDebugPage from '@/pages/devices/DeviceDebugPage';
 import DeviceDetailPage from '@/pages/devices/DeviceDetailPage';
 import DeviceProfilesPage from '@/pages/device-profiles/DeviceProfilesPage';
 import DeviceProfileDetailPage from '@/pages/device-profiles/DeviceProfileDetailPage';
@@ -37,6 +23,8 @@ import AssetDetailPage from '@/pages/assets/AssetDetailPage';
 import AssetProfilesPage from '@/pages/asset-profiles/AssetProfilesPage';
 import CustomersPage from '@/pages/customers/CustomersPage';
 import CustomerDetailPage from '@/pages/customers/CustomerDetailPage';
+import UserManagementPage from '@/pages/customers/UserManagementPage';
+import AppUserDetailPage from '@/pages/customers/AppUserDetailPage';
 import UsersPage from '@/pages/users/UsersPage';
 import TenantsPage from '@/pages/tenants/TenantsPage';
 import TenantDetailPage from '@/pages/tenants/TenantDetailPage';
@@ -54,12 +42,17 @@ import EdgeDetailPage from '@/pages/edge/EdgeDetailPage';
 import EntityViewsPage from '@/pages/entity-views/EntityViewsPage';
 import GatewaysPage from '@/pages/gateways/GatewaysPage';
 import OtaUpdatesPage from '@/pages/ota-updates/OtaUpdatesPage';
+import FirmwareManagementPage from '@/pages/ota-updates/FirmwareManagementPage';
+import FirmwareUpdatePage from '@/pages/ota-updates/FirmwareUpdatePage';
+import VoiceIntegrationPage from '@/pages/voice/VoiceIntegrationPage';
 import NotificationsPage from '@/pages/notifications/NotificationsPage';
 import SecurityPage from '@/pages/security/SecurityPage';
 import ApiUsagePage from '@/pages/api-usage/ApiUsagePage';
 import ProfilePage from '@/pages/profile/ProfilePage';
 import QueuesPage from '@/pages/queues/QueuesPage';
 import ResourcesPage from '@/pages/resources/ResourcesPage';
+import ProductProfileListPage from '@/pages/product-profiles/ProductProfileListPage';
+import ProductProfileEditPage from '@/pages/product-profiles/ProductProfileEditPage';
 
 function App() {
   const dispatch = useAppDispatch();
@@ -99,6 +92,7 @@ function App() {
           <Route path="/profile" element={<ProfilePage />} />
 
           {/* Entities */}
+          <Route path="/devices/debug" element={<DeviceDebugPage />} />
           <Route path="/entities/devices" element={<DevicesPage />} />
           <Route path="/entities/devices/:deviceId" element={<DeviceDetailPage />} />
           <Route path="/entities/assets" element={<AssetsPage />} />
@@ -114,9 +108,15 @@ function App() {
           <Route path="/dashboards" element={<DashboardsPage />} />
           <Route path="/dashboards/:dashboardId" element={<DashboardViewPage />} />
 
-          {/* Customers */}
+          {/* Product Profile (Operation) */}
+          <Route path="/operation/productFiles" element={<ProductProfileListPage />} />
+          <Route path="/operation/productFiles/:profileId/edit" element={<ProductProfileEditPage />} />
+
+          {/* Customers / User Management */}
           <Route path="/customers" element={<CustomersPage />} />
           <Route path="/customers/:customerId" element={<CustomerDetailPage />} />
+          <Route path="/operation/app" element={<UserManagementPage />} />
+          <Route path="/operation/appUser" element={<AppUserDetailPage />} />
 
           {/* Users */}
           <Route path="/users" element={<UsersPage />} />
@@ -143,8 +143,13 @@ function App() {
           <Route path="/widgets-bundles" element={<WidgetsPage />} />
           <Route path="/widgets-bundles/:bundleId" element={<WidgetBundleDetailPage />} />
 
-          {/* OTA */}
+          {/* Firmware / OTA */}
+          <Route path="/firmware/management" element={<FirmwareManagementPage />} />
+          <Route path="/firmware/update" element={<FirmwareUpdatePage />} />
           <Route path="/otaUpdates" element={<OtaUpdatesPage />} />
+
+          {/* Voice Integration */}
+          <Route path="/voice/integration" element={<VoiceIntegrationPage />} />
 
           {/* Notifications */}
           <Route path="/notifications" element={<NotificationsPage />} />

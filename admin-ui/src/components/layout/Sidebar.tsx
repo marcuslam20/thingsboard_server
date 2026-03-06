@@ -1,18 +1,3 @@
-/*
- * Copyright © 2016-2025 The Thingsboard Authors
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import Box from '@mui/material/Box';
@@ -92,15 +77,16 @@ const modules: ModuleItem[] = [
         children: [
           { id: 'all-devices', label: 'Sold Device Details', path: '/entities/devices' },
           { id: 'device-logs', label: 'Device Logs', path: '/security-settings/auditLogs' },
-          { id: 'firmware-update', label: 'Firmware Update', path: '/otaUpdates' },
-          { id: 'device-debug', label: 'Device Debug', path: '/entities/devices' },
+          { id: 'firmware-mgmt', label: 'Firmware Mgmt', path: '/firmware/management' },
+          { id: 'firmware-update', label: 'Firmware Update', path: '/firmware/update' },
+          { id: 'device-debug', label: 'Device Debug', path: '/devices/debug' },
         ],
       },
       {
         id: 'voice',
         label: 'Voice Platform',
         children: [
-          { id: 'voice-integration', label: 'Voice Integration', path: '/entities/entityViews' },
+          { id: 'voice-integration', label: 'Voice Integration', path: '/voice/integration' },
         ],
       },
     ],
@@ -188,9 +174,17 @@ const modules: ModuleItem[] = [
         ],
       },
       {
+        id: 'product-profile',
+        label: 'Product Profile',
+        children: [
+          { id: 'product-files', label: 'Product Profile', path: '/operation/productFiles', authorities: [Authority.TENANT_ADMIN] },
+        ],
+      },
+      {
         id: 'user-mgmt',
         label: 'User Management',
         children: [
+          { id: 'app-user-mgmt', label: 'User Management', path: '/operation/app', authorities: [Authority.TENANT_ADMIN] },
           { id: 'tenants', label: 'Tenants', path: '/tenants', authorities: [Authority.SYS_ADMIN] },
           { id: 'tenant-profiles', label: 'Tenant Profiles', path: '/tenantProfiles', authorities: [Authority.SYS_ADMIN] },
           { id: 'customers', label: 'Customers', path: '/customers', authorities: [Authority.TENANT_ADMIN] },

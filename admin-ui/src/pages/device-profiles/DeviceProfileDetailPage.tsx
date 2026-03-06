@@ -1,18 +1,3 @@
-/*
- * Copyright © 2016-2025 The Thingsboard Authors
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Box from '@mui/material/Box';
@@ -36,6 +21,7 @@ import { deviceProfileApi } from '@/api/device-profile.api';
 import { smartHomeProductApi } from '@/api/smarthome-product.api';
 import { tuyaColors } from '@/theme/theme';
 import FunctionDefinitionTab from './tabs/FunctionDefinitionTab';
+import InformationManagementDrawer from './InformationManagementDrawer';
 
 function getTransportLabel(profile: DeviceProfile): string {
   switch (profile.transportType) {
@@ -62,6 +48,7 @@ export default function DeviceProfileDetailPage() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState(0);
   const [pidCopied, setPidCopied] = useState(false);
+  const [infoDrawerOpen, setInfoDrawerOpen] = useState(false);
 
   useEffect(() => {
     if (!profileId) return;
@@ -179,14 +166,24 @@ export default function DeviceProfileDetailPage() {
 
             {/* More + Edit */}
             <Link
-              href="#"
+              component="button"
+              onClick={() => setInfoDrawerOpen(true)}
               sx={{ fontSize: '12px', color: tuyaColors.info, textDecoration: 'none', '&:hover': { textDecoration: 'underline' } }}
             >
               ... More
             </Link>
-            <IconButton size="small" sx={{ p: 0.25, color: tuyaColors.info }}>
+            <Link
+              component="button"
+              onClick={() => setInfoDrawerOpen(true)}
+              sx={{
+                fontSize: '12px', color: tuyaColors.info, textDecoration: 'none',
+                display: 'inline-flex', alignItems: 'center', gap: 0.25, cursor: 'pointer',
+                '&:hover': { textDecoration: 'underline' },
+              }}
+            >
               <EditOutlinedIcon sx={{ fontSize: 14 }} />
-            </IconButton>
+              Edit
+            </Link>
           </Box>
         </Box>
 
@@ -266,6 +263,18 @@ export default function DeviceProfileDetailPage() {
         {activeTab === 3 && <ComingSoon label="Product Configuration" />}
         {activeTab === 4 && <ComingSoon label="Product Test" />}
       </Box>
+
+      {/* Information Management Drawer */}
+      <InformationManagementDrawer
+        open={infoDrawerOpen}
+        profile={profile}
+        category={category}
+        onClose={() => setInfoDrawerOpen(false)}
+        onSaved={(updated) => {
+          setProfile(updated);
+          setInfoDrawerOpen(false);
+        }}
+      />
     </Box>
   );
 }
