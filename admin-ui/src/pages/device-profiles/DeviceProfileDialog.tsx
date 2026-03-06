@@ -71,6 +71,15 @@ export default function DeviceProfileDialog({ open, profile, onClose, onSaved }:
         transportType: data.transportType,
         description: data.description,
       };
+      // Backend requires profileData with transport/profile/provision/alarm configs
+      if (!payload.profileData) {
+        payload.profileData = {
+          configuration: { type: data.type },
+          transportConfiguration: { type: data.transportType },
+          provisionConfiguration: { type: 'DISABLED', provisionDeviceSecret: null },
+          alarms: [],
+        };
+      }
       if (data.categoryId) {
         payload.categoryId = { id: data.categoryId, entityType: 'PRODUCT_CATEGORY' };
       }

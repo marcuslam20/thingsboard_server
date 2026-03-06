@@ -35,7 +35,49 @@ import { DeviceProfile } from '@/models/device.model';
 import { ProductCategory } from '@/models/datapoint.model';
 import { deviceProfileApi } from '@/api/device-profile.api';
 import { smartHomeProductApi } from '@/api/smarthome-product.api';
+import api from '@/api/client';
 import { tuyaColors } from '@/theme/theme';
+
+/**
+ * Resolve TB image reference to a displayable URL path.
+ * TB stores: "tb-image;/api/images/tenant/KEY"
+ */
+function resolveImagePath(image: string | undefined | null): string | null {
+  if (!image) return null;
+  if (image.startsWith('tb-image;')) return image.substring('tb-image;'.length);
+  if (image.startsWith('tb-image:')) {
+    const ref = image.substring('tb-image:'.length);
+    return `/api/images/${ref}`;
+  }
+  return image;
+}
+
+/** Tiny component that fetches an image via Axios (with JWT) and displays it */
+function AuthImage({ src, size = 36 }: { src: string; size?: number }) {
+  const [blobUrl, setBlobUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    let revoke: string | null = null;
+    api.get(src, { responseType: 'blob' })
+      .then((res) => {
+        const url = URL.createObjectURL(res.data);
+        revoke = url;
+        setBlobUrl(url);
+      })
+      .catch(() => setBlobUrl(null));
+    return () => { if (revoke) URL.revokeObjectURL(revoke); };
+  }, [src]);
+
+  if (!blobUrl) return null;
+  return (
+    <Box
+      component="img"
+      src={blobUrl}
+      alt="Product"
+      sx={{ width: size, height: size, objectFit: 'contain', borderRadius: '6px' }}
+    />
+  );
+}
 
 export default function DeviceProfilesPage() {
   const navigate = useNavigate();
@@ -57,6 +99,10 @@ export default function DeviceProfilesPage() {
   // More menu ("...")
   const [menuAnchor, setMenuAnchor] = useState<HTMLElement | null>(null);
   const [menuProfile, setMenuProfile] = useState<DeviceProfile | null>(null);
+
+  // Manage dropdown menu
+  const [manageAnchor, setManageAnchor] = useState<HTMLElement | null>(null);
+  const [manageProfile, setManageProfile] = useState<DeviceProfile | null>(null);
 
   // Fetch categories on mount for category name lookup
   useEffect(() => {
@@ -306,20 +352,27 @@ export default function DeviceProfilesPage() {
               ) : (
                 data.map((profile) => {
                   const catName = getCategoryName(profile);
+                  const imagePath = resolveImagePath(profile.image);
                   return (
                     <TableRow key={profile.id.id} hover>
-                      {/* Product Information: icon + name + category subtitle + ID */}
+                      {/* Product Information: image + name + category subtitle + ID */}
                       <TableCell>
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                          <Box
-                            sx={{
-                              width: 36, height: 36, borderRadius: '6px',
-                              bgcolor: '#F5F7FA', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                              border: `1px solid ${tuyaColors.border}`, flexShrink: 0,
-                            }}
-                          >
-                            <DevicesOtherIcon sx={{ fontSize: 18, color: tuyaColors.textHint }} />
-                          </Box>
+                          {imagePath ? (
+                            <Box sx={{ width: 36, height: 36, flexShrink: 0 }}>
+                              <AuthImage src={imagePath} size={36} />
+                            </Box>
+                          ) : (
+                            <Box
+                              sx={{
+                                width: 36, height: 36, borderRadius: '6px',
+                                bgcolor: '#F5F7FA', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                border: `1px solid ${tuyaColors.border}`, flexShrink: 0,
+                              }}
+                            >
+                              <DevicesOtherIcon sx={{ fontSize: 18, color: tuyaColors.textHint }} />
+                            </Box>
+                          )}
                           <Box>
                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                               <Typography sx={{ fontWeight: 400, fontSize: '12px', color: tuyaColors.orangeDark }}>
@@ -389,7 +442,7 @@ export default function DeviceProfilesPage() {
                           <Link
                             component="button"
                             variant="body2"
-                            onClick={() => { setEditProfile(profile); setDialogOpen(true); }}
+                            onClick={(e: React.MouseEvent<HTMLElement>) => { setManageAnchor(e.currentTarget); setManageProfile(profile); }}
                             sx={{
                               color: tuyaColors.orangeDark,
                               fontSize: '11px',
@@ -452,6 +505,38 @@ export default function DeviceProfilesPage() {
           sx={{ fontSize: '13px', color: menuProfile?.default ? tuyaColors.textHint : tuyaColors.textPrimary }}
         >
           Delete
+        </MenuItem>
+      </Menu>
+
+      {/* Manage dropdown menu */}
+      <Menu
+        anchorEl={manageAnchor}
+        open={Boolean(manageAnchor)}
+        onClose={() => { setManageAnchor(null); setManageProfile(null); }}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+        transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+        slotProps={{ paper: { sx: { minWidth: 160, boxShadow: '0 2px 8px rgba(0,0,0,0.15)' } } }}
+      >
+        <MenuItem
+          onClick={() => {
+            setEditProfile(manageProfile);
+            setDialogOpen(true);
+            setManageAnchor(null);
+            setManageProfile(null);
+          }}
+          sx={{ fontSize: '13px' }}
+        >
+          Edit Product
+        </MenuItem>
+        <MenuItem
+          onClick={() => {
+            navigate('/operation/app');
+            setManageAnchor(null);
+            setManageProfile(null);
+          }}
+          sx={{ fontSize: '13px' }}
+        >
+          User Management
         </MenuItem>
       </Menu>
 

@@ -21,6 +21,7 @@ import { deviceProfileApi } from '@/api/device-profile.api';
 import { smartHomeProductApi } from '@/api/smarthome-product.api';
 import { tuyaColors } from '@/theme/theme';
 import FunctionDefinitionTab from './tabs/FunctionDefinitionTab';
+import InformationManagementDrawer from './InformationManagementDrawer';
 
 function getTransportLabel(profile: DeviceProfile): string {
   switch (profile.transportType) {
@@ -47,6 +48,7 @@ export default function DeviceProfileDetailPage() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState(0);
   const [pidCopied, setPidCopied] = useState(false);
+  const [infoDrawerOpen, setInfoDrawerOpen] = useState(false);
 
   useEffect(() => {
     if (!profileId) return;
@@ -164,14 +166,24 @@ export default function DeviceProfileDetailPage() {
 
             {/* More + Edit */}
             <Link
-              href="#"
+              component="button"
+              onClick={() => setInfoDrawerOpen(true)}
               sx={{ fontSize: '12px', color: tuyaColors.info, textDecoration: 'none', '&:hover': { textDecoration: 'underline' } }}
             >
               ... More
             </Link>
-            <IconButton size="small" sx={{ p: 0.25, color: tuyaColors.info }}>
+            <Link
+              component="button"
+              onClick={() => setInfoDrawerOpen(true)}
+              sx={{
+                fontSize: '12px', color: tuyaColors.info, textDecoration: 'none',
+                display: 'inline-flex', alignItems: 'center', gap: 0.25, cursor: 'pointer',
+                '&:hover': { textDecoration: 'underline' },
+              }}
+            >
               <EditOutlinedIcon sx={{ fontSize: 14 }} />
-            </IconButton>
+              Edit
+            </Link>
           </Box>
         </Box>
 
@@ -251,6 +263,18 @@ export default function DeviceProfileDetailPage() {
         {activeTab === 3 && <ComingSoon label="Product Configuration" />}
         {activeTab === 4 && <ComingSoon label="Product Test" />}
       </Box>
+
+      {/* Information Management Drawer */}
+      <InformationManagementDrawer
+        open={infoDrawerOpen}
+        profile={profile}
+        category={category}
+        onClose={() => setInfoDrawerOpen(false)}
+        onSaved={(updated) => {
+          setProfile(updated);
+          setInfoDrawerOpen(false);
+        }}
+      />
     </Box>
   );
 }

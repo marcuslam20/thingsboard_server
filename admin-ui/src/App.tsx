@@ -23,6 +23,8 @@ import AssetDetailPage from '@/pages/assets/AssetDetailPage';
 import AssetProfilesPage from '@/pages/asset-profiles/AssetProfilesPage';
 import CustomersPage from '@/pages/customers/CustomersPage';
 import CustomerDetailPage from '@/pages/customers/CustomerDetailPage';
+import UserManagementPage from '@/pages/customers/UserManagementPage';
+import AppUserDetailPage from '@/pages/customers/AppUserDetailPage';
 import UsersPage from '@/pages/users/UsersPage';
 import TenantsPage from '@/pages/tenants/TenantsPage';
 import TenantDetailPage from '@/pages/tenants/TenantDetailPage';
@@ -49,6 +51,8 @@ import ApiUsagePage from '@/pages/api-usage/ApiUsagePage';
 import ProfilePage from '@/pages/profile/ProfilePage';
 import QueuesPage from '@/pages/queues/QueuesPage';
 import ResourcesPage from '@/pages/resources/ResourcesPage';
+import ProductProfileListPage from '@/pages/product-profiles/ProductProfileListPage';
+import ProductProfileEditPage from '@/pages/product-profiles/ProductProfileEditPage';
 
 function App() {
   const dispatch = useAppDispatch();
@@ -104,9 +108,15 @@ function App() {
           <Route path="/dashboards" element={<DashboardsPage />} />
           <Route path="/dashboards/:dashboardId" element={<DashboardViewPage />} />
 
-          {/* Customers */}
+          {/* Product Profile (Operation) */}
+          <Route path="/operation/productFiles" element={<ProductProfileListPage />} />
+          <Route path="/operation/productFiles/:profileId/edit" element={<ProductProfileEditPage />} />
+
+          {/* Customers / User Management */}
           <Route path="/customers" element={<CustomersPage />} />
           <Route path="/customers/:customerId" element={<CustomerDetailPage />} />
+          <Route path="/operation/app" element={<UserManagementPage />} />
+          <Route path="/operation/appUser" element={<AppUserDetailPage />} />
 
           {/* Users */}
           <Route path="/users" element={<UsersPage />} />

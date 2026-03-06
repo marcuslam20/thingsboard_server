@@ -18,8 +18,10 @@ import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import Tooltip from '@mui/material/Tooltip';
 import Link from '@mui/material/Link';
+import Chip from '@mui/material/Chip';
 import ConfirmDialog from '@/components/entity/ConfirmDialog';
 import DataPointDialog from '../DataPointDialog';
+import AddStandardFunctionDialog from '../AddStandardFunctionDialog';
 import { DataPoint, DpType, DpMode, ValueConstraints } from '@/models/datapoint.model';
 import { smartHomeProductApi } from '@/api/smarthome-product.api';
 import { tuyaColors } from '@/theme/theme';
@@ -80,6 +82,7 @@ function DpTable({
   onEdit,
   onDelete,
   loading: tableLoading,
+  requiredCodes,
 }: {
   title: string;
   dataPoints: DataPoint[];
@@ -88,6 +91,7 @@ function DpTable({
   onEdit: (dp: DataPoint) => void;
   onDelete: (dp: DataPoint) => void;
   loading?: boolean;
+  requiredCodes?: Set<string>;
 }) {
   return (
     <Box sx={{ mb: 3 }}>
@@ -105,10 +109,10 @@ function DpTable({
           size="small"
           startIcon={tableLoading ? <CircularProgress size={14} sx={{ color: '#fff' }} /> : <AddIcon />}
           onClick={onAdd}
-          disabled={tableLoading || addLabel === 'No Category'}
+          disabled={tableLoading}
           sx={{ height: 28, fontSize: '12px' }}
         >
-          {addLabel || 'Add'}
+          {addLabel || '+ Add'}
         </Button>
       </Box>
 
@@ -117,11 +121,11 @@ function DpTable({
           <TableHead>
             <TableRow>
               <TableCell sx={{ width: '6%' }}>DP ID</TableCell>
-              <TableCell sx={{ width: '12%' }}>DP Name</TableCell>
+              <TableCell sx={{ width: '14%' }}>DP Name</TableCell>
               <TableCell sx={{ width: '10%' }}>Identifier</TableCell>
               <TableCell sx={{ width: '12%' }}>Data Transfer Type</TableCell>
               <TableCell sx={{ width: '8%' }}>Data Type</TableCell>
-              <TableCell sx={{ width: '22%' }}>Properties</TableCell>
+              <TableCell sx={{ width: '20%' }}>Properties</TableCell>
               <TableCell sx={{ width: '10%' }}>Report frequency limit</TableCell>
               <TableCell sx={{ width: '8%' }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
@@ -142,48 +146,70 @@ function DpTable({
                 </TableCell>
               </TableRow>
             ) : (
-              dataPoints.map((dp) => (
-                <TableRow key={dp.id.id} hover>
-                  <TableCell>{dp.dpId}</TableCell>
-                  <TableCell>{dp.name}</TableCell>
-                  <TableCell>
-                    <Typography variant="body2" sx={{ fontFamily: 'monospace', fontSize: '12px' }}>
-                      {dp.code}
-                    </Typography>
-                  </TableCell>
-                  <TableCell>{getModeLabel(dp.mode)}</TableCell>
-                  <TableCell>{getTypeLabel(dp.dpType)}</TableCell>
-                  <TableCell>
-                    <Typography variant="body2" sx={{ whiteSpace: 'normal', lineHeight: 1.5 }}>
-                      {getPropertiesDisplay(dp)}
-                    </Typography>
-                  </TableCell>
-                  <TableCell>
-                    <Typography variant="body2" sx={{ color: tuyaColors.textHint }}>—</Typography>
-                  </TableCell>
-                  <TableCell>
-                    <Typography variant="body2" sx={{ color: tuyaColors.textHint }}>—</Typography>
-                  </TableCell>
-                  <TableCell sx={{ textAlign: 'right' }}>
-                    <Link
-                      component="button"
-                      variant="body2"
-                      onClick={() => onEdit(dp)}
-                      sx={{ color: tuyaColors.info, cursor: 'pointer', mr: 1.5, textDecoration: 'none', '&:hover': { textDecoration: 'underline' } }}
-                    >
-                      Edit
-                    </Link>
-                    <Link
-                      component="button"
-                      variant="body2"
-                      onClick={() => onDelete(dp)}
-                      sx={{ color: tuyaColors.info, cursor: 'pointer', textDecoration: 'none', '&:hover': { textDecoration: 'underline' } }}
-                    >
-                      Delete
-                    </Link>
-                  </TableCell>
-                </TableRow>
-              ))
+              dataPoints.map((dp) => {
+                const isRequired = requiredCodes?.has(dp.code);
+                const canDelete = !isRequired;
+                return (
+                  <TableRow key={dp.id.id} hover>
+                    <TableCell>{dp.dpId}</TableCell>
+                    <TableCell>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+                        {dp.name}
+                        {isRequired && (
+                          <Chip
+                            label="Required"
+                            size="small"
+                            sx={{
+                              height: 20, fontSize: '11px', fontWeight: 500,
+                              bgcolor: 'rgba(82,196,26,0.1)',
+                              color: tuyaColors.success,
+                              border: `1px solid rgba(82,196,26,0.3)`,
+                            }}
+                          />
+                        )}
+                      </Box>
+                    </TableCell>
+                    <TableCell>
+                      <Typography variant="body2" sx={{ fontFamily: 'monospace', fontSize: '12px' }}>
+                        {dp.code}
+                      </Typography>
+                    </TableCell>
+                    <TableCell>{getModeLabel(dp.mode)}</TableCell>
+                    <TableCell>{getTypeLabel(dp.dpType)}</TableCell>
+                    <TableCell>
+                      <Typography variant="body2" sx={{ whiteSpace: 'normal', lineHeight: 1.5 }}>
+                        {getPropertiesDisplay(dp)}
+                      </Typography>
+                    </TableCell>
+                    <TableCell>
+                      <Typography variant="body2" sx={{ color: tuyaColors.textHint }}>—</Typography>
+                    </TableCell>
+                    <TableCell>
+                      <Typography variant="body2" sx={{ color: tuyaColors.textHint }}>—</Typography>
+                    </TableCell>
+                    <TableCell sx={{ textAlign: 'right' }}>
+                      <Link
+                        component="button"
+                        variant="body2"
+                        onClick={() => onEdit(dp)}
+                        sx={{ color: tuyaColors.info, cursor: 'pointer', mr: 1.5, textDecoration: 'none', '&:hover': { textDecoration: 'underline' } }}
+                      >
+                        Edit
+                      </Link>
+                      {canDelete && (
+                        <Link
+                          component="button"
+                          variant="body2"
+                          onClick={() => onDelete(dp)}
+                          sx={{ color: tuyaColors.info, cursor: 'pointer', textDecoration: 'none', '&:hover': { textDecoration: 'underline' } }}
+                        >
+                          Delete
+                        </Link>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                );
+              })
             )}
           </TableBody>
         </Table>
@@ -234,11 +260,12 @@ function SummaryCard({ label, count, suffix, linkText, highlighted }: {
 export default function FunctionDefinitionTab({ deviceProfileId, categoryId }: Props) {
   const [dataPoints, setDataPoints] = useState<DataPoint[]>([]);
   const [loading, setLoading] = useState(true);
-  const [applyingStandard, setApplyingStandard] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [addStandardOpen, setAddStandardOpen] = useState(false);
   const [editDp, setEditDp] = useState<DataPoint | null>(null);
   const [deleteDp, setDeleteDp] = useState<DataPoint | null>(null);
   const [activeSubTab, setActiveSubTab] = useState(0);
+  const [requiredCodes, setRequiredCodes] = useState<Set<string>>(new Set());
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -252,6 +279,22 @@ export default function FunctionDefinitionTab({ deviceProfileId, categoryId }: P
     }
   }, [deviceProfileId]);
 
+  // Load required codes from category's standardDpSet
+  useEffect(() => {
+    if (!categoryId) return;
+    smartHomeProductApi.getCategory(categoryId)
+      .then((cat) => {
+        if (cat.standardDpSet && Array.isArray(cat.standardDpSet)) {
+          const codes = new Set<string>();
+          for (const dp of cat.standardDpSet as { code: string; required?: boolean }[]) {
+            if (dp.required) codes.add(dp.code);
+          }
+          setRequiredCodes(codes);
+        }
+      })
+      .catch(() => setRequiredCodes(new Set()));
+  }, [categoryId]);
+
   useEffect(() => {
     loadData();
   }, [loadData]);
@@ -259,24 +302,16 @@ export default function FunctionDefinitionTab({ deviceProfileId, categoryId }: P
   const standardDps = dataPoints.filter((dp) => dp.standard);
   const customDps = dataPoints.filter((dp) => !dp.standard);
 
-  const handleApplyStandard = async () => {
-    if (!categoryId) {
-      console.error('No category assigned to this product. Please assign a category first.');
-      return;
-    }
-    setApplyingStandard(true);
+  const handleAddStandard = () => {
+    setAddStandardOpen(true);
+  };
+
+  const handleApplySelected = async (selectedDps: { dpId: number; code: string; name: string; dpType: string; mode: string; required?: boolean; constraints?: unknown }[]) => {
     try {
-      const cat = await smartHomeProductApi.getCategory(categoryId);
-      if (!cat.standardDpSet || !Array.isArray(cat.standardDpSet) || cat.standardDpSet.length === 0) {
-        console.error('No standard DP set defined for category:', cat.name);
-        return;
-      }
-      await smartHomeProductApi.applyStandardDps(deviceProfileId, cat.standardDpSet);
+      await smartHomeProductApi.applyStandardDps(deviceProfileId, selectedDps as Partial<DataPoint>[]);
       loadData();
     } catch (err) {
       console.error('Failed to apply standard DPs:', err);
-    } finally {
-      setApplyingStandard(false);
     }
   };
 
@@ -396,11 +431,11 @@ export default function FunctionDefinitionTab({ deviceProfileId, categoryId }: P
           <DpTable
             title="Product Standard Functions"
             dataPoints={standardDps}
-            onAdd={handleApplyStandard}
-            addLabel={categoryId ? 'Apply Standard' : 'No Category'}
-            loading={applyingStandard}
+            onAdd={handleAddStandard}
+            addLabel="+ Add"
             onEdit={handleEdit}
             onDelete={(dp) => setDeleteDp(dp)}
+            requiredCodes={requiredCodes}
           />
 
           {/* Custom Functions Table */}
@@ -433,6 +468,13 @@ export default function FunctionDefinitionTab({ deviceProfileId, categoryId }: P
       </Box>
 
       {/* Dialogs */}
+      <AddStandardFunctionDialog
+        open={addStandardOpen}
+        categoryId={categoryId}
+        existingDpCodes={dataPoints.map((dp) => dp.code)}
+        onClose={() => setAddStandardOpen(false)}
+        onApply={handleApplySelected}
+      />
       <DataPointDialog
         open={dialogOpen}
         deviceProfileId={deviceProfileId}

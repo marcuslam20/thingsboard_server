@@ -23,8 +23,8 @@ export const deviceProfileApi = {
     return api.get('/api/deviceProfileInfos', { params: pageLinkToQueryParams(pl) }).then((r) => r.data);
   },
 
-  getDeviceProfile(deviceProfileId: string): Promise<DeviceProfile> {
-    return api.get(`/api/deviceProfile/${deviceProfileId}`).then((r) => r.data);
+  getDeviceProfile(deviceProfileId: string, inlineImages = false): Promise<DeviceProfile> {
+    return api.get(`/api/deviceProfile/${deviceProfileId}`, { params: inlineImages ? { inlineImages: true } : {} }).then((r) => r.data);
   },
 
   saveDeviceProfile(profile: Partial<DeviceProfile>): Promise<DeviceProfile> {

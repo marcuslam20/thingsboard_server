@@ -33,6 +33,10 @@ export const smartHomeProductApi = {
     return api.get(`/api/smarthome/categories/${categoryId}`).then((r) => r.data);
   },
 
+  saveCategory(category: Partial<ProductCategory>): Promise<ProductCategory> {
+    return api.post('/api/smarthome/categories', category).then((r) => r.data);
+  },
+
   seedStandardCategories(): Promise<void> {
     return api.post('/api/smarthome/categories/seed-standard').then(() => undefined);
   },

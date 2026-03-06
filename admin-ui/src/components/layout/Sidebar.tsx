@@ -174,9 +174,17 @@ const modules: ModuleItem[] = [
         ],
       },
       {
+        id: 'product-profile',
+        label: 'Product Profile',
+        children: [
+          { id: 'product-files', label: 'Product Profile', path: '/operation/productFiles', authorities: [Authority.TENANT_ADMIN] },
+        ],
+      },
+      {
         id: 'user-mgmt',
         label: 'User Management',
         children: [
+          { id: 'app-user-mgmt', label: 'User Management', path: '/operation/app', authorities: [Authority.TENANT_ADMIN] },
           { id: 'tenants', label: 'Tenants', path: '/tenants', authorities: [Authority.SYS_ADMIN] },
           { id: 'tenant-profiles', label: 'Tenant Profiles', path: '/tenantProfiles', authorities: [Authority.SYS_ADMIN] },
           { id: 'customers', label: 'Customers', path: '/customers', authorities: [Authority.TENANT_ADMIN] },
