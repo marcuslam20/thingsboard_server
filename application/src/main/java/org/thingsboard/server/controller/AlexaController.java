@@ -330,6 +330,46 @@ public class AlexaController extends BaseController {
         }
     }
 
+    // ============== App-to-App Account Linking ==============
+
+    /**
+     * Generate authorization code for app-to-app Alexa account linking.
+     * Called by the mobile app when user is already authenticated.
+     * The mobile app then uses this code with Amazon's Skill Enablement API
+     * to enable the skill and link accounts without requiring a login form.
+     *
+     * Flow: Mobile app (user logged in) → this API → auth code
+     *       → mobile calls Amazon Skill Enablement API with auth code + Amazon token
+     *       → Amazon calls POST /api/alexa/oauth/token (existing endpoint) to exchange code
+     */
+    @Operation(summary = "Generate auth code for app-to-app linking",
+            description = "Generates an OAuth2 authorization code for the currently authenticated user. " +
+                    "Used by mobile apps to enable Alexa skill via Amazon Skill Enablement API " +
+                    "without requiring the user to re-enter credentials.")
+    @PreAuthorize("hasAnyAuthority('TENANT_ADMIN', 'CUSTOMER_USER')")
+    @PostMapping("/app-linking/generate-code")
+    public ResponseEntity<?> generateCodeForAppLinking(
+            @AuthenticationPrincipal SecurityUser currentUser
+    ) throws ThingsboardException {
+        try {
+            TenantId tenantId = currentUser.getTenantId();
+            UserId userId = currentUser.getId();
+            String alexaUserId = UUID.randomUUID().toString();
+
+            String authCode = alexaOAuth2Service.generateAuthorizationCode(tenantId, userId, alexaUserId);
+
+            log.info("Generated app-linking auth code for user: {}", currentUser.getEmail());
+
+            return ResponseEntity.ok(java.util.Map.of(
+                    "authCode", authCode,
+                    "expiresIn", 600 // 10 minutes
+            ));
+        } catch (Exception e) {
+            log.error("Failed to generate app-linking auth code for user: {}", currentUser.getEmail(), e);
+            throw handleException(e);
+        }
+    }
+
     // ============== Device Management Endpoints ==============
 
     /**
