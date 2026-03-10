@@ -304,9 +304,10 @@ public class SmartHomeDeviceController extends AbstractRpcController {
             log.info("Saved {} DP values as shared attributes for device {}", attrsToSave.size(), deviceId);
         }
 
-        // Build RPC request body: { "method": "setDps", "params": { "1": true, "2": 80 } }
+        // Build RPC request body with 3s timeout to avoid hanging when device is offline
         String rpcBody = JacksonUtil.toString(JacksonUtil.newObjectNode()
                 .put("method", "setDps")
+                .put("timeout", 3000)
                 .set("params", JacksonUtil.valueToTree(rpcParams)));
 
         log.info("Sending DP command to device {}: {}", deviceId, rpcParams);
