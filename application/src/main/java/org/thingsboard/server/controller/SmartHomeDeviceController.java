@@ -41,6 +41,11 @@ import org.thingsboard.server.common.data.id.DeviceId;
 import org.thingsboard.server.common.data.id.SmartHomeId;
 import org.thingsboard.server.common.data.id.TenantId;
 import org.thingsboard.server.common.data.kv.AttributeKvEntry;
+import org.thingsboard.server.common.data.kv.BaseAttributeKvEntry;
+import org.thingsboard.server.common.data.kv.BooleanDataEntry;
+import org.thingsboard.server.common.data.kv.DoubleDataEntry;
+import org.thingsboard.server.common.data.kv.LongDataEntry;
+import org.thingsboard.server.common.data.kv.StringDataEntry;
 import org.thingsboard.server.common.data.smarthome.DataPoint;
 import org.thingsboard.server.common.data.smarthome.DeviceGroup;
 import org.thingsboard.server.common.data.smarthome.DeviceGroupMember;
@@ -278,6 +283,27 @@ public class SmartHomeDeviceController extends AbstractRpcController {
             rpcParams.put(String.valueOf(dpId), JacksonUtil.treeToValue(value, Object.class));
         }
 
+        // Save commanded values as SHARED_SCOPE attributes so status API can read them.
+        // Uses DP code as attribute key (e.g., "control", "percent_control", "switch_led").
+        // When a real device reports back, it writes CLIENT_SCOPE attributes which take priority.
+        List<AttributeKvEntry> attrsToSave = new ArrayList<>();
+        long now = System.currentTimeMillis();
+        for (JsonNode dpCmd : dpCommands) {
+            int dpId = dpCmd.get("dpId").asInt();
+            JsonNode value = dpCmd.get("value");
+            DataPoint dp = dataPointService.findDataPointByDeviceProfileIdAndDpId(device.getDeviceProfileId(), dpId);
+            if (dp != null) {
+                AttributeKvEntry attr = toAttributeKvEntry(dp.getCode(), value, now);
+                if (attr != null) {
+                    attrsToSave.add(attr);
+                }
+            }
+        }
+        if (!attrsToSave.isEmpty()) {
+            attributesService.save(tenantId, deviceId, AttributeScope.SHARED_SCOPE, attrsToSave);
+            log.info("Saved {} DP values as shared attributes for device {}", attrsToSave.size(), deviceId);
+        }
+
         // Build RPC request body: { "method": "setDps", "params": { "1": true, "2": 80 } }
         String rpcBody = JacksonUtil.toString(JacksonUtil.newObjectNode()
                 .put("method", "setDps")
@@ -319,12 +345,13 @@ public class SmartHomeDeviceController extends AbstractRpcController {
                                 new com.google.common.util.concurrent.FutureCallback<List<AttributeKvEntry>>() {
                                     @Override
                                     public void onSuccess(List<AttributeKvEntry> sharedAttrs) {
-                                        // Merge all attributes into a lookup map
+                                        // Merge all attributes into a lookup map.
+                                        // Shared attrs first, then client attrs override (device-reported = ground truth).
                                         Map<String, Object> attrMap = new HashMap<>();
-                                        for (AttributeKvEntry entry : clientAttrs) {
+                                        for (AttributeKvEntry entry : sharedAttrs) {
                                             attrMap.put(entry.getKey(), getKvValue(entry));
                                         }
-                                        for (AttributeKvEntry entry : sharedAttrs) {
+                                        for (AttributeKvEntry entry : clientAttrs) {
                                             attrMap.put(entry.getKey(), getKvValue(entry));
                                         }
 
@@ -430,6 +457,20 @@ public class SmartHomeDeviceController extends AbstractRpcController {
             case FAULT:
                 throw new ThingsboardException("DP " + dp.getDpId() + " (" + dp.getCode() + ") is a FAULT type and cannot be written", ThingsboardErrorCode.BAD_REQUEST_PARAMS);
         }
+    }
+
+    private AttributeKvEntry toAttributeKvEntry(String key, JsonNode value, long ts) {
+        if (value.isBoolean()) {
+            return new BaseAttributeKvEntry(new BooleanDataEntry(key, value.asBoolean()), ts);
+        } else if (value.isInt() || value.isLong()) {
+            return new BaseAttributeKvEntry(new LongDataEntry(key, value.asLong()), ts);
+        } else if (value.isFloat() || value.isDouble()) {
+            return new BaseAttributeKvEntry(new DoubleDataEntry(key, value.asDouble()), ts);
+        } else if (value.isTextual()) {
+            return new BaseAttributeKvEntry(new StringDataEntry(key, value.asText()), ts);
+        }
+        // For RAW/JSON types, store as string
+        return new BaseAttributeKvEntry(new StringDataEntry(key, value.toString()), ts);
     }
 
     private Object getKvValue(AttributeKvEntry entry) {
