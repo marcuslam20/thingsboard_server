@@ -296,15 +296,21 @@ public class GoogleAssistantServiceImpl implements GoogleAssistantService {
         switch (googleCommand) {
             case "OnOff": {
                 boolean on = params.has("on") && params.get("on").asBoolean();
-                // Look for common on/off DP codes
-                DataPoint switchDp = findDpByCodePattern(dpByCode, "switch", "switch_led", "switch_1", "control");
-                if (switchDp != null) {
+                // Look for BOOLEAN switch DPs first (switch, switch_led, switch_1)
+                DataPoint switchDp = findDpByCodePattern(dpByCode, "switch", "switch_led", "switch_1");
+                if (switchDp != null && switchDp.getDpType() == DpType.BOOLEAN) {
                     dpValues.put(switchDp.getCode(), on);
                 } else {
-                    // Fallback: first BOOLEAN DP that is writable
-                    List<DataPoint> boolDps = dpByType.getOrDefault(DpType.BOOLEAN, Collections.emptyList());
-                    if (!boolDps.isEmpty()) {
-                        dpValues.put(boolDps.get(0).getCode(), on);
+                    // Check for ENUM control DP (e.g., curtain with open/close/stop)
+                    DataPoint controlDp = findDpByCodePattern(dpByCode, "control", "curtain_control", "mach_operate");
+                    if (controlDp != null && controlDp.getDpType() == DpType.ENUM) {
+                        dpValues.put(controlDp.getCode(), on ? "open" : "close");
+                    } else {
+                        // Fallback: first BOOLEAN DP that is writable
+                        List<DataPoint> boolDps = dpByType.getOrDefault(DpType.BOOLEAN, Collections.emptyList());
+                        if (!boolDps.isEmpty()) {
+                            dpValues.put(boolDps.get(0).getCode(), on);
+                        }
                     }
                 }
                 break;
@@ -345,18 +351,27 @@ public class GoogleAssistantServiceImpl implements GoogleAssistantService {
             }
             case "OpenClose": {
                 int openPercent = params.has("openPercent") ? params.get("openPercent").asInt() : 0;
-                // Look for curtain control DP
+                // Look for curtain control DPs
                 DataPoint controlDp = findDpByCodePattern(dpByCode, "control", "curtain_control", "mach_operate");
                 DataPoint percentDp = findDpByCodePattern(dpByCode, "percent_control", "position", "percent_state");
 
-                if (percentDp != null) {
-                    // Use percentage DP directly
-                    openPercent = scaleValueToConstraints(openPercent, 0, 100, percentDp);
-                    dpValues.put(percentDp.getCode(), openPercent);
-                } else if (controlDp != null) {
-                    // Use enum control DP: open/stop/close
-                    String controlValue = openPercent > 0 ? "open" : "close";
-                    dpValues.put(controlDp.getCode(), controlValue);
+                if (openPercent == 0 || openPercent == 100) {
+                    // Simple open/close → use ENUM control DP (e.g., dpId=1, "open"/"close")
+                    if (controlDp != null) {
+                        String controlValue = openPercent > 0 ? "open" : "close";
+                        dpValues.put(controlDp.getCode(), controlValue);
+                    } else if (percentDp != null) {
+                        // Fallback to percent if no control DP
+                        dpValues.put(percentDp.getCode(), scaleValueToConstraints(openPercent, 0, 100, percentDp));
+                    }
+                } else {
+                    // Partial open (1-99%) → use VALUE percent DP (e.g., dpId=2)
+                    if (percentDp != null) {
+                        dpValues.put(percentDp.getCode(), scaleValueToConstraints(openPercent, 0, 100, percentDp));
+                    } else if (controlDp != null) {
+                        // No percent DP, approximate with open/close
+                        dpValues.put(controlDp.getCode(), "open");
+                    }
                 }
                 break;
             }
