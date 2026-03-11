@@ -41,10 +41,12 @@ import org.thingsboard.server.common.data.page.PageLink;
 import org.thingsboard.server.common.data.smarthome.DataPoint;
 import org.thingsboard.server.common.data.smarthome.DpMode;
 import org.thingsboard.server.common.data.smarthome.DpType;
+import org.thingsboard.server.common.data.smarthome.ProductCategory;
 import org.thingsboard.server.dao.attributes.AttributesService;
 import org.thingsboard.server.dao.device.DeviceProfileService;
 import org.thingsboard.server.dao.device.DeviceService;
 import org.thingsboard.server.dao.smarthome.DataPointService;
+import org.thingsboard.server.dao.smarthome.ProductCategoryService;
 import org.thingsboard.server.dao.user.UserService;
 import org.thingsboard.server.service.alexa.dto.AlexaCapabilities;
 import org.thingsboard.server.service.alexa.dto.AlexaCommand;
@@ -69,6 +71,7 @@ public class AlexaServiceImpl implements AlexaService {
     private final TbCoreDeviceRpcService rpcService;
     private final UserService userService;
     private final DataPointService dataPointService;
+    private final ProductCategoryService productCategoryService;
     private final AttributesService attributesService;
     private final ObjectMapper objectMapper;
 
@@ -85,7 +88,7 @@ public class AlexaServiceImpl implements AlexaService {
         do {
             pageData = deviceService.findDevicesByTenantId(tenantId, pageLink);
             for (Device device : pageData.getData()) {
-                AlexaCapabilities capabilities = getAlexaCapabilities(device);
+                AlexaCapabilities capabilities = getAlexaCapabilities(tenantId, device);
                 if (capabilities != null && capabilities.isEnabled()) {
                     alexaDevices.add(mapToAlexaDevice(device, capabilities));
                 }
@@ -124,7 +127,7 @@ public class AlexaServiceImpl implements AlexaService {
         do {
             pageData = deviceService.findDevicesByTenantIdAndCustomerId(tenantId, customerId, pageLink);
             for (Device device : pageData.getData()) {
-                AlexaCapabilities capabilities = getAlexaCapabilities(device);
+                AlexaCapabilities capabilities = getAlexaCapabilities(tenantId, device);
                 if (capabilities != null && capabilities.isEnabled()) {
                     alexaDevices.add(mapToAlexaDevice(device, capabilities));
                 }
@@ -143,7 +146,7 @@ public class AlexaServiceImpl implements AlexaService {
             throw new IllegalArgumentException("Device not found: " + deviceId);
         }
 
-        AlexaCapabilities capabilities = getAlexaCapabilities(device);
+        AlexaCapabilities capabilities = getAlexaCapabilities(tenantId, device);
         return mapToAlexaDevice(device, capabilities);
     }
 
@@ -444,10 +447,14 @@ public class AlexaServiceImpl implements AlexaService {
     }
 
     /**
-     * Get Alexa capabilities from device additional info or profile.
+     * Get Alexa capabilities from device additional info.
+     * If no alexaCapabilities in additional_info, auto-generate from ProductCategory/DPs.
+     * This allows devices with DPs to be auto-discovered by Alexa without manual configuration.
      */
-    private AlexaCapabilities getAlexaCapabilities(Device device) {
+    private AlexaCapabilities getAlexaCapabilities(TenantId tenantId, Device device) {
         JsonNode additionalInfo = device.getAdditionalInfo();
+
+        // 1. Check explicit alexaCapabilities in additional_info
         if (additionalInfo != null && additionalInfo.has("alexaCapabilities")) {
             JsonNode alexaNode = additionalInfo.get("alexaCapabilities");
             AlexaCapabilities capabilities = new AlexaCapabilities();
@@ -457,7 +464,84 @@ public class AlexaServiceImpl implements AlexaService {
             capabilities.setBrightness(alexaNode.path("brightness").asInt(100));
             return capabilities;
         }
-        return null;
+
+        // 2. Auto-generate from ProductCategory + DataPoints
+        DeviceProfile profile = deviceProfileService.findDeviceProfileById(tenantId, device.getDeviceProfileId());
+        if (profile == null) return null;
+
+        List<DataPoint> dataPoints = dataPointService.findDataPointsByDeviceProfileId(device.getDeviceProfileId());
+        if (dataPoints == null || dataPoints.isEmpty()) return null;
+
+        // Determine Alexa category from ProductCategory
+        String alexaCategory = "SWITCH"; // default
+        if (profile.getCategoryId() != null) {
+            ProductCategory category = productCategoryService.findProductCategoryById(tenantId, profile.getCategoryId());
+            if (category != null) {
+                alexaCategory = mapCategoryCodeToAlexaCategory(category.getCode());
+            }
+        }
+
+        AlexaCapabilities capabilities = new AlexaCapabilities();
+        capabilities.setEnabled(true);
+        capabilities.setCategory(alexaCategory);
+
+        // Auto-save alexaCapabilities to additional_info so it persists
+        try {
+            ObjectNode infoNode = additionalInfo != null && !additionalInfo.isNull()
+                    ? (ObjectNode) additionalInfo : objectMapper.createObjectNode();
+            ObjectNode alexaConfig = objectMapper.createObjectNode();
+            alexaConfig.put("enabled", true);
+            alexaConfig.put("category", alexaCategory);
+            infoNode.set("alexaCapabilities", alexaConfig);
+            device.setAdditionalInfo(infoNode);
+            deviceService.saveDevice(device);
+            log.info("Auto-generated alexaCapabilities for device {} (category: {})", device.getName(), alexaCategory);
+        } catch (Exception e) {
+            log.warn("Failed to auto-save alexaCapabilities for device {}: {}", device.getId(), e.getMessage());
+        }
+
+        return capabilities;
+    }
+
+    /**
+     * Map Tuya category code to Alexa display category.
+     */
+    private String mapCategoryCodeToAlexaCategory(String code) {
+        switch (code.toLowerCase()) {
+            case "dj":
+            case "light":
+            case "lamp":
+            case "bulb":
+                return "LIGHT";
+            case "kg":
+            case "switch":
+                return "SWITCH";
+            case "cz":
+            case "outlet":
+            case "smartplug":
+                return "SMARTPLUG";
+            case "wk":
+            case "thermostat":
+            case "hvac":
+                return "THERMOSTAT";
+            case "fs":
+            case "fan":
+                return "FAN";
+            case "ms":
+            case "lock":
+            case "door_lock":
+                return "SMARTLOCK";
+            case "cl":
+            case "curtain":
+            case "curtain_track":
+            case "blind":
+                return "INTERIOR_BLIND";
+            case "cg":
+            case "sensor":
+                return "TEMPERATURE_SENSOR";
+            default:
+                return "SWITCH";
+        }
     }
 
     /**
