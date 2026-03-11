@@ -22,25 +22,35 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.thingsboard.server.common.data.AttributeScope;
-import org.thingsboard.server.common.data.Customer;
 import org.thingsboard.server.common.data.Device;
+import org.thingsboard.server.common.data.DeviceProfile;
 import org.thingsboard.server.common.data.User;
 import org.thingsboard.server.common.data.id.CustomerId;
 import org.thingsboard.server.common.data.id.DeviceId;
 import org.thingsboard.server.common.data.id.TenantId;
 import org.thingsboard.server.common.data.id.UserId;
 import org.thingsboard.server.common.data.kv.AttributeKvEntry;
+import org.thingsboard.server.common.data.kv.BaseAttributeKvEntry;
 import org.thingsboard.server.common.data.kv.BaseReadTsKvQuery;
+import org.thingsboard.server.common.data.kv.BooleanDataEntry;
+import org.thingsboard.server.common.data.kv.DoubleDataEntry;
+import org.thingsboard.server.common.data.kv.LongDataEntry;
 import org.thingsboard.server.common.data.kv.ReadTsKvQuery;
+import org.thingsboard.server.common.data.kv.StringDataEntry;
 import org.thingsboard.server.common.data.kv.TsKvEntry;
 import org.thingsboard.server.common.data.page.PageData;
 import org.thingsboard.server.common.data.page.PageLink;
-import org.thingsboard.server.common.data.rpc.RpcError;
 import org.thingsboard.server.common.data.rpc.ToDeviceRpcRequestBody;
-import org.thingsboard.server.common.msg.rpc.FromDeviceRpcResponse;
+import org.thingsboard.server.common.data.smarthome.DataPoint;
+import org.thingsboard.server.common.data.smarthome.DpMode;
+import org.thingsboard.server.common.data.smarthome.DpType;
+import org.thingsboard.server.common.data.smarthome.ProductCategory;
 import org.thingsboard.server.common.msg.rpc.ToDeviceRpcRequest;
 import org.thingsboard.server.dao.attributes.AttributesService;
+import org.thingsboard.server.dao.device.DeviceProfileService;
 import org.thingsboard.server.dao.device.DeviceService;
+import org.thingsboard.server.dao.smarthome.DataPointService;
+import org.thingsboard.server.dao.smarthome.ProductCategoryService;
 import org.thingsboard.server.dao.timeseries.TimeseriesService;
 import org.thingsboard.server.dao.user.UserService;
 import org.thingsboard.server.queue.util.TbCoreComponent;
@@ -61,10 +71,13 @@ import java.util.stream.Collectors;
 public class GoogleAssistantServiceImpl implements GoogleAssistantService {
 
     private final DeviceService deviceService;
+    private final DeviceProfileService deviceProfileService;
     private final AttributesService attributesService;
     private final TimeseriesService timeseriesService;
     private final TbCoreDeviceRpcService deviceRpcService;
     private final UserService userService;
+    private final DataPointService dataPointService;
+    private final ProductCategoryService productCategoryService;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     private static final String GOOGLE_CAPABILITIES_KEY = "googleCapabilities";
@@ -177,14 +190,290 @@ public class GoogleAssistantServiceImpl implements GoogleAssistantService {
             throw new IllegalArgumentException("Device not found: " + deviceId);
         }
 
-        // Get device capabilities for custom RPC mapping
+        // Try DP-based execution first if device has DP definitions
+        List<DataPoint> dataPoints = dataPointService.findDataPointsByDeviceProfileId(device.getDeviceProfileId());
+        if (dataPoints != null && !dataPoints.isEmpty()) {
+            executeDpCommand(device, command, dataPoints);
+            return;
+        }
+
+        // Fallback: legacy hardcoded RPC mapping for devices without DPs
+        log.debug("No DPs found for device profile {}, using legacy RPC mapping", device.getDeviceProfileId());
+        executeLegacyCommand(device, command);
+    }
+
+    /**
+     * DP-based command execution.
+     * Maps Google command params to matching DP codes and sends via setDps RPC.
+     * Also saves values as shared attributes for status query.
+     */
+    private void executeDpCommand(Device device, GoogleCommand command, List<DataPoint> dataPoints) {
+        String googleCommand = command.getCommand().replace("action.devices.commands.", "");
+        JsonNode params = command.getParams();
+
+        // Map Google command to DP values
+        Map<String, Object> dpValues = mapGoogleCommandToDpValues(googleCommand, params, dataPoints);
+
+        if (dpValues.isEmpty()) {
+            log.warn("No DP mapping found for Google command {} on device {}", googleCommand, device.getId());
+            // Fallback to legacy
+            executeLegacyCommand(device, command);
+            return;
+        }
+
+        // Build RPC params: { "1": true, "2": 50 } keyed by dpId
+        ObjectNode rpcParams = objectMapper.createObjectNode();
+        List<AttributeKvEntry> attrsToSave = new ArrayList<>();
+        long now = System.currentTimeMillis();
+
+        for (Map.Entry<String, Object> entry : dpValues.entrySet()) {
+            String dpCode = entry.getKey();
+            Object value = entry.getValue();
+
+            // Find the DP by code to get dpId
+            DataPoint dp = dataPoints.stream()
+                    .filter(d -> d.getCode().equals(dpCode))
+                    .findFirst().orElse(null);
+            if (dp == null) continue;
+
+            // Check mode allows writing
+            if (dp.getMode() == DpMode.RO) {
+                log.warn("DP {} ({}) is read-only, skipping", dp.getDpId(), dp.getCode());
+                continue;
+            }
+
+            // Add to RPC params keyed by dpId
+            rpcParams.set(String.valueOf(dp.getDpId()), objectMapper.valueToTree(value));
+
+            // Save as shared attribute for status API
+            AttributeKvEntry attr = createAttributeKvEntry(dpCode, value, now);
+            if (attr != null) {
+                attrsToSave.add(attr);
+            }
+        }
+
+        if (rpcParams.isEmpty()) {
+            log.warn("No writable DP values for command on device {}", device.getId());
+            return;
+        }
+
+        // Save shared attributes
+        if (!attrsToSave.isEmpty()) {
+            try {
+                attributesService.save(device.getTenantId(), device.getId(), AttributeScope.SHARED_SCOPE, attrsToSave);
+                log.info("Saved {} DP values as shared attributes for device {}", attrsToSave.size(), device.getId());
+            } catch (Exception e) {
+                log.error("Failed to save shared attributes for device {}: {}", device.getId(), e.getMessage());
+            }
+        }
+
+        // Send RPC with setDps method and 3s timeout
+        ObjectNode rpcBody = objectMapper.createObjectNode();
+        rpcBody.put("method", "setDps");
+        rpcBody.put("timeout", 3000);
+        rpcBody.set("params", rpcParams);
+
+        log.info("Sending DP command to device {} via Google Assistant: {}", device.getId(), rpcParams);
+        sendRpcCommand(device, "setDps", rpcParams);
+    }
+
+    /**
+     * Map Google command + params to DP code → value pairs by matching DP definitions.
+     */
+    private Map<String, Object> mapGoogleCommandToDpValues(String googleCommand, JsonNode params, List<DataPoint> dataPoints) {
+        Map<String, Object> dpValues = new LinkedHashMap<>();
+
+        // Build lookup maps for quick DP search
+        Map<String, DataPoint> dpByCode = new LinkedHashMap<>();
+        Map<DpType, List<DataPoint>> dpByType = new HashMap<>();
+        for (DataPoint dp : dataPoints) {
+            if (dp.getMode() != DpMode.RO) {
+                dpByCode.put(dp.getCode(), dp);
+                dpByType.computeIfAbsent(dp.getDpType(), k -> new ArrayList<>()).add(dp);
+            }
+        }
+
+        switch (googleCommand) {
+            case "OnOff": {
+                boolean on = params.has("on") && params.get("on").asBoolean();
+                // Look for common on/off DP codes
+                DataPoint switchDp = findDpByCodePattern(dpByCode, "switch", "switch_led", "switch_1", "control");
+                if (switchDp != null) {
+                    dpValues.put(switchDp.getCode(), on);
+                } else {
+                    // Fallback: first BOOLEAN DP that is writable
+                    List<DataPoint> boolDps = dpByType.getOrDefault(DpType.BOOLEAN, Collections.emptyList());
+                    if (!boolDps.isEmpty()) {
+                        dpValues.put(boolDps.get(0).getCode(), on);
+                    }
+                }
+                break;
+            }
+            case "BrightnessAbsolute": {
+                int brightness = params.has("brightness") ? params.get("brightness").asInt() : 0;
+                // Look for brightness DP (VALUE type, typically 10-1000 range)
+                DataPoint brightDp = findDpByCodePattern(dpByCode, "bright_value", "bright_value_v2", "brightness");
+                if (brightDp != null) {
+                    // Scale Google brightness (0-100) to DP range
+                    brightness = scaleValueToConstraints(brightness, 0, 100, brightDp);
+                    dpValues.put(brightDp.getCode(), brightness);
+                }
+                break;
+            }
+            case "ColorAbsolute": {
+                if (params.has("color")) {
+                    JsonNode color = params.get("color");
+                    if (color.has("temperature")) {
+                        int tempK = color.get("temperature").asInt();
+                        DataPoint tempDp = findDpByCodePattern(dpByCode, "temp_value", "temp_value_v2", "colour_temp");
+                        if (tempDp != null) {
+                            // Scale Kelvin (2000-6500) to DP range
+                            tempK = scaleValueToConstraints(tempK, 2000, 6500, tempDp);
+                            dpValues.put(tempDp.getCode(), tempK);
+                        }
+                    }
+                    if (color.has("spectrumRGB")) {
+                        int rgb = color.get("spectrumRGB").asInt();
+                        DataPoint colorDp = findDpByCodePattern(dpByCode, "colour_data", "colour_data_v2");
+                        if (colorDp != null) {
+                            // Convert RGB int to HSV JSON string that Tuya expects
+                            dpValues.put(colorDp.getCode(), rgbToTuyaColorString(rgb));
+                        }
+                    }
+                }
+                break;
+            }
+            case "OpenClose": {
+                int openPercent = params.has("openPercent") ? params.get("openPercent").asInt() : 0;
+                // Look for curtain control DP
+                DataPoint controlDp = findDpByCodePattern(dpByCode, "control", "curtain_control", "mach_operate");
+                DataPoint percentDp = findDpByCodePattern(dpByCode, "percent_control", "position", "percent_state");
+
+                if (percentDp != null) {
+                    // Use percentage DP directly
+                    openPercent = scaleValueToConstraints(openPercent, 0, 100, percentDp);
+                    dpValues.put(percentDp.getCode(), openPercent);
+                } else if (controlDp != null) {
+                    // Use enum control DP: open/stop/close
+                    String controlValue = openPercent > 0 ? "open" : "close";
+                    dpValues.put(controlDp.getCode(), controlValue);
+                }
+                break;
+            }
+            case "ThermostatTemperatureSetpoint": {
+                double temp = params.has("thermostatTemperatureSetpoint") ? params.get("thermostatTemperatureSetpoint").asDouble() : 20;
+                DataPoint tempDp = findDpByCodePattern(dpByCode, "temp_set", "temperature_set", "set_temp");
+                if (tempDp != null) {
+                    // Tuya thermostats often use integer (multiply by 10)
+                    int scaledTemp = scaleValueToConstraints((int)(temp * 10), 0, 600, tempDp);
+                    dpValues.put(tempDp.getCode(), scaledTemp);
+                }
+                break;
+            }
+            case "ThermostatSetMode": {
+                String mode = params.has("thermostatMode") ? params.get("thermostatMode").asText() : "heat";
+                DataPoint modeDp = findDpByCodePattern(dpByCode, "mode", "work_mode");
+                if (modeDp != null) {
+                    dpValues.put(modeDp.getCode(), mode);
+                }
+                break;
+            }
+            case "SetFanSpeed": {
+                String speed = params.has("fanSpeed") ? params.get("fanSpeed").asText() : "medium";
+                DataPoint speedDp = findDpByCodePattern(dpByCode, "fan_speed", "speed", "fan_speed_enum");
+                if (speedDp != null) {
+                    dpValues.put(speedDp.getCode(), speed);
+                }
+                break;
+            }
+            case "LockUnlock": {
+                boolean lock = params.has("lock") && params.get("lock").asBoolean();
+                DataPoint lockDp = findDpByCodePattern(dpByCode, "switch_lock", "lock", "child_lock");
+                if (lockDp != null) {
+                    dpValues.put(lockDp.getCode(), lock);
+                }
+                break;
+            }
+            default:
+                log.warn("Unhandled Google command for DP mapping: {}", googleCommand);
+        }
+
+        return dpValues;
+    }
+
+    /**
+     * Find a DP by trying multiple code patterns in order.
+     */
+    private DataPoint findDpByCodePattern(Map<String, DataPoint> dpByCode, String... patterns) {
+        for (String pattern : patterns) {
+            DataPoint dp = dpByCode.get(pattern);
+            if (dp != null) return dp;
+        }
+        return null;
+    }
+
+    /**
+     * Scale a value from source range to DP constraint range.
+     */
+    private int scaleValueToConstraints(int value, int srcMin, int srcMax, DataPoint dp) {
+        JsonNode constraints = dp.getConstraints();
+        if (constraints == null || !constraints.has("min") || !constraints.has("max")) {
+            return value;
+        }
+        int dpMin = constraints.get("min").asInt();
+        int dpMax = constraints.get("max").asInt();
+
+        if (srcMin == dpMin && srcMax == dpMax) {
+            return value;
+        }
+
+        // Linear interpolation
+        double ratio = (double)(value - srcMin) / (srcMax - srcMin);
+        return (int)(dpMin + ratio * (dpMax - dpMin));
+    }
+
+    /**
+     * Convert RGB integer to Tuya-style HSV color JSON string.
+     */
+    private String rgbToTuyaColorString(int rgb) {
+        int r = (rgb >> 16) & 0xFF;
+        int g = (rgb >> 8) & 0xFF;
+        int b = rgb & 0xFF;
+
+        float[] hsb = java.awt.Color.RGBtoHSB(r, g, b, null);
+        int h = Math.round(hsb[0] * 360);
+        int s = Math.round(hsb[1] * 1000);
+        int v = Math.round(hsb[2] * 1000);
+
+        return String.format("{\"h\":%d,\"s\":%d,\"v\":%d}", h, s, v);
+    }
+
+    /**
+     * Create an AttributeKvEntry from a DP code and value.
+     */
+    private AttributeKvEntry createAttributeKvEntry(String key, Object value, long ts) {
+        if (value instanceof Boolean) {
+            return new BaseAttributeKvEntry(new BooleanDataEntry(key, (Boolean) value), ts);
+        } else if (value instanceof Integer || value instanceof Long) {
+            return new BaseAttributeKvEntry(new LongDataEntry(key, ((Number) value).longValue()), ts);
+        } else if (value instanceof Double || value instanceof Float) {
+            return new BaseAttributeKvEntry(new DoubleDataEntry(key, ((Number) value).doubleValue()), ts);
+        } else if (value instanceof String) {
+            return new BaseAttributeKvEntry(new StringDataEntry(key, (String) value), ts);
+        }
+        return new BaseAttributeKvEntry(new StringDataEntry(key, String.valueOf(value)), ts);
+    }
+
+    /**
+     * Legacy command execution for devices without DP definitions.
+     * Keeps backward compatibility with existing rpcMapping approach.
+     */
+    private void executeLegacyCommand(Device device, GoogleCommand command) {
         GoogleCapabilities capabilities = getDeviceCapabilities(device);
 
-        // Map Google command to RPC method and params (with custom mapping support)
         String standardRpcMethod = mapCommandToRpcMethod(command.getCommand());
         ObjectNode standardRpcParams = mapCommandParams(command.getCommand(), command.getParams());
 
-        // Apply custom RPC mapping if configured
         String finalRpcMethod = standardRpcMethod;
         JsonNode finalRpcParams = standardRpcParams;
 
@@ -197,12 +486,11 @@ public class GoogleAssistantServiceImpl implements GoogleAssistantService {
             }
         }
 
-        // Send RPC command to device
         try {
             sendRpcCommand(device, finalRpcMethod, finalRpcParams);
-            log.debug("Command executed successfully on device: {}", deviceId);
+            log.debug("Legacy command executed successfully on device: {}", device.getId());
         } catch (Exception e) {
-            log.error("Error executing command on device {}: {}", deviceId, e.getMessage(), e);
+            log.error("Error executing legacy command on device {}: {}", device.getId(), e.getMessage(), e);
             throw new RuntimeException("Failed to execute command: " + e.getMessage(), e);
         }
     }
@@ -219,17 +507,233 @@ public class GoogleAssistantServiceImpl implements GoogleAssistantService {
         GoogleDevice googleDevice = mapToGoogleDevice(device);
         GoogleState state = GoogleState.builder().online(true).build();
 
-        // Get device traits and query state for each
-        List<String> traits = googleDevice.getGoogleCapabilities().getTraits();
-        if (traits != null) {
-            for (String trait : traits) {
-                Map<String, Object> traitState = queryTraitState(tenantId, deviceId, trait);
-                traitState.forEach(state::addStateProperty);
+        // Try DP-based state query first
+        List<DataPoint> dataPoints = dataPointService.findDataPointsByDeviceProfileId(device.getDeviceProfileId());
+        if (dataPoints != null && !dataPoints.isEmpty()) {
+            Map<String, Object> dpState = queryDpBasedState(tenantId, deviceId, dataPoints, googleDevice);
+            dpState.forEach(state::addStateProperty);
+        } else {
+            // Fallback: legacy trait-based query
+            List<String> traits = googleDevice.getGoogleCapabilities().getTraits();
+            if (traits != null) {
+                for (String trait : traits) {
+                    Map<String, Object> traitState = queryTraitState(tenantId, deviceId, trait);
+                    traitState.forEach(state::addStateProperty);
+                }
             }
         }
 
         log.debug("Device state queried successfully for device: {}", deviceId);
         return state;
+    }
+
+    /**
+     * Query device state from DP definitions + attributes.
+     * Reads shared and client attributes, maps DP codes to Google trait states.
+     */
+    private Map<String, Object> queryDpBasedState(TenantId tenantId, DeviceId deviceId,
+                                                   List<DataPoint> dataPoints, GoogleDevice googleDevice) {
+        Map<String, Object> googleState = new HashMap<>();
+
+        // Read all attributes (shared first, client overrides)
+        Map<String, Object> attrMap = new HashMap<>();
+        try {
+            List<AttributeKvEntry> sharedAttrs = attributesService.findAll(tenantId, deviceId, AttributeScope.SHARED_SCOPE).get();
+            for (AttributeKvEntry entry : sharedAttrs) {
+                attrMap.put(entry.getKey(), getKvValue(entry));
+            }
+            List<AttributeKvEntry> clientAttrs = attributesService.findAll(tenantId, deviceId, AttributeScope.CLIENT_SCOPE).get();
+            for (AttributeKvEntry entry : clientAttrs) {
+                attrMap.put(entry.getKey(), getKvValue(entry));
+            }
+        } catch (Exception e) {
+            log.error("Failed to read attributes for device {}: {}", deviceId, e.getMessage());
+            return googleState;
+        }
+
+        // Build DP code → value lookup
+        Map<String, Object> dpValueMap = new HashMap<>();
+        for (DataPoint dp : dataPoints) {
+            Object value = attrMap.get(dp.getCode());
+            if (value == null) value = attrMap.get("dp_" + dp.getDpId());
+            if (value == null) value = attrMap.get(String.valueOf(dp.getDpId()));
+            if (value != null) {
+                dpValueMap.put(dp.getCode(), value);
+            }
+        }
+
+        // Map DP values to Google trait states based on configured traits
+        List<String> traits = googleDevice.getGoogleCapabilities() != null
+                ? googleDevice.getGoogleCapabilities().getTraits() : Collections.emptyList();
+
+        for (String trait : traits) {
+            String cleanTrait = trait.replace("action.devices.traits.", "");
+            switch (cleanTrait) {
+                case "OnOff": {
+                    // Look for switch DP
+                    Object val = findDpValue(dpValueMap, "switch", "switch_led", "switch_1", "control");
+                    if (val instanceof Boolean) {
+                        googleState.put("on", val);
+                    } else if (val instanceof Number) {
+                        googleState.put("on", ((Number) val).intValue() != 0);
+                    } else {
+                        googleState.put("on", false);
+                    }
+                    break;
+                }
+                case "Brightness": {
+                    Object val = findDpValue(dpValueMap, "bright_value", "bright_value_v2", "brightness");
+                    if (val instanceof Number) {
+                        // Find the DP to get constraints for reverse scaling
+                        DataPoint dp = findDpByCodeInList(dataPoints, "bright_value", "bright_value_v2", "brightness");
+                        int rawVal = ((Number) val).intValue();
+                        int brightness = dp != null ? reverseScaleValue(rawVal, 0, 100, dp) : rawVal;
+                        googleState.put("brightness", brightness);
+                    } else {
+                        googleState.put("brightness", 0);
+                    }
+                    break;
+                }
+                case "ColorSetting": {
+                    Object colorVal = findDpValue(dpValueMap, "colour_data", "colour_data_v2");
+                    if (colorVal instanceof String) {
+                        Integer rgb = tuyaColorStringToRgb((String) colorVal);
+                        if (rgb != null) {
+                            Map<String, Object> colorData = new HashMap<>();
+                            colorData.put("spectrumRgb", rgb);
+                            googleState.put("color", colorData);
+                        }
+                    }
+                    Object tempVal = findDpValue(dpValueMap, "temp_value", "temp_value_v2", "colour_temp");
+                    if (tempVal instanceof Number) {
+                        DataPoint dp = findDpByCodeInList(dataPoints, "temp_value", "temp_value_v2", "colour_temp");
+                        int rawTemp = ((Number) tempVal).intValue();
+                        int tempK = dp != null ? reverseScaleValue(rawTemp, 2000, 6500, dp) : rawTemp;
+                        Map<String, Object> colorData = (Map<String, Object>) googleState.getOrDefault("color", new HashMap<>());
+                        colorData.put("temperatureK", tempK);
+                        googleState.put("color", colorData);
+                    }
+                    break;
+                }
+                case "OpenClose": {
+                    Object val = findDpValue(dpValueMap, "percent_control", "position", "percent_state");
+                    if (val instanceof Number) {
+                        googleState.put("openPercent", ((Number) val).intValue());
+                    } else {
+                        // Check enum control DP for open/close state
+                        Object controlVal = findDpValue(dpValueMap, "control", "curtain_control", "mach_operate");
+                        if (controlVal != null) {
+                            googleState.put("openPercent", "open".equals(String.valueOf(controlVal)) ? 100 : 0);
+                        } else {
+                            googleState.put("openPercent", 0);
+                        }
+                    }
+                    break;
+                }
+                case "TemperatureSetting": {
+                    Object tempVal = findDpValue(dpValueMap, "temp_set", "temperature_set", "set_temp");
+                    if (tempVal instanceof Number) {
+                        // Reverse scale (DP might be *10)
+                        double temp = ((Number) tempVal).doubleValue();
+                        DataPoint dp = findDpByCodeInList(dataPoints, "temp_set", "temperature_set", "set_temp");
+                        if (dp != null && dp.getConstraints() != null && dp.getConstraints().has("max") && dp.getConstraints().get("max").asInt() > 100) {
+                            temp = temp / 10.0; // DP is likely in 0.1 degree units
+                        }
+                        googleState.put("thermostatTemperatureSetpoint", temp);
+                    } else {
+                        googleState.put("thermostatTemperatureSetpoint", 20.0);
+                    }
+                    Object modeVal = findDpValue(dpValueMap, "mode", "work_mode");
+                    googleState.put("thermostatMode", modeVal != null ? String.valueOf(modeVal) : "heat");
+                    break;
+                }
+                case "FanSpeed": {
+                    Object val = findDpValue(dpValueMap, "fan_speed", "speed", "fan_speed_enum");
+                    googleState.put("currentFanSpeedSetting", val != null ? String.valueOf(val) : "medium");
+                    break;
+                }
+                case "LockUnlock": {
+                    Object val = findDpValue(dpValueMap, "switch_lock", "lock", "child_lock");
+                    if (val instanceof Boolean) {
+                        googleState.put("isLocked", val);
+                    } else {
+                        googleState.put("isLocked", false);
+                    }
+                    break;
+                }
+            }
+        }
+
+        return googleState;
+    }
+
+    /**
+     * Find a DP value from the map by trying multiple code patterns.
+     */
+    private Object findDpValue(Map<String, Object> dpValueMap, String... patterns) {
+        for (String pattern : patterns) {
+            Object val = dpValueMap.get(pattern);
+            if (val != null) return val;
+        }
+        return null;
+    }
+
+    /**
+     * Find a DataPoint from a list by code patterns.
+     */
+    private DataPoint findDpByCodeInList(List<DataPoint> dataPoints, String... patterns) {
+        for (String pattern : patterns) {
+            for (DataPoint dp : dataPoints) {
+                if (pattern.equals(dp.getCode())) return dp;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Reverse scale a DP value back to a target range (e.g., DP 10-1000 → Google 0-100).
+     */
+    private int reverseScaleValue(int dpValue, int targetMin, int targetMax, DataPoint dp) {
+        JsonNode constraints = dp.getConstraints();
+        if (constraints == null || !constraints.has("min") || !constraints.has("max")) {
+            return dpValue;
+        }
+        int dpMin = constraints.get("min").asInt();
+        int dpMax = constraints.get("max").asInt();
+
+        if (dpMin == targetMin && dpMax == targetMax) {
+            return dpValue;
+        }
+
+        double ratio = (double)(dpValue - dpMin) / (dpMax - dpMin);
+        return (int)(targetMin + ratio * (targetMax - targetMin));
+    }
+
+    /**
+     * Convert Tuya HSV color string to RGB integer.
+     */
+    private Integer tuyaColorStringToRgb(String colorStr) {
+        try {
+            JsonNode colorJson = objectMapper.readTree(colorStr);
+            int h = colorJson.get("h").asInt();
+            int s = colorJson.get("s").asInt();
+            int v = colorJson.get("v").asInt();
+
+            java.awt.Color color = java.awt.Color.getHSBColor(h / 360f, s / 1000f, v / 1000f);
+            return (color.getRed() << 16) | (color.getGreen() << 8) | color.getBlue();
+        } catch (Exception e) {
+            log.error("Failed to parse Tuya color string: {}", colorStr);
+            return null;
+        }
+    }
+
+    private Object getKvValue(AttributeKvEntry entry) {
+        if (entry.getBooleanValue().isPresent()) return entry.getBooleanValue().get();
+        if (entry.getLongValue().isPresent()) return entry.getLongValue().get();
+        if (entry.getDoubleValue().isPresent()) return entry.getDoubleValue().get();
+        if (entry.getStrValue().isPresent()) return entry.getStrValue().get();
+        if (entry.getJsonValue().isPresent()) return entry.getJsonValue().get();
+        return null;
     }
 
     @Override
@@ -311,47 +815,81 @@ public class GoogleAssistantServiceImpl implements GoogleAssistantService {
     @Override
     public GoogleCapabilities getDefaultCapabilities(String deviceType) {
         log.debug("Getting default Google capabilities for device type: {}", deviceType);
+        return mapCategoryCodeToCapabilities(deviceType.toLowerCase());
+    }
 
-        String lowerType = deviceType.toLowerCase();
+    /**
+     * Get default capabilities from a DeviceProfile's linked ProductCategory.
+     * Falls back to device type string matching if no category is linked.
+     */
+    public GoogleCapabilities getDefaultCapabilitiesForProfile(TenantId tenantId, DeviceProfile profile) {
+        if (profile.getCategoryId() != null) {
+            ProductCategory category = productCategoryService.findProductCategoryById(tenantId, profile.getCategoryId());
+            if (category != null) {
+                log.debug("Using ProductCategory '{}' ({}) for Google capabilities", category.getName(), category.getCode());
+                return mapCategoryCodeToCapabilities(category.getCode());
+            }
+        }
+        // Fallback to device type
+        return mapCategoryCodeToCapabilities(profile.getType() != null ? profile.getType().name().toLowerCase() : "switch");
+    }
+
+    /**
+     * Map category code (Tuya standard) to Google device type and traits.
+     * Category codes: dj=Light, kg=Switch, cz=Plug, wk=Thermostat, fs=Fan, ms=Lock, cl=Curtain, cg=Sensor
+     */
+    private GoogleCapabilities mapCategoryCodeToCapabilities(String code) {
         String googleDeviceType;
         List<String> traits;
 
-        // Map device type to Google device type and traits
-        switch (lowerType) {
+        switch (code) {
+            // Tuya category codes
+            case "dj":
             case "light":
             case "lamp":
             case "bulb":
                 googleDeviceType = "action.devices.types.LIGHT";
-                traits = Arrays.asList("OnOff", "Brightness");
+                traits = Arrays.asList("OnOff", "Brightness", "ColorSetting");
                 break;
+            case "kg":
             case "switch":
                 googleDeviceType = "action.devices.types.SWITCH";
                 traits = Collections.singletonList("OnOff");
                 break;
+            case "cz":
             case "outlet":
             case "smartplug":
                 googleDeviceType = "action.devices.types.OUTLET";
                 traits = Collections.singletonList("OnOff");
                 break;
+            case "wk":
             case "thermostat":
             case "hvac":
                 googleDeviceType = "action.devices.types.THERMOSTAT";
                 traits = Arrays.asList("TemperatureSetting");
                 break;
+            case "fs":
             case "fan":
                 googleDeviceType = "action.devices.types.FAN";
                 traits = Arrays.asList("OnOff", "FanSpeed");
                 break;
+            case "ms":
             case "lock":
             case "door_lock":
                 googleDeviceType = "action.devices.types.LOCK";
                 traits = Collections.singletonList("LockUnlock");
                 break;
+            case "cl":
             case "curtain":
             case "curtain_track":
             case "curtain_robot":
                 googleDeviceType = "action.devices.types.CURTAIN";
-                traits = Collections.singletonList("OpenClose");
+                traits = Arrays.asList("OpenClose");
+                break;
+            case "cg":
+            case "sensor":
+                googleDeviceType = "action.devices.types.SENSOR";
+                traits = Collections.singletonList("SensorState");
                 break;
             default:
                 googleDeviceType = "action.devices.types.SWITCH";
