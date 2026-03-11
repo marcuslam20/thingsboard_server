@@ -900,7 +900,16 @@ public class GoogleAssistantServiceImpl implements GoogleAssistantService {
             case "curtain_robot":
                 googleDeviceType = "action.devices.types.CURTAIN";
                 traits = Arrays.asList("OpenClose");
-                break;
+                // Tell Google this device supports percentage (not just open/close)
+                Map<String, Object> curtainAttrs = new HashMap<>();
+                curtainAttrs.put("discreteOnlyOpenClose", false);
+                return GoogleCapabilities.builder()
+                        .enabled(false)
+                        .deviceType(googleDeviceType)
+                        .traits(traits)
+                        .attributes(curtainAttrs)
+                        .willReportState(false)
+                        .build();
             case "cg":
             case "sensor":
                 googleDeviceType = "action.devices.types.SENSOR";
