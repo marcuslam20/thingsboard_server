@@ -648,6 +648,15 @@ public class GoogleAssistantController extends BaseController {
                 .swVersion("1.0")
                 .build();
 
+        // Auto-inject required attributes based on traits
+        Map<String, Object> attributes = capabilities.getAttributes() != null
+                ? new HashMap<>(capabilities.getAttributes()) : new HashMap<>();
+
+        // OpenClose trait requires discreteOnlyOpenClose to enable percentage control
+        if (traits.stream().anyMatch(t -> t.contains("OpenClose"))) {
+            attributes.putIfAbsent("discreteOnlyOpenClose", false);
+        }
+
         return GoogleSyncResponse.Device.builder()
                 .id(device.getId().toString())
                 .type(capabilities.getDeviceType())
@@ -656,7 +665,7 @@ public class GoogleAssistantController extends BaseController {
                 .willReportState(capabilities.isWillReportState())
                 .roomHint(capabilities.getRoomHint())
                 .deviceInfo(deviceInfo)
-                .attributes(capabilities.getAttributes())
+                .attributes(attributes.isEmpty() ? null : attributes)
                 .build();
     }
 }
