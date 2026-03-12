@@ -31,6 +31,7 @@ import org.thingsboard.server.service.alexa.dto.AlexaOAuth2TokenResponse;
 
 import java.security.SecureRandom;
 import java.sql.Timestamp;
+import java.util.List;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Base64;
@@ -251,6 +252,13 @@ public class AlexaOAuth2ServiceImpl implements AlexaOAuth2Service {
     public UserId getUserIdFromToken(String accessToken) {
         AlexaOAuth2TokenEntity token = validateAndGetToken(accessToken);
         return token.toUserId();
+    }
+
+    @Override
+    public boolean isUserLinked(UserId userId) {
+        List<AlexaOAuth2TokenEntity> tokens = tokenDao.findByUserId(userId);
+        Timestamp now = Timestamp.from(Instant.now());
+        return tokens.stream().anyMatch(t -> t.getExpiresAt().after(now));
     }
 
     @Override

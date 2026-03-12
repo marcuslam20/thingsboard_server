@@ -370,6 +370,29 @@ public class AlexaController extends BaseController {
         }
     }
 
+    /**
+     * Check if the current user's account is linked with Alexa.
+     * Used by mobile app to show "Link" or "Already linked" screen.
+     */
+    @Operation(summary = "Check Alexa account linking status",
+            description = "Returns whether the current user has an active Alexa account link.")
+    @PreAuthorize("hasAnyAuthority('TENANT_ADMIN', 'CUSTOMER_USER')")
+    @GetMapping("/app-linking/status")
+    public ResponseEntity<?> getAppLinkingStatus(
+            @AuthenticationPrincipal SecurityUser currentUser
+    ) throws ThingsboardException {
+        try {
+            boolean linked = alexaOAuth2Service.isUserLinked(currentUser.getId());
+            return ResponseEntity.ok(java.util.Map.of(
+                    "linked", linked,
+                    "platform", "alexa"
+            ));
+        } catch (Exception e) {
+            log.error("Failed to check linking status for user: {}", currentUser.getEmail(), e);
+            throw handleException(e);
+        }
+    }
+
     // ============== Device Management Endpoints ==============
 
     /**

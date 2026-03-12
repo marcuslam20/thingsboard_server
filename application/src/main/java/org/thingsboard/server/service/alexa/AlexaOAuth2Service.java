@@ -103,6 +103,14 @@ public interface AlexaOAuth2Service {
     UserId getUserIdFromToken(String accessToken);
 
     /**
+     * Check if a user has an active (non-expired) Alexa account link.
+     *
+     * @param userId the user ID
+     * @return true if user has at least one valid token
+     */
+    boolean isUserLinked(UserId userId);
+
+    /**
      * Clean up expired tokens and authorization codes.
      * Should be called periodically by a scheduled task.
      *
