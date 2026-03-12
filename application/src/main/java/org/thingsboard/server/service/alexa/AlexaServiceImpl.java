@@ -449,7 +449,7 @@ public class AlexaServiceImpl implements AlexaService {
             Optional<AttributeKvEntry> attr = attributesService.find(
                     tenantId, device.getId(), AttributeScope.SHARED_SCOPE, dpCode).get();
             if (attr.isPresent()) {
-                return (int) attr.get().getLongValue().orElse((long) defaultValue);
+                return (int) (long) attr.get().getLongValue().orElse((long) defaultValue);
             }
         } catch (Exception e) {
             log.debug("Could not read current DP value for {}: {}", dpCode, e.getMessage());
