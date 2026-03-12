@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
@@ -14,65 +14,117 @@ import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
 import CircularProgress from '@mui/material/CircularProgress';
 import Link from '@mui/material/Link';
-import Chip from '@mui/material/Chip';
 import DevicesOtherIcon from '@mui/icons-material/DevicesOther';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import { DeviceProfile } from '@/models/device.model';
+import { DataPoint, DpMode } from '@/models/datapoint.model';
 import { deviceProfileApi, DeviceProfileInfo } from '@/api/device-profile.api';
+import { deviceApi } from '@/api/device.api';
 import { smartHomeProductApi } from '@/api/smarthome-product.api';
+import { voiceApi, AlexaDeviceConfig } from '@/api/voice.api';
+import api from '@/api/client';
 import { tuyaColors } from '@/theme/theme';
 
-// Voice platform definitions
-interface VoicePlatform {
-  id: string;
-  name: string;
-  icon: string; // emoji placeholder — replace with real icons later
-  iconColor: string;
-  developing: 'configuring' | 'no_solution' | 'configured';
-  released: number; // voice features count, 0 = none
-  supported: boolean; // whether our backend supports this platform
+function resolveImagePath(image: string | undefined | null): string | null {
+  if (!image) return null;
+  if (image.startsWith('tb-image;')) return image.substring('tb-image;'.length);
+  if (image.startsWith('tb-image:')) {
+    const ref = image.substring('tb-image:'.length);
+    return `/api/images/${ref}`;
+  }
+  return image;
 }
 
-const VOICE_PLATFORMS: VoicePlatform[] = [
-  {
-    id: 'alexa',
-    name: 'Alexa',
-    icon: '\u{1F535}', // blue circle
-    iconColor: '#00CAFF',
-    developing: 'configuring',
-    released: 0,
-    supported: true,
-  },
-  {
-    id: 'google_assistant',
-    name: 'Google Assistant',
-    icon: '\u{1F7E1}', // yellow circle
-    iconColor: '#FBBC04',
-    developing: 'no_solution',
-    released: 0,
-    supported: true,
-  },
-  {
-    id: 'smartthings',
-    name: 'SmartThings',
-    icon: '\u{1F537}', // blue diamond
-    iconColor: '#15BDB2',
-    developing: 'no_solution',
-    released: 0,
-    supported: false,
-  },
+function AuthImage({ src, size = 36 }: { src: string; size?: number }) {
+  const [blobUrl, setBlobUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    let revoke: string | null = null;
+    api.get(src, { responseType: 'blob' })
+      .then((res) => {
+        const url = URL.createObjectURL(res.data);
+        revoke = url;
+        setBlobUrl(url);
+      })
+      .catch(() => setBlobUrl(null));
+    return () => { if (revoke) URL.revokeObjectURL(revoke); };
+  }, [src]);
+
+  if (!blobUrl) return null;
+  return (
+    <Box
+      component="img"
+      src={blobUrl}
+      alt="Product"
+      sx={{ width: size, height: size, objectFit: 'contain', borderRadius: '6px' }}
+    />
+  );
+}
+
+/** Platform definition */
+interface VoicePlatformRow {
+  id: string;
+  name: string;
+  iconSrc: string;
+  status: 'no_solution' | 'configuring' | 'released';
+  releasedCount: number;
+  supported: boolean;
+}
+
+/** DP codes that map to voice features — must match VoiceSolutionConfigPage */
+const VOICE_FEATURE_DP_CODES: { id: string; dpCodes: string[] }[] = [
+  { id: 'power_onoff', dpCodes: ['switch', 'switch_led', 'switch_1', 'control'] },
+  { id: 'brightness', dpCodes: ['bright_value', 'bright_value_v2', 'brightness'] },
+  { id: 'color', dpCodes: ['colour_data', 'colour_data_v2'] },
+  { id: 'color_temperature', dpCodes: ['temp_value', 'temp_value_v2', 'colour_temp'] },
+  { id: 'open_close', dpCodes: ['control', 'curtain_control', 'mach_operate'] },
+  { id: 'percentage', dpCodes: ['percent_control', 'position', 'percent_state'] },
+  { id: 'temperature_setting', dpCodes: ['temp_set', 'temperature_set', 'set_temp'] },
+  { id: 'mode_setting', dpCodes: ['mode', 'work_mode'] },
+  { id: 'lock_unlock', dpCodes: ['switch_lock', 'lock', 'child_lock'] },
+  { id: 'continue_pause', dpCodes: ['pause', 'switch_go'] },
 ];
+
+/** Count supported voice features by evaluating real DataPoints */
+function countSupportedFeatures(dataPoints: DataPoint[]): number {
+  const writableCodes = new Set(
+    dataPoints.filter((dp) => dp.mode !== DpMode.RO).map((dp) => dp.code)
+  );
+  return VOICE_FEATURE_DP_CODES.filter((f) =>
+    f.dpCodes.some((code) => writableCodes.has(code))
+  ).length;
+}
+
+/** localStorage key for tracking "configuring" state */
+function getConfiguringKey(profileId: string, platformId: string): string {
+  return `voice_configuring_${profileId}_${platformId}`;
+}
+
+function isConfiguring(profileId: string, platformId: string): boolean {
+  return localStorage.getItem(getConfiguringKey(profileId, platformId)) === 'true';
+}
+
+function setConfiguring(profileId: string, platformId: string, value: boolean): void {
+  if (value) {
+    localStorage.setItem(getConfiguringKey(profileId, platformId), 'true');
+  } else {
+    localStorage.removeItem(getConfiguringKey(profileId, platformId));
+  }
+}
 
 export default function VoiceIntegrationPage() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
 
-  // Profile list + selection
   const [profileInfos, setProfileInfos] = useState<DeviceProfileInfo[]>([]);
   const [selectedProfileId, setSelectedProfileId] = useState<string>(searchParams.get('profileId') || '');
   const [selectedProfile, setSelectedProfile] = useState<DeviceProfile | null>(null);
   const [categoryName, setCategoryName] = useState('');
   const [loadingProfiles, setLoadingProfiles] = useState(true);
+
+  // Voice state per platform
+  const [platforms, setPlatforms] = useState<VoicePlatformRow[]>([]);
+  const [loadingVoice, setLoadingVoice] = useState(false);
 
   // Load profiles on mount
   useEffect(() => {
@@ -88,24 +140,124 @@ export default function VoiceIntegrationPage() {
       .finally(() => setLoadingProfiles(false));
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Load full profile + category when selection changes
+  // Load full profile + voice status when selection changes
+  const loadVoiceStatus = useCallback(async (profileId: string) => {
+    if (!profileId) return;
+    setLoadingVoice(true);
+
+    try {
+      const profile = await deviceProfileApi.getDeviceProfile(profileId);
+      setSelectedProfile(profile);
+
+      // Load category name
+      if (profile.categoryId?.id) {
+        try {
+          const cat = await smartHomeProductApi.getCategory(profile.categoryId.id);
+          setCategoryName(cat.name);
+        } catch { setCategoryName(''); }
+      } else {
+        setCategoryName('');
+      }
+
+      // Get devices belonging to this profile to check voice status
+      const devicesResult = await deviceApi.getTenantDeviceInfos(
+        { page: 0, pageSize: 100, sortProperty: 'name', sortOrder: 'ASC' },
+        undefined,
+        profileId
+      );
+
+      // Check if any device has alexa enabled
+      let alexaStatus: 'no_solution' | 'configuring' | 'released' = 'no_solution';
+      let alexaCount = 0;
+
+      try {
+        const alexaDevices: AlexaDeviceConfig[] = await voiceApi.getAlexaDevices();
+        const profileDeviceIds = new Set(devicesResult.data.map((d) => d.id.id));
+        const matchedDevices = alexaDevices.filter((ad) => profileDeviceIds.has(ad.id));
+        const enabledDevices = matchedDevices.filter((ad) => ad.alexaCapabilities?.enabled);
+
+        if (enabledDevices.length > 0) {
+          alexaStatus = 'released';
+          // Count features based on real DataPoints
+          try {
+            const dps = await smartHomeProductApi.getDataPoints(profileId);
+            alexaCount = countSupportedFeatures(dps);
+          } catch {
+            alexaCount = enabledDevices.length; // fallback
+          }
+          // Clear configuring state since it's now released
+          setConfiguring(profileId, 'alexa', false);
+        } else if (isConfiguring(profileId, 'alexa')) {
+          alexaStatus = 'configuring';
+        }
+      } catch {
+        // Alexa API might not be available
+        if (isConfiguring(profileId, 'alexa')) {
+          alexaStatus = 'configuring';
+        }
+      }
+
+      // TODO: Similar logic for Google Assistant
+      let googleStatus: 'no_solution' | 'configuring' | 'released' = 'no_solution';
+      if (isConfiguring(profileId, 'google_assistant')) {
+        googleStatus = 'configuring';
+      }
+
+      setPlatforms([
+        {
+          id: 'alexa',
+          name: 'Alexa',
+          iconSrc: '/alexa-icon.png',
+          status: alexaStatus,
+          releasedCount: alexaCount,
+          supported: true,
+        },
+        {
+          id: 'google_assistant',
+          name: 'Google Assistant',
+          iconSrc: '/google-assistants-icon.png',
+          status: googleStatus,
+          releasedCount: 0,
+          supported: true,
+        },
+        {
+          id: 'smartthings',
+          name: 'SmartThings',
+          iconSrc: '',
+          status: 'no_solution',
+          releasedCount: 0,
+          supported: false,
+        },
+      ]);
+    } catch {
+      setSelectedProfile(null);
+    } finally {
+      setLoadingVoice(false);
+    }
+  }, []);
+
   useEffect(() => {
     if (!selectedProfileId) return;
     setSearchParams({ profileId: selectedProfileId }, { replace: true });
+    loadVoiceStatus(selectedProfileId);
+  }, [selectedProfileId, setSearchParams, loadVoiceStatus]);
 
-    deviceProfileApi.getDeviceProfile(selectedProfileId)
-      .then((profile) => {
-        setSelectedProfile(profile);
-        if (profile.categoryId?.id) {
-          smartHomeProductApi.getCategory(profile.categoryId.id)
-            .then((cat) => setCategoryName(cat.name))
-            .catch(() => setCategoryName(''));
-        } else {
-          setCategoryName('');
-        }
-      })
-      .catch(() => setSelectedProfile(null));
-  }, [selectedProfileId, setSearchParams]);
+  const handleCancelActivation = async (platformId: string) => {
+    if (!selectedProfileId) return;
+    try {
+      const devicesResult = await deviceApi.getTenantDeviceInfos(
+        { page: 0, pageSize: 100, sortProperty: 'name', sortOrder: 'ASC' },
+        undefined,
+        selectedProfileId
+      );
+      const deviceIds = devicesResult.data.map((d) => d.id.id);
+      await voiceApi.configureAlexaForProfile(deviceIds, false, 'SWITCH');
+      setConfiguring(selectedProfileId, platformId, false);
+      loadVoiceStatus(selectedProfileId);
+    } catch (err) {
+      console.error('Failed to cancel activation:', err);
+    }
+  };
 
   if (loadingProfiles) {
     return (
@@ -128,7 +280,6 @@ export default function VoiceIntegrationPage() {
         </Link>
       </Box>
 
-      {/* Separator */}
       <Box sx={{ borderBottom: `1px solid ${tuyaColors.border}`, mb: 2.5, mt: 1 }} />
 
       {profileInfos.length === 0 ? (
@@ -143,13 +294,22 @@ export default function VoiceIntegrationPage() {
           {/* Product Card */}
           <Paper elevation={0} sx={{ border: `1px solid ${tuyaColors.border}`, borderRadius: 1, p: 2, mb: 3 }}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-              <Box sx={{
-                width: 48, height: 48, borderRadius: 1, bgcolor: '#F5F5F5',
-                display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-              }}>
-                <DevicesOtherIcon sx={{ fontSize: 24, color: tuyaColors.textHint }} />
-              </Box>
-
+              {(() => {
+                const imgPath = resolveImagePath(selectedProfile?.image);
+                return imgPath ? (
+                  <Box sx={{ width: 48, height: 48, flexShrink: 0 }}>
+                    <AuthImage src={imgPath} size={48} />
+                  </Box>
+                ) : (
+                  <Box sx={{
+                    width: 48, height: 48, borderRadius: '6px', bgcolor: '#F5F7FA',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    border: `1px solid ${tuyaColors.border}`, flexShrink: 0,
+                  }}>
+                    <DevicesOtherIcon sx={{ fontSize: 24, color: tuyaColors.textHint }} />
+                  </Box>
+                );
+              })()}
               <Box sx={{ flex: 1 }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 0.5 }}>
                   <Typography sx={{ fontWeight: 500, fontSize: '14px', color: tuyaColors.textPrimary }}>
@@ -177,7 +337,6 @@ export default function VoiceIntegrationPage() {
                   {selectedProfile?.transportType && <> | Protocol Type: {selectedProfile.transportType}</>}
                 </Typography>
               </Box>
-
               <Link
                 component="button"
                 onClick={() => selectedProfileId && navigate(`/profiles/deviceProfiles/${selectedProfileId}`)}
@@ -217,122 +376,131 @@ export default function VoiceIntegrationPage() {
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {VOICE_PLATFORMS.map((platform) => (
-                    <TableRow key={platform.id} hover>
-                      {/* Platform Name */}
-                      <TableCell>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                          <Box sx={{
-                            width: 32, height: 32, borderRadius: '50%',
-                            display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            bgcolor: platform.id === 'alexa' ? '#E6FBFF' :
-                                     platform.id === 'google_assistant' ? '#FFF8E6' : '#E6FFF8',
-                          }}>
-                            {platform.id === 'alexa' && (
-                              <Box sx={{ width: 20, height: 20, borderRadius: '50%', bgcolor: '#00CAFF', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                <Typography sx={{ color: '#fff', fontSize: '10px', fontWeight: 700 }}>A</Typography>
-                              </Box>
-                            )}
-                            {platform.id === 'google_assistant' && (
-                              <Box sx={{ width: 20, height: 20, borderRadius: '50%', bgcolor: '#FBBC04', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                <Typography sx={{ color: '#fff', fontSize: '10px', fontWeight: 700 }}>G</Typography>
-                              </Box>
-                            )}
-                            {platform.id === 'smartthings' && (
-                              <Box sx={{ width: 20, height: 20, borderRadius: '50%', bgcolor: '#15BDB2', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                <Typography sx={{ color: '#fff', fontSize: '10px', fontWeight: 700 }}>S</Typography>
-                              </Box>
-                            )}
-                          </Box>
-                          <Typography sx={{ fontSize: '13px', fontWeight: 500, color: tuyaColors.textPrimary }}>
-                            {platform.name}
-                          </Typography>
-                        </Box>
-                      </TableCell>
-
-                      {/* Developing status */}
-                      <TableCell>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                          {platform.developing === 'configuring' ? (
-                            <>
-                              <Typography sx={{ fontSize: '12px', color: tuyaColors.textSecondary }}>Configuring...</Typography>
-                              <Button
-                                variant="contained"
-                                size="small"
-                                sx={{ height: 24, fontSize: '11px', px: 1.5 }}
-                              >
-                                Continue
-                              </Button>
-                            </>
-                          ) : platform.developing === 'configured' ? (
-                            <>
-                              <CheckCircleIcon sx={{ fontSize: 16, color: tuyaColors.success }} />
-                              <Typography sx={{ fontSize: '12px', color: tuyaColors.success }}>Configured</Typography>
-                            </>
-                          ) : (
-                            <>
-                              <Typography sx={{ fontSize: '12px', color: tuyaColors.textHint }}>No solution</Typography>
-                              <Button
-                                variant="outlined"
-                                size="small"
-                                disabled={!platform.supported}
-                                sx={{
-                                  height: 24, fontSize: '11px', px: 1.5,
-                                  color: platform.supported ? tuyaColors.info : tuyaColors.textHint,
-                                  borderColor: platform.supported ? tuyaColors.info : tuyaColors.border,
-                                }}
-                              >
-                                Create Solution
-                              </Button>
-                            </>
-                          )}
-                        </Box>
-                      </TableCell>
-
-                      {/* Released */}
-                      <TableCell>
-                        {platform.released > 0 ? (
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                            <CheckCircleIcon sx={{ fontSize: 14, color: tuyaColors.success }} />
-                            <Link
-                              component="button"
-                              sx={{ fontSize: '12px', color: tuyaColors.info, textDecoration: 'none', cursor: 'pointer', '&:hover': { textDecoration: 'underline' } }}
-                            >
-                              {platform.released} Voice Feature(s)
-                            </Link>
-                          </Box>
-                        ) : (
-                          <Typography sx={{ fontSize: '12px', color: tuyaColors.textHint }}>—</Typography>
-                        )}
-                      </TableCell>
-
-                      {/* Operation */}
-                      <TableCell sx={{ textAlign: 'right' }}>
-                        {platform.supported && (platform.developing === 'configuring' || platform.developing === 'configured') ? (
-                          <Link
-                            component="button"
-                            sx={{ color: tuyaColors.info, fontSize: '12px', textDecoration: 'none', cursor: 'pointer', '&:hover': { textDecoration: 'underline' } }}
-                          >
-                            Manage Versions
-                          </Link>
-                        ) : platform.supported ? (
-                          <Typography sx={{ fontSize: '12px', color: tuyaColors.textHint }}>—</Typography>
-                        ) : (
-                          <Chip label="Not Supported" size="small" sx={{ fontSize: '10px', height: 20, color: tuyaColors.textHint }} />
-                        )}
+                  {loadingVoice ? (
+                    <TableRow>
+                      <TableCell colSpan={4} sx={{ textAlign: 'center', py: 4 }}>
+                        <CircularProgress size={24} sx={{ color: tuyaColors.orange }} />
                       </TableCell>
                     </TableRow>
-                  ))}
+                  ) : (
+                    platforms.map((platform) => (
+                      <TableRow key={platform.id} hover>
+                        {/* Platform Name */}
+                        <TableCell>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                            <Box sx={{ width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                              {platform.iconSrc ? (
+                                <img src={platform.iconSrc} alt={platform.name} style={{ width: 28, height: 28 }} />
+                              ) : (
+                                <Box sx={{ width: 24, height: 24, borderRadius: '50%', bgcolor: '#15BDB2', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                  <Typography sx={{ color: '#fff', fontSize: '11px', fontWeight: 700 }}>S</Typography>
+                                </Box>
+                              )}
+                            </Box>
+                            <Typography sx={{ fontSize: '13px', fontWeight: 500, color: tuyaColors.textPrimary }}>
+                              {platform.name}
+                            </Typography>
+                          </Box>
+                        </TableCell>
+
+                        {/* Developing */}
+                        <TableCell>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                            {platform.status === 'released' || platform.status === 'configuring' ? (
+                              <>
+                                <Typography sx={{ fontSize: '12px', color: tuyaColors.textSecondary }}>Configuring...</Typography>
+                                <Button
+                                  variant="contained"
+                                  size="small"
+                                  sx={{ height: 24, fontSize: '11px', px: 1.5 }}
+                                  onClick={() => navigate(`/voice/integration/${platform.id}/config?profileId=${selectedProfileId}&mode=edit`)}
+                                >
+                                  Continue
+                                </Button>
+                              </>
+                            ) : (
+                              <>
+                                <Typography sx={{ fontSize: '12px', color: tuyaColors.textHint }}>No solution</Typography>
+                                <Button
+                                  variant="outlined"
+                                  size="small"
+                                  disabled={!platform.supported}
+                                  onClick={() => {
+                                    setConfiguring(selectedProfileId, platform.id, true);
+                                    navigate(`/voice/integration/${platform.id}/config?profileId=${selectedProfileId}&mode=edit`);
+                                  }}
+                                  sx={{
+                                    height: 24, fontSize: '11px', px: 1.5,
+                                    color: platform.supported ? tuyaColors.info : tuyaColors.textHint,
+                                    borderColor: platform.supported ? tuyaColors.info : tuyaColors.border,
+                                  }}
+                                >
+                                  Create Solution
+                                </Button>
+                              </>
+                            )}
+                          </Box>
+                        </TableCell>
+
+                        {/* Released */}
+                        <TableCell>
+                          {platform.releasedCount > 0 ? (
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                              <CheckCircleIcon sx={{ fontSize: 14, color: tuyaColors.success }} />
+                              <Link
+                                component="button"
+                                onClick={() => navigate(`/voice/integration/${platform.id}/config?profileId=${selectedProfileId}&mode=released`)}
+                                sx={{ fontSize: '12px', color: tuyaColors.info, textDecoration: 'none', cursor: 'pointer', '&:hover': { textDecoration: 'underline' } }}
+                              >
+                                {platform.releasedCount} Voice Feature(s) &gt;
+                              </Link>
+                            </Box>
+                          ) : (
+                            <Typography sx={{ fontSize: '12px', color: tuyaColors.textHint }}>&mdash;</Typography>
+                          )}
+                        </TableCell>
+
+                        {/* Operation */}
+                        <TableCell sx={{ textAlign: 'right' }}>
+                          {platform.status === 'released' ? (
+                            <Box sx={{ display: 'flex', gap: 2, justifyContent: 'flex-end' }}>
+                              <Link
+                                component="button"
+                                onClick={() => handleCancelActivation(platform.id)}
+                                sx={{ color: tuyaColors.info, fontSize: '12px', textDecoration: 'none', cursor: 'pointer', '&:hover': { textDecoration: 'underline' } }}
+                              >
+                                Cancel Activation
+                              </Link>
+                              <Link
+                                component="button"
+                                onClick={() => navigate(`/voice/integration/${platform.id}/config?profileId=${selectedProfileId}&mode=released`)}
+                                sx={{ color: tuyaColors.info, fontSize: '12px', textDecoration: 'none', cursor: 'pointer', '&:hover': { textDecoration: 'underline' } }}
+                              >
+                                Manage Versions
+                              </Link>
+                            </Box>
+                          ) : platform.supported && platform.status === 'configuring' ? (
+                            <Link
+                              component="button"
+                              sx={{ color: tuyaColors.info, fontSize: '12px', textDecoration: 'none', cursor: 'pointer', '&:hover': { textDecoration: 'underline' } }}
+                            >
+                              Manage Versions
+                            </Link>
+                          ) : (
+                            <Typography sx={{ fontSize: '12px', color: tuyaColors.textHint }}>&mdash;</Typography>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
                 </TableBody>
               </Table>
             </TableContainer>
           </Paper>
 
-          {/* Info note */}
           <Box sx={{ mt: 2 }}>
             <Typography variant="body2" sx={{ fontSize: '12px', color: tuyaColors.textHint }}>
               Currently supported voice platforms: <strong>Amazon Alexa</strong> and <strong>Google Assistant</strong>.
-              Integration is managed through the Alexa Skill Lambda and Google Cloud Function deployed alongside this platform.
             </Typography>
           </Box>
         </>

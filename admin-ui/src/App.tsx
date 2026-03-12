@@ -45,6 +45,7 @@ import OtaUpdatesPage from '@/pages/ota-updates/OtaUpdatesPage';
 import FirmwareManagementPage from '@/pages/ota-updates/FirmwareManagementPage';
 import FirmwareUpdatePage from '@/pages/ota-updates/FirmwareUpdatePage';
 import VoiceIntegrationPage from '@/pages/voice/VoiceIntegrationPage';
+import VoiceSolutionConfigPage from '@/pages/voice/VoiceSolutionConfigPage';
 import NotificationsPage from '@/pages/notifications/NotificationsPage';
 import SecurityPage from '@/pages/security/SecurityPage';
 import ApiUsagePage from '@/pages/api-usage/ApiUsagePage';
@@ -150,6 +151,7 @@ function App() {
 
           {/* Voice Integration */}
           <Route path="/voice/integration" element={<VoiceIntegrationPage />} />
+          <Route path="/voice/integration/:platform/config" element={<VoiceSolutionConfigPage />} />
 
           {/* Notifications */}
           <Route path="/notifications" element={<NotificationsPage />} />
