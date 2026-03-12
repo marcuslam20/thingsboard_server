@@ -16,7 +16,8 @@
 
 /**
  * Device Mapper
- * Maps ThingsBoard devices to Alexa endpoint format
+ * Maps ThingsBoard devices to Alexa endpoint format.
+ * Uses alexaCapabilities.category from backend (auto-discovered from ProductCategory & DataPoints).
  */
 
 import { TBAlexaDevice } from '../types/thingsboard';
@@ -26,10 +27,8 @@ import {
   AlexaDisplayCategory
 } from '../types/alexa';
 
-/**
- * Map device type to Alexa display category
- */
-export function mapDeviceCategory(deviceType: string): AlexaDisplayCategory {
+/** Fallback: map device type string to Alexa category when backend doesn't provide one */
+function mapDeviceCategoryFallback(deviceType: string): AlexaDisplayCategory {
   const typeMap: Record<string, AlexaDisplayCategory> = {
     'light': 'LIGHT',
     'lamp': 'LIGHT',
@@ -43,31 +42,38 @@ export function mapDeviceCategory(deviceType: string): AlexaDisplayCategory {
     'contact': 'CONTACT_SENSOR',
     'door': 'CONTACT_SENSOR',
     'window': 'CONTACT_SENSOR',
-    'motion': 'MOTION_SENSOR'
+    'motion': 'MOTION_SENSOR',
+    'curtain': 'INTERIOR_BLIND',
+    'blind': 'INTERIOR_BLIND',
+    'fan': 'FAN',
+    'lock': 'SMARTLOCK',
   };
 
   const lowerType = deviceType.toLowerCase();
-  
   for (const [key, category] of Object.entries(typeMap)) {
     if (lowerType.includes(key)) {
       return category;
     }
   }
-
   return 'OTHER';
 }
 
+/** Resolve Alexa display category: prefer backend, fallback to device type matching */
+function resolveCategory(device: TBAlexaDevice): AlexaDisplayCategory {
+  const backendCategory = device.alexaCapabilities?.category;
+  if (backendCategory) {
+    return backendCategory as AlexaDisplayCategory;
+  }
+  return mapDeviceCategoryFallback(device.type);
+}
+
 /**
- * Get Alexa capabilities based on device category
+ * Build Alexa capabilities for a given category.
+ * These define what controllers/interfaces the device supports.
  */
-export function getCapabilitiesForCategory(category: AlexaDisplayCategory): AlexaCapability[] {
+function getCapabilitiesForCategory(category: AlexaDisplayCategory): AlexaCapability[] {
   const capabilities: AlexaCapability[] = [
-    // All devices support Alexa interface
-    {
-      type: 'AlexaInterface',
-      interface: 'Alexa',
-      version: '3'
-    }
+    { type: 'AlexaInterface', interface: 'Alexa', version: '3' }
   ];
 
   switch (category) {
@@ -92,6 +98,26 @@ export function getCapabilitiesForCategory(category: AlexaDisplayCategory): Alex
             proactivelyReported: false,
             retrievable: true
           }
+        },
+        {
+          type: 'AlexaInterface',
+          interface: 'Alexa.ColorController',
+          version: '3',
+          properties: {
+            supported: [{ name: 'color' }],
+            proactivelyReported: false,
+            retrievable: true
+          }
+        },
+        {
+          type: 'AlexaInterface',
+          interface: 'Alexa.ColorTemperatureController',
+          version: '3',
+          properties: {
+            supported: [{ name: 'colorTemperatureInKelvin' }],
+            proactivelyReported: false,
+            retrievable: true
+          }
         }
       );
       break;
@@ -104,6 +130,69 @@ export function getCapabilitiesForCategory(category: AlexaDisplayCategory): Alex
         version: '3',
         properties: {
           supported: [{ name: 'powerState' }],
+          proactivelyReported: false,
+          retrievable: true
+        }
+      });
+      break;
+
+    case 'INTERIOR_BLIND':
+      capabilities.push(
+        {
+          type: 'AlexaInterface',
+          interface: 'Alexa.PowerController',
+          version: '3',
+          properties: {
+            supported: [{ name: 'powerState' }],
+            proactivelyReported: false,
+            retrievable: true
+          }
+        },
+        {
+          type: 'AlexaInterface',
+          interface: 'Alexa.PercentageController',
+          version: '3',
+          properties: {
+            supported: [{ name: 'percentage' }],
+            proactivelyReported: false,
+            retrievable: true
+          }
+        }
+      );
+      break;
+
+    case 'FAN':
+      capabilities.push(
+        {
+          type: 'AlexaInterface',
+          interface: 'Alexa.PowerController',
+          version: '3',
+          properties: {
+            supported: [{ name: 'powerState' }],
+            proactivelyReported: false,
+            retrievable: true
+          }
+        },
+        {
+          type: 'AlexaInterface',
+          interface: 'Alexa.PercentageController',
+          version: '3',
+          properties: {
+            supported: [{ name: 'percentage' }],
+            proactivelyReported: false,
+            retrievable: true
+          }
+        }
+      );
+      break;
+
+    case 'SMARTLOCK':
+      capabilities.push({
+        type: 'AlexaInterface',
+        interface: 'Alexa.LockController',
+        version: '3',
+        properties: {
+          supported: [{ name: 'lockState' }],
           proactivelyReported: false,
           retrievable: true
         }
@@ -182,7 +271,7 @@ export function getCapabilitiesForCategory(category: AlexaDisplayCategory): Alex
       break;
   }
 
-  // Add endpoint health for all devices
+  // All devices get EndpointHealth
   capabilities.push({
     type: 'AlexaInterface',
     interface: 'Alexa.EndpointHealth',
@@ -201,11 +290,11 @@ export function getCapabilitiesForCategory(category: AlexaDisplayCategory): Alex
  * Map ThingsBoard device to Alexa endpoint configuration
  */
 export function mapDeviceToEndpoint(device: TBAlexaDevice): AlexaEndpointConfig {
-  const category = mapDeviceCategory(device.type);
-  
+  const category = resolveCategory(device);
+
   return {
     endpointId: device.id,
-    manufacturerName: 'PachiraMining',
+    manufacturerName: 'ThingsBoard',
     friendlyName: device.label || device.name,
     description: `${device.type} - ${device.name}`,
     displayCategories: [category],
@@ -218,7 +307,7 @@ export function mapDeviceToEndpoint(device: TBAlexaDevice): AlexaEndpointConfig 
 }
 
 /**
- * Map multiple devices to Alexa endpoints
+ * Map multiple devices to Alexa endpoints (only enabled devices)
  */
 export function mapDevicesToEndpoints(devices: TBAlexaDevice[]): AlexaEndpointConfig[] {
   return devices

@@ -25,6 +25,7 @@ export interface AlexaHeader {
   messageId: string;
   correlationToken?: string;
   payloadVersion: string;
+  instance?: string;
 }
 
 export interface AlexaEndpoint {
@@ -113,4 +114,7 @@ export type AlexaDisplayCategory =
   | 'TEMPERATURE_SENSOR'
   | 'CONTACT_SENSOR'
   | 'MOTION_SENSOR'
+  | 'INTERIOR_BLIND'
+  | 'FAN'
+  | 'SMARTLOCK'
   | 'OTHER';

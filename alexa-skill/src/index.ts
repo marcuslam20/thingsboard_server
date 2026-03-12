@@ -20,10 +20,22 @@
  */
 
 import { handleDiscovery } from './handlers/discovery';
-import { handlePowerController } from './handlers/powerController';
+import { handleDirective } from './handlers/directiveHandler';
 import { handleAuthorization } from './handlers/authorization';
 import { handleStateReport } from './handlers/stateReport';
 import { AlexaRequest, AlexaResponse, AlexaErrorResponse } from './types/alexa';
+
+/** Namespaces that map to device control directives (handled by directiveHandler) */
+const CONTROL_NAMESPACES = new Set([
+  'Alexa.PowerController',
+  'Alexa.BrightnessController',
+  'Alexa.ColorController',
+  'Alexa.ColorTemperatureController',
+  'Alexa.PercentageController',
+  'Alexa.ThermostatController',
+  'Alexa.LockController',
+  'Alexa.RangeController',
+]);
 
 export const handler = async (event: AlexaRequest): Promise<AlexaResponse | AlexaErrorResponse> => {
   console.log('Received Alexa directive:', JSON.stringify(event, null, 2));
@@ -32,30 +44,33 @@ export const handler = async (event: AlexaRequest): Promise<AlexaResponse | Alex
     const namespace = event.directive.header.namespace;
     const name = event.directive.header.name;
 
-    switch (namespace) {
-      case 'Alexa.Discovery':
-        return await handleDiscovery(event);
-
-      case 'Alexa.PowerController':
-        return await handlePowerController(event);
-
-      case 'Alexa.Authorization':
-        return await handleAuthorization(event);
-
-      case 'Alexa':
-        if (name === 'ReportState') {
-          return await handleStateReport(event);
-        }
-        throw new Error(`Unsupported Alexa directive: ${name}`);
-
-      default:
-        console.error(`Unsupported namespace: ${namespace}`);
-        return createErrorResponse(
-          event,
-          'INVALID_DIRECTIVE',
-          `Unsupported namespace: ${namespace}`
-        );
+    // Discovery
+    if (namespace === 'Alexa.Discovery') {
+      return await handleDiscovery(event);
     }
+
+    // Authorization (account linking)
+    if (namespace === 'Alexa.Authorization') {
+      return await handleAuthorization(event);
+    }
+
+    // ReportState
+    if (namespace === 'Alexa' && name === 'ReportState') {
+      return await handleStateReport(event);
+    }
+
+    // All device control directives
+    if (CONTROL_NAMESPACES.has(namespace)) {
+      return await handleDirective(event);
+    }
+
+    // Unsupported
+    console.error(`Unsupported namespace: ${namespace}, name: ${name}`);
+    return createErrorResponse(
+      event,
+      'INVALID_DIRECTIVE',
+      `Unsupported namespace: ${namespace}`
+    );
   } catch (error) {
     console.error('Error handling directive:', error);
     return createErrorResponse(

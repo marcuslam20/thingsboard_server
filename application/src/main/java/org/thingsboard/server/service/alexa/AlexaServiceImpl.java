@@ -56,6 +56,7 @@ import org.thingsboard.server.common.data.rpc.ToDeviceRpcRequestBody;
 import org.thingsboard.server.common.msg.rpc.ToDeviceRpcRequest;
 
 import java.util.*;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -191,8 +192,11 @@ public class AlexaServiceImpl implements AlexaService {
         switch (cmd) {
             case "setpower":
             case "turnon":
-            case "turnoff": {
-                boolean on = cmd.equals("turnon") || (command.getValue() != null &&
+            case "turnoff":
+            case "open":
+            case "close": {
+                boolean on = cmd.equals("turnon") || cmd.equals("open") ||
+                        (command.getValue() != null &&
                         (Boolean.parseBoolean(command.getValue().toString()) ||
                          "on".equalsIgnoreCase(command.getValue().toString())));
 
@@ -224,6 +228,18 @@ public class AlexaServiceImpl implements AlexaService {
                 }
                 break;
             }
+            case "adjustbrightness": {
+                // Delta adjustment - read current value, apply delta, clamp to 0-100
+                int delta = command.getValue() != null ? Integer.parseInt(command.getValue().toString()) : 0;
+                DataPoint brightDp2 = findDpByCode(dpByCode, "bright_value", "bright_value_v2", "brightness");
+                if (brightDp2 != null) {
+                    int current = getCurrentDpValue(tenantId, device, brightDp2.getCode(), 50);
+                    int newVal = Math.max(0, Math.min(100, current + delta));
+                    newVal = scaleValue(newVal, 0, 100, brightDp2);
+                    dpValues.put(brightDp2.getCode(), newVal);
+                }
+                break;
+            }
             case "setpercentage": {
                 int percent = command.getValue() != null ? Integer.parseInt(command.getValue().toString()) : 0;
                 DataPoint percentDp = findDpByCode(dpByCode, "percent_control", "position", "percent_state");
@@ -240,12 +256,43 @@ public class AlexaServiceImpl implements AlexaService {
                 }
                 break;
             }
+            case "adjustpercentage": {
+                int delta = command.getValue() != null ? Integer.parseInt(command.getValue().toString()) : 0;
+                DataPoint percentDp2 = findDpByCode(dpByCode, "percent_control", "position", "percent_state");
+                if (percentDp2 != null) {
+                    int current = getCurrentDpValue(tenantId, device, percentDp2.getCode(), 50);
+                    int newVal = Math.max(0, Math.min(100, current + delta));
+                    newVal = scaleValue(newVal, 0, 100, percentDp2);
+                    dpValues.put(percentDp2.getCode(), newVal);
+                }
+                break;
+            }
             case "settemperature": {
                 double temp = command.getValue() != null ? Double.parseDouble(command.getValue().toString()) : 20;
                 DataPoint tempDp = findDpByCode(dpByCode, "temp_set", "temperature_set", "set_temp");
                 if (tempDp != null) {
                     int scaledTemp = scaleValue((int)(temp * 10), 0, 600, tempDp);
                     dpValues.put(tempDp.getCode(), scaledTemp);
+                }
+                break;
+            }
+            case "adjusttemperature": {
+                double delta = command.getValue() != null ? Double.parseDouble(command.getValue().toString()) : 0;
+                DataPoint tempDp2 = findDpByCode(dpByCode, "temp_set", "temperature_set", "set_temp");
+                if (tempDp2 != null) {
+                    int currentTemp = getCurrentDpValue(tenantId, device, tempDp2.getCode(), 200); // 20.0°C * 10
+                    int newTemp = (int)(currentTemp + delta * 10);
+                    newTemp = Math.max(0, Math.min(600, newTemp));
+                    newTemp = scaleValue(newTemp, 0, 600, tempDp2);
+                    dpValues.put(tempDp2.getCode(), newTemp);
+                }
+                break;
+            }
+            case "setthermostatmode": {
+                String mode = command.getValue() != null ? command.getValue().toString().toLowerCase() : "auto";
+                DataPoint modeDp = findDpByCode(dpByCode, "mode", "work_mode");
+                if (modeDp != null) {
+                    dpValues.put(modeDp.getCode(), mode);
                 }
                 break;
             }
@@ -277,6 +324,19 @@ public class AlexaServiceImpl implements AlexaService {
                         tempK = scaleValue(tempK, 2000, 6500, tempDp);
                         dpValues.put(tempDp.getCode(), tempK);
                     }
+                }
+                break;
+            }
+            case "increasecolortemperature":
+            case "decreasecolortemperature": {
+                // Delta-based color temperature adjustment (±500K step from Lambda)
+                int deltaK = command.getValue() != null ? Integer.parseInt(command.getValue().toString()) : 0;
+                DataPoint ctDp = findDpByCode(dpByCode, "temp_value", "temp_value_v2", "colour_temp");
+                if (ctDp != null) {
+                    int currentK = getCurrentDpValue(tenantId, device, ctDp.getCode(), 4000);
+                    int newK = Math.max(2000, Math.min(6500, currentK + deltaK));
+                    newK = scaleValue(newK, 2000, 6500, ctDp);
+                    dpValues.put(ctDp.getCode(), newK);
                 }
                 break;
             }
@@ -380,6 +440,22 @@ public class AlexaServiceImpl implements AlexaService {
     }
 
     // ========== DP Helper Methods ==========
+
+    /**
+     * Get current DP value from shared attributes (saved by previous commands).
+     */
+    private int getCurrentDpValue(TenantId tenantId, Device device, String dpCode, int defaultValue) {
+        try {
+            Optional<AttributeKvEntry> attr = attributesService.find(
+                    tenantId, device.getId(), AttributeScope.SHARED_SCOPE, dpCode).get();
+            if (attr.isPresent()) {
+                return (int) attr.get().getLongValue().orElse((long) defaultValue);
+            }
+        } catch (Exception e) {
+            log.debug("Could not read current DP value for {}: {}", dpCode, e.getMessage());
+        }
+        return defaultValue;
+    }
 
     private DataPoint findDpByCode(Map<String, DataPoint> dpByCode, String... patterns) {
         for (String pattern : patterns) {
