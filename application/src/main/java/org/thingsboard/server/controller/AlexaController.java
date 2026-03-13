@@ -33,11 +33,14 @@ import org.thingsboard.server.common.data.id.TenantId;
 import org.thingsboard.server.common.data.id.UserId;
 import org.thingsboard.server.common.data.security.UserCredentials;
 import org.thingsboard.server.queue.util.TbCoreComponent;
+import org.thingsboard.server.service.alexa.AlexaAppLinkingService;
 import org.thingsboard.server.service.alexa.AlexaOAuth2Service;
 import org.thingsboard.server.service.alexa.AlexaService;
 import org.thingsboard.server.service.alexa.dto.AlexaCommand;
 import org.thingsboard.server.service.alexa.dto.AlexaDevice;
 import org.thingsboard.server.service.alexa.dto.AlexaOAuth2TokenResponse;
+import org.thingsboard.server.service.alexa.dto.AppLinkingCompleteRequest;
+import org.thingsboard.server.service.alexa.dto.AppLinkingStartResponse;
 import org.thingsboard.server.service.security.model.SecurityUser;
 
 import jakarta.servlet.http.HttpServletRequest;
@@ -62,6 +65,7 @@ public class AlexaController extends BaseController {
 
     private final AlexaService alexaService;
     private final AlexaOAuth2Service alexaOAuth2Service;
+    private final AlexaAppLinkingService alexaAppLinkingService;
     private final PasswordEncoder passwordEncoder;
 
     // ============== OAuth2 Endpoints ==============
@@ -333,19 +337,121 @@ public class AlexaController extends BaseController {
     // ============== App-to-App Account Linking ==============
 
     /**
-     * Generate authorization code for app-to-app Alexa account linking.
-     * Called by the mobile app when user is already authenticated.
-     * The mobile app then uses this code with Amazon's Skill Enablement API
-     * to enable the skill and link accounts without requiring a login form.
+     * Step 1: Start app-to-app linking flow.
+     * Generates state, PKCE parameters, and returns Alexa app + LWA fallback URLs.
+     * Mobile app opens the appropriate URL based on whether Alexa app is installed.
      *
-     * Flow: Mobile app (user logged in) → this API → auth code
-     *       → mobile calls Amazon Skill Enablement API with auth code + Amazon token
-     *       → Amazon calls POST /api/alexa/oauth/token (existing endpoint) to exchange code
+     * Flow: App calls this → gets URLs → opens browser/Alexa app → user logs in Amazon
+     *       → Amazon redirects to /oauth/app-callback → backend redirects to app
+     *       → App calls /app-linking/complete with Amazon auth code
      */
-    @Operation(summary = "Generate auth code for app-to-app linking",
-            description = "Generates an OAuth2 authorization code for the currently authenticated user. " +
-                    "Used by mobile apps to enable Alexa skill via Amazon Skill Enablement API " +
-                    "without requiring the user to re-enter credentials.")
+    @Operation(summary = "Start app-to-app linking",
+            description = "Returns Alexa app URL and LWA fallback URL for initiating account linking. " +
+                    "App should check if Alexa app is installed and open the appropriate URL.")
+    @PreAuthorize("hasAnyAuthority('TENANT_ADMIN', 'CUSTOMER_USER')")
+    @PostMapping("/app-linking/start")
+    public ResponseEntity<AppLinkingStartResponse> startAppLinking(
+            @AuthenticationPrincipal SecurityUser currentUser
+    ) throws ThingsboardException {
+        try {
+            AppLinkingStartResponse response = alexaAppLinkingService.startLinking(
+                    currentUser.getTenantId(), currentUser.getId());
+
+            log.info("Started app-to-app linking for user: {}", currentUser.getEmail());
+
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            log.error("Failed to start app-to-app linking for user: {}", currentUser.getEmail(), e);
+            throw handleException(e);
+        }
+    }
+
+    /**
+     * Step 2: Amazon OAuth callback redirect.
+     * Amazon redirects here after user logs in and consents.
+     * This endpoint redirects to the mobile app's custom scheme with the auth code.
+     * This endpoint is PUBLIC (under /api/alexa/oauth/**) — no JWT required.
+     */
+    @Operation(summary = "App-to-app OAuth callback",
+            description = "Receives Amazon's OAuth redirect and forwards to mobile app via custom scheme.")
+    @GetMapping("/oauth/app-callback")
+    public ResponseEntity<Void> appCallback(
+            @RequestParam(value = "code", required = false) String code,
+            @RequestParam(value = "state", required = false) String state,
+            @RequestParam(value = "error", required = false) String error,
+            @RequestParam(value = "error_description", required = false) String errorDescription
+    ) {
+        log.debug("App-to-app callback received: code={}, state={}, error={}",
+                code != null ? "present" : "null", state, error);
+
+        String appCallback = alexaAppLinkingService.getAppCallbackScheme();
+        String redirectUrl;
+
+        if (error != null) {
+            redirectUrl = appCallback + "?error=" + error +
+                    (errorDescription != null ? "&error_description=" + errorDescription : "") +
+                    (state != null ? "&state=" + state : "");
+        } else if (code != null) {
+            redirectUrl = appCallback + "?code=" + code +
+                    (state != null ? "&state=" + state : "");
+        } else {
+            redirectUrl = appCallback + "?error=unknown_error";
+        }
+
+        log.debug("Redirecting to app: {}", redirectUrl);
+
+        return ResponseEntity.status(HttpStatus.FOUND)
+                .header("Location", redirectUrl)
+                .build();
+    }
+
+    /**
+     * Step 3: Complete app-to-app linking.
+     * App sends the Amazon auth code received from the callback.
+     * Backend exchanges it for Amazon access token, generates TB auth code,
+     * and calls Skill Enablement API to link the accounts.
+     */
+    @Operation(summary = "Complete app-to-app linking",
+            description = "Exchanges Amazon auth code for token, generates TB auth code, " +
+                    "and calls Skill Enablement API to complete account linking.")
+    @PreAuthorize("hasAnyAuthority('TENANT_ADMIN', 'CUSTOMER_USER')")
+    @PostMapping("/app-linking/complete")
+    public ResponseEntity<?> completeAppLinking(
+            @AuthenticationPrincipal SecurityUser currentUser,
+            @RequestBody AppLinkingCompleteRequest request
+    ) throws ThingsboardException {
+        try {
+            alexaAppLinkingService.completeLinking(
+                    currentUser.getTenantId(),
+                    currentUser.getId(),
+                    request.getAmazonAuthCode(),
+                    request.getState());
+
+            log.info("App-to-app linking completed for user: {}", currentUser.getEmail());
+
+            return ResponseEntity.ok(java.util.Map.of(
+                    "success", true,
+                    "message", "Account linked successfully"
+            ));
+        } catch (IllegalArgumentException e) {
+            log.warn("App-to-app linking validation failed for user: {}: {}",
+                    currentUser.getEmail(), e.getMessage());
+            return ResponseEntity.badRequest().body(java.util.Map.of(
+                    "success", false,
+                    "message", e.getMessage()
+            ));
+        } catch (Exception e) {
+            log.error("Failed to complete app-to-app linking for user: {}", currentUser.getEmail(), e);
+            throw handleException(e);
+        }
+    }
+
+    /**
+     * Generate authorization code for app-to-app Alexa account linking (legacy).
+     * Kept for backward compatibility. New apps should use /app-linking/start + /app-linking/complete.
+     */
+    @Operation(summary = "Generate auth code for app-to-app linking (legacy)",
+            description = "Generates an OAuth2 authorization code for the currently authenticated user.")
     @PreAuthorize("hasAnyAuthority('TENANT_ADMIN', 'CUSTOMER_USER')")
     @PostMapping("/app-linking/generate-code")
     public ResponseEntity<?> generateCodeForAppLinking(

@@ -2045,3 +2045,15 @@ alexa:
     # These should match the values configured in Alexa Developer Console
     client_id: "${ALEXA_OAUTH_CLIENT_ID:}"
     client_secret: "${ALEXA_OAUTH_CLIENT_SECRET:}"
+  app_linking:
+    # Alexa Client ID and Secret from Account Linking page (NOT Security Profile)
+    alexa_client_id: "${ALEXA_APP_LINKING_CLIENT_ID:}"
+    alexa_client_secret: "${ALEXA_APP_LINKING_CLIENT_SECRET:}"
+    # Alexa Skill ID
+    skill_id: "${ALEXA_SKILL_ID:}"
+    # Your app's HTTPS redirect URL (Universal Link / App Link)
+    redirect_uri: "${ALEXA_APP_LINKING_REDIRECT_URI:}"
+    # Mobile app's custom scheme callback (backend redirects here)
+    app_callback_scheme: "${ALEXA_APP_CALLBACK_SCHEME:osprey://alexa-callback}"
+    # Skill stage: "development" or "live"
+    skill_stage: "${ALEXA_SKILL_STAGE:development}"
