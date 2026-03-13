@@ -369,19 +369,21 @@ public class AlexaController extends BaseController {
     /**
      * Step 2: Amazon OAuth callback redirect.
      * Amazon redirects here after user logs in and consents.
-     * This endpoint redirects to the mobile app's custom scheme with the auth code.
+     * Returns an HTML page with JavaScript redirect to the mobile app's custom scheme.
+     * Uses JS window.location.href instead of HTTP 302 because Chrome Custom Tabs
+     * and Samsung Browser don't handle 302 redirects to custom schemes (osprey://).
      * This endpoint is PUBLIC (under /api/alexa/oauth/**) — no JWT required.
      */
     @Operation(summary = "App-to-app OAuth callback",
             description = "Receives Amazon's OAuth redirect and forwards to mobile app via custom scheme.")
     @GetMapping("/oauth/app-callback")
-    public ResponseEntity<Void> appCallback(
+    public ResponseEntity<String> appCallback(
             @RequestParam(value = "code", required = false) String code,
             @RequestParam(value = "state", required = false) String state,
             @RequestParam(value = "error", required = false) String error,
             @RequestParam(value = "error_description", required = false) String errorDescription
     ) {
-        log.debug("App-to-app callback received: code={}, state={}, error={}",
+        log.info("App-to-app callback received: code={}, state={}, error={}",
                 code != null ? "present" : "null", state, error);
 
         String appCallback = alexaAppLinkingService.getAppCallbackScheme();
@@ -398,11 +400,20 @@ public class AlexaController extends BaseController {
             redirectUrl = appCallback + "?error=unknown_error";
         }
 
-        log.debug("Redirecting to app: {}", redirectUrl);
+        log.info("Redirecting to app via HTML/JS: {}", redirectUrl);
 
-        return ResponseEntity.status(HttpStatus.FOUND)
-                .header("Location", redirectUrl)
-                .build();
+        String html = "<!DOCTYPE html><html><head><meta charset='UTF-8'>" +
+                "<title>Redirecting...</title></head><body>" +
+                "<script>window.location.href = '" + redirectUrl + "';</script>" +
+                "<p style='text-align:center;margin-top:50px;font-family:Arial,sans-serif;'>" +
+                "Redirecting to Osprey app...</p>" +
+                "<p style='text-align:center;'>" +
+                "<a href='" + redirectUrl + "'>Click here if not redirected</a></p>" +
+                "</body></html>";
+
+        return ResponseEntity.ok()
+                .contentType(MediaType.TEXT_HTML)
+                .body(html);
     }
 
     /**
