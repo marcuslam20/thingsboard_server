@@ -402,9 +402,28 @@ public class AlexaController extends BaseController {
 
         log.info("Redirecting to app via HTML/JS: {}", redirectUrl);
 
+        // Use multiple redirect strategies for maximum browser compatibility:
+        // 1. Android Intent URL (works in Chrome Custom Tabs)
+        // 2. JavaScript window.location.href (works in most browsers)
+        // 3. Meta refresh (fallback)
+        // 4. Manual click link (last resort)
+        // Also try HTTP 302 first — some browsers handle it, some don't
+        String intentUrl = "intent://" + redirectUrl.substring(redirectUrl.indexOf("://") + 3) +
+                "#Intent;scheme=osprey;end";
+
         String html = "<!DOCTYPE html><html><head><meta charset='UTF-8'>" +
-                "<title>Redirecting...</title></head><body>" +
-                "<script>window.location.href = '" + redirectUrl + "';</script>" +
+                "<title>Redirecting...</title>" +
+                "<meta http-equiv='refresh' content='1;url=" + redirectUrl + "'>" +
+                "</head><body>" +
+                "<script>" +
+                "function tryRedirect() {" +
+                "  try { window.location.href = '" + redirectUrl + "'; } catch(e) {}" +
+                "  setTimeout(function() {" +
+                "    try { window.location.href = '" + intentUrl + "'; } catch(e) {}" +
+                "  }, 500);" +
+                "}" +
+                "tryRedirect();" +
+                "</script>" +
                 "<p style='text-align:center;margin-top:50px;font-family:Arial,sans-serif;'>" +
                 "Redirecting to Osprey app...</p>" +
                 "<p style='text-align:center;'>" +
