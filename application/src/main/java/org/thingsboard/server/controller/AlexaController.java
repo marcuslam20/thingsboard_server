@@ -518,7 +518,10 @@ public class AlexaController extends BaseController {
             @AuthenticationPrincipal SecurityUser currentUser
     ) throws ThingsboardException {
         try {
+            log.debug("Checking linking status for user: {} ({}), userId UUID: {}",
+                    currentUser.getEmail(), currentUser.getId(), currentUser.getId().getId());
             boolean linked = alexaOAuth2Service.isUserLinked(currentUser.getId());
+            log.debug("Linking status for user {}: linked={}", currentUser.getEmail(), linked);
             return ResponseEntity.ok(java.util.Map.of(
                     "linked", linked,
                     "platform", "alexa"

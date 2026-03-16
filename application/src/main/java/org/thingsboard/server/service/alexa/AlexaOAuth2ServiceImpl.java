@@ -256,7 +256,9 @@ public class AlexaOAuth2ServiceImpl implements AlexaOAuth2Service {
 
     @Override
     public boolean isUserLinked(UserId userId) {
+        log.debug("isUserLinked called for userId: {}", userId.getId());
         List<AlexaOAuth2TokenEntity> tokens = tokenDao.findByUserId(userId);
+        log.debug("Found {} tokens for userId: {}", tokens.size(), userId.getId());
         Timestamp now = Timestamp.from(Instant.now());
         return tokens.stream().anyMatch(t -> t.getExpiresAt().after(now));
     }
