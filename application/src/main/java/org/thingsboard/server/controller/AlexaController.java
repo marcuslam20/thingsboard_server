@@ -583,10 +583,17 @@ public class AlexaController extends BaseController {
         }
 
         try {
-            if ("SkillDisabled".equals(eventName)) {
-                // Revoke all tokens associated with this Amazon user
-                alexaOAuth2Service.revokeTokenByAlexaUserId(amazonUserId);
-                log.info("Tokens revoked for amazonUserId: {} (skill disabled)", amazonUserId);
+            switch (eventName) {
+                case "SkillDisabled":
+                    alexaOAuth2Service.revokeTokenByAmazonUserId(amazonUserId);
+                    log.info("Tokens revoked for amazonUserId: {} (skill disabled)", amazonUserId);
+                    break;
+                case "SkillAccountLinked":
+                    alexaOAuth2Service.associateAmazonUserId(amazonUserId);
+                    log.info("Amazon userId associated: {} (skill account linked)", amazonUserId);
+                    break;
+                default:
+                    log.info("Unhandled skill event: {}", eventName);
             }
 
             return ResponseEntity.ok(java.util.Map.of(

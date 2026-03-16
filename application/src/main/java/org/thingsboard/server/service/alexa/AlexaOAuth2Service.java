@@ -119,6 +119,22 @@ public interface AlexaOAuth2Service {
     void revokeAllTokensByUserId(UserId userId);
 
     /**
+     * Associate an Amazon user ID with the most recently created token.
+     * Called when SkillAccountLinked event is received from Amazon.
+     *
+     * @param amazonUserId the Amazon Alexa account user ID
+     */
+    void associateAmazonUserId(String amazonUserId);
+
+    /**
+     * Revoke all tokens for a specific Amazon user ID.
+     * Called when SkillDisabled event is received from Amazon.
+     *
+     * @param amazonUserId the Amazon Alexa account user ID
+     */
+    void revokeTokenByAmazonUserId(String amazonUserId);
+
+    /**
      * Clean up expired tokens and authorization codes.
      * Should be called periodically by a scheduled task.
      *

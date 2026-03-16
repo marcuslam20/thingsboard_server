@@ -82,8 +82,7 @@ export async function handleSkillEvent(event: SkillEvent): Promise<void> {
       break;
 
     case 'SkillAccountLinked':
-      console.log(`Skill account linked for userId: ${userId}`);
-      // No action needed — linking is handled by the app flow
+      await handleSkillAccountLinked(userId);
       break;
 
     default:
@@ -91,29 +90,42 @@ export async function handleSkillEvent(event: SkillEvent): Promise<void> {
   }
 }
 
-async function handleSkillDisabled(amazonUserId: string): Promise<void> {
-  console.log(`Skill disabled by user: ${amazonUserId}, revoking tokens...`);
-
+async function notifyBackend(eventName: string, amazonUserId: string): Promise<void> {
   const baseUrl = process.env.TB_URL || '';
   if (!baseUrl) {
     console.error('TB_URL not configured, cannot notify backend');
     return;
   }
 
-  try {
-    // Call public endpoint directly — no authentication needed
-    const response = await fetch(`${baseUrl.replace(/\/$/, '')}/api/alexa/skill/events`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ eventName: 'SkillDisabled', amazonUserId }),
-    });
+  const response = await fetch(`${baseUrl.replace(/\/$/, '')}/api/alexa/skill/events`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ eventName, amazonUserId }),
+  });
 
-    if (!response.ok) {
-      const error = await response.text();
-      console.error(`Backend returned ${response.status}: ${error}`);
-    } else {
-      console.log(`Successfully notified backend to revoke tokens for user: ${amazonUserId}`);
-    }
+  if (!response.ok) {
+    const error = await response.text();
+    throw new Error(`Backend returned ${response.status}: ${error}`);
+  }
+}
+
+async function handleSkillAccountLinked(amazonUserId: string): Promise<void> {
+  console.log(`Skill account linked for user: ${amazonUserId}, associating with token...`);
+
+  try {
+    await notifyBackend('SkillAccountLinked', amazonUserId);
+    console.log(`Successfully associated Amazon userId: ${amazonUserId}`);
+  } catch (error) {
+    console.error(`Failed to associate Amazon userId ${amazonUserId}:`, error);
+  }
+}
+
+async function handleSkillDisabled(amazonUserId: string): Promise<void> {
+  console.log(`Skill disabled by user: ${amazonUserId}, revoking tokens...`);
+
+  try {
+    await notifyBackend('SkillDisabled', amazonUserId);
+    console.log(`Successfully notified backend to revoke tokens for user: ${amazonUserId}`);
   } catch (error) {
     console.error(`Failed to revoke tokens for user ${amazonUserId}:`, error);
     // Don't throw — Amazon doesn't expect a response for skill events

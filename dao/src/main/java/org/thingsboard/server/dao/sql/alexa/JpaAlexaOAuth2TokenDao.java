@@ -93,4 +93,19 @@ public class JpaAlexaOAuth2TokenDao implements AlexaOAuth2TokenDao {
     public int deleteExpiredTokens(Timestamp timestamp) {
         return repository.deleteExpiredTokens(timestamp);
     }
+
+    @Override
+    public Optional<AlexaOAuth2TokenEntity> findByAmazonUserId(String amazonUserId) {
+        return repository.findByAmazonUserId(amazonUserId);
+    }
+
+    @Override
+    public List<AlexaOAuth2TokenEntity> findTokensWithoutAmazonUserId() {
+        return repository.findTokensWithoutAmazonUserId();
+    }
+
+    @Override
+    public void deleteByAmazonUserId(String amazonUserId) {
+        repository.deleteByAmazonUserId(amazonUserId);
+    }
 }

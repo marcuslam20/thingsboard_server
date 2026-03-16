@@ -270,6 +270,30 @@ public class AlexaOAuth2ServiceImpl implements AlexaOAuth2Service {
 
     @Override
     @Transactional
+    public void associateAmazonUserId(String amazonUserId) {
+        log.info("Associating Amazon userId: {}", amazonUserId);
+        List<AlexaOAuth2TokenEntity> tokens = tokenDao.findTokensWithoutAmazonUserId();
+        if (!tokens.isEmpty()) {
+            AlexaOAuth2TokenEntity latestToken = tokens.get(0);
+            latestToken.setAmazonUserId(amazonUserId);
+            latestToken.setUpdatedAt(Timestamp.from(Instant.now()));
+            tokenDao.save(latestToken);
+            log.info("Associated Amazon userId {} with token for TB userId: {}",
+                    amazonUserId, latestToken.getUserId());
+        } else {
+            log.warn("No token without amazonUserId found to associate with: {}", amazonUserId);
+        }
+    }
+
+    @Override
+    @Transactional
+    public void revokeTokenByAmazonUserId(String amazonUserId) {
+        log.info("Revoking tokens for Amazon userId: {}", amazonUserId);
+        tokenDao.deleteByAmazonUserId(amazonUserId);
+    }
+
+    @Override
+    @Transactional
     public int cleanupExpiredTokens() {
         log.debug("Cleaning up expired tokens and authorization codes");
         Timestamp now = Timestamp.from(Instant.now());

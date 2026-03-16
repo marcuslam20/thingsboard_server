@@ -47,6 +47,9 @@ public class AlexaOAuth2TokenEntity implements Serializable {
     @Column(name = "alexa_user_id", nullable = false, length = 255)
     private String alexaUserId;
 
+    @Column(name = "amazon_user_id", length = 512)
+    private String amazonUserId;
+
     @Column(name = "access_token", nullable = false, columnDefinition = "TEXT")
     private String accessToken;
 

@@ -68,6 +68,12 @@ CREATE INDEX IF NOT EXISTS idx_alexa_oauth_tenant ON alexa_oauth2_tokens(tenant_
 -- Index for user-based queries (for account management)
 CREATE INDEX IF NOT EXISTS idx_alexa_oauth_user ON alexa_oauth2_tokens(user_id);
 
+-- Amazon user ID column (populated when SkillAccountLinked event received)
+ALTER TABLE alexa_oauth2_tokens ADD COLUMN IF NOT EXISTS amazon_user_id VARCHAR(512);
+
+-- Index for looking up tokens by Amazon user ID (used by Skill Events)
+CREATE INDEX IF NOT EXISTS idx_alexa_oauth_amazon_user ON alexa_oauth2_tokens(amazon_user_id);
+
 -- Table for storing temporary authorization codes (used during OAuth2 flow)
 CREATE TABLE IF NOT EXISTS alexa_oauth2_auth_codes (
     code VARCHAR(255) NOT NULL CONSTRAINT alexa_oauth2_auth_codes_pkey PRIMARY KEY,

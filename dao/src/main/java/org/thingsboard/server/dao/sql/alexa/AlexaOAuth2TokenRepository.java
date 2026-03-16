@@ -47,6 +47,12 @@ public interface AlexaOAuth2TokenRepository extends JpaRepository<AlexaOAuth2Tok
     @Query("SELECT t FROM AlexaOAuth2TokenEntity t WHERE t.expiresAt < :timestamp")
     List<AlexaOAuth2TokenEntity> findExpiredTokens(@Param("timestamp") Timestamp timestamp);
 
+    @Query("SELECT t FROM AlexaOAuth2TokenEntity t WHERE t.amazonUserId = :amazonUserId")
+    Optional<AlexaOAuth2TokenEntity> findByAmazonUserId(@Param("amazonUserId") String amazonUserId);
+
+    @Query("SELECT t FROM AlexaOAuth2TokenEntity t WHERE t.amazonUserId IS NULL ORDER BY t.createdAt DESC")
+    List<AlexaOAuth2TokenEntity> findTokensWithoutAmazonUserId();
+
     @Transactional
     @Modifying
     @Query("DELETE FROM AlexaOAuth2TokenEntity t WHERE t.alexaUserId = :alexaUserId")
@@ -71,4 +77,9 @@ public interface AlexaOAuth2TokenRepository extends JpaRepository<AlexaOAuth2Tok
     @Modifying
     @Query("DELETE FROM AlexaOAuth2TokenEntity t WHERE t.expiresAt < :timestamp")
     int deleteExpiredTokens(@Param("timestamp") Timestamp timestamp);
+
+    @Transactional
+    @Modifying
+    @Query("DELETE FROM AlexaOAuth2TokenEntity t WHERE t.amazonUserId = :amazonUserId")
+    void deleteByAmazonUserId(@Param("amazonUserId") String amazonUserId);
 }

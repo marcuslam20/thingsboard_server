@@ -116,4 +116,26 @@ public interface AlexaOAuth2TokenDao {
      * @return number of deleted tokens
      */
     int deleteExpiredTokens(Timestamp timestamp);
+
+    /**
+     * Find token by Amazon user ID (from Skill Events)
+     *
+     * @param amazonUserId the Amazon Alexa account user ID
+     * @return the token entity if found
+     */
+    Optional<AlexaOAuth2TokenEntity> findByAmazonUserId(String amazonUserId);
+
+    /**
+     * Find tokens that don't have an Amazon user ID yet
+     *
+     * @return list of tokens without amazon_user_id, ordered by created_at desc
+     */
+    List<AlexaOAuth2TokenEntity> findTokensWithoutAmazonUserId();
+
+    /**
+     * Delete token by Amazon user ID
+     *
+     * @param amazonUserId the Amazon Alexa account user ID
+     */
+    void deleteByAmazonUserId(String amazonUserId);
 }
