@@ -23,6 +23,7 @@ import { handleDiscovery } from './handlers/discovery';
 import { handleDirective } from './handlers/directiveHandler';
 import { handleAuthorization } from './handlers/authorization';
 import { handleStateReport } from './handlers/stateReport';
+import { handleSkillEvent, SkillEvent } from './handlers/skillEventHandler';
 import { AlexaRequest, AlexaResponse, AlexaErrorResponse } from './types/alexa';
 
 /** Namespaces that map to device control directives (handled by directiveHandler) */
@@ -37,44 +38,54 @@ const CONTROL_NAMESPACES = new Set([
   'Alexa.RangeController',
 ]);
 
-export const handler = async (event: AlexaRequest): Promise<AlexaResponse | AlexaErrorResponse> => {
-  console.log('Received Alexa directive:', JSON.stringify(event, null, 2));
+export const handler = async (event: AlexaRequest | SkillEvent): Promise<AlexaResponse | AlexaErrorResponse | void> => {
+  console.log('Received event:', JSON.stringify(event, null, 2));
+
+  // Skill Events (SkillDisabled, SkillAccountLinked) have a different structure:
+  // they use event.request.type = "AlexaSkillEvent.SkillDisabled" instead of event.directive
+  const skillEvent = event as any;
+  if (skillEvent.request?.type?.startsWith('AlexaSkillEvent.')) {
+    await handleSkillEvent(skillEvent as SkillEvent);
+    return;
+  }
+
+  const alexaEvent = event as AlexaRequest;
 
   try {
-    const namespace = event.directive.header.namespace;
-    const name = event.directive.header.name;
+    const namespace = alexaEvent.directive.header.namespace;
+    const name = alexaEvent.directive.header.name;
 
     // Discovery
     if (namespace === 'Alexa.Discovery') {
-      return await handleDiscovery(event);
+      return await handleDiscovery(alexaEvent);
     }
 
     // Authorization (account linking)
     if (namespace === 'Alexa.Authorization') {
-      return await handleAuthorization(event);
+      return await handleAuthorization(alexaEvent);
     }
 
     // ReportState
     if (namespace === 'Alexa' && name === 'ReportState') {
-      return await handleStateReport(event);
+      return await handleStateReport(alexaEvent);
     }
 
     // All device control directives
     if (CONTROL_NAMESPACES.has(namespace)) {
-      return await handleDirective(event);
+      return await handleDirective(alexaEvent);
     }
 
     // Unsupported
     console.error(`Unsupported namespace: ${namespace}, name: ${name}`);
     return createErrorResponse(
-      event,
+      alexaEvent,
       'INVALID_DIRECTIVE',
       `Unsupported namespace: ${namespace}`
     );
   } catch (error) {
     console.error('Error handling directive:', error);
     return createErrorResponse(
-      event,
+      alexaEvent,
       'INTERNAL_ERROR',
       error instanceof Error ? error.message : 'Unknown error'
     );

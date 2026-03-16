@@ -111,6 +111,14 @@ public interface AlexaOAuth2Service {
     boolean isUserLinked(UserId userId);
 
     /**
+     * Revoke all tokens for a specific user (by ThingsBoard userId).
+     * Used when user unlinks from the mobile app or when skill is disabled.
+     *
+     * @param userId the ThingsBoard user ID
+     */
+    void revokeAllTokensByUserId(UserId userId);
+
+    /**
      * Clean up expired tokens and authorization codes.
      * Should be called periodically by a scheduled task.
      *

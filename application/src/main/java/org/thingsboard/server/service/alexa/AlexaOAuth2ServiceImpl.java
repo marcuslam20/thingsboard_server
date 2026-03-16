@@ -263,6 +263,13 @@ public class AlexaOAuth2ServiceImpl implements AlexaOAuth2Service {
 
     @Override
     @Transactional
+    public void revokeAllTokensByUserId(UserId userId) {
+        log.info("Revoking all Alexa tokens for userId: {}", userId);
+        tokenDao.deleteByUserId(userId);
+    }
+
+    @Override
+    @Transactional
     public int cleanupExpiredTokens() {
         log.debug("Cleaning up expired tokens and authorization codes");
         Timestamp now = Timestamp.from(Instant.now());

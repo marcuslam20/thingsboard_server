@@ -529,6 +529,78 @@ public class AlexaController extends BaseController {
         }
     }
 
+    // ============== Unlink Endpoint ==============
+
+    /**
+     * Unlink the current user's Alexa account.
+     * Revokes all OAuth2 tokens for this user so the Alexa skill will no longer work.
+     * Mobile app calls this when user taps "Unlink" button.
+     */
+    @Operation(summary = "Unlink Alexa account",
+            description = "Revokes all Alexa OAuth2 tokens for the current user, effectively unlinking their account.")
+    @PreAuthorize("hasAnyAuthority('TENANT_ADMIN', 'CUSTOMER_USER')")
+    @PostMapping("/app-linking/unlink")
+    public ResponseEntity<?> unlinkAlexa(
+            @AuthenticationPrincipal SecurityUser currentUser
+    ) throws ThingsboardException {
+        try {
+            alexaOAuth2Service.revokeAllTokensByUserId(currentUser.getId());
+            log.info("Alexa account unlinked for user: {}", currentUser.getEmail());
+            return ResponseEntity.ok(java.util.Map.of(
+                    "success", true,
+                    "message", "Alexa account unlinked successfully"
+            ));
+        } catch (Exception e) {
+            log.error("Failed to unlink Alexa for user: {}", currentUser.getEmail(), e);
+            throw handleException(e);
+        }
+    }
+
+    // ============== Skill Events Endpoint ==============
+
+    /**
+     * Receive skill lifecycle events from Lambda.
+     * When a user disables the skill from the Alexa app, Amazon sends a SkillDisabled
+     * event to Lambda, which forwards it here so we can revoke tokens.
+     * This endpoint is PUBLIC (under /api/alexa/skill/**) — no JWT required.
+     * Lambda authenticates with TB admin credentials.
+     */
+    @Operation(summary = "Receive skill events from Lambda",
+            description = "Handles skill lifecycle events (SkillDisabled, SkillAccountLinked) forwarded by Lambda.")
+    @PostMapping("/skill/events")
+    public ResponseEntity<?> receiveSkillEvent(
+            @RequestBody java.util.Map<String, String> eventData
+    ) {
+        String eventName = eventData.get("eventName");
+        String amazonUserId = eventData.get("amazonUserId");
+
+        log.info("Skill event received: eventName={}, amazonUserId={}", eventName, amazonUserId);
+
+        if (eventName == null || amazonUserId == null) {
+            return ResponseEntity.badRequest().body(java.util.Map.of(
+                    "error", "Missing eventName or amazonUserId"
+            ));
+        }
+
+        try {
+            if ("SkillDisabled".equals(eventName)) {
+                // Revoke all tokens associated with this Amazon user
+                alexaOAuth2Service.revokeTokenByAlexaUserId(amazonUserId);
+                log.info("Tokens revoked for amazonUserId: {} (skill disabled)", amazonUserId);
+            }
+
+            return ResponseEntity.ok(java.util.Map.of(
+                    "success", true,
+                    "message", "Event processed: " + eventName
+            ));
+        } catch (Exception e) {
+            log.error("Failed to process skill event: {} for amazonUserId: {}", eventName, amazonUserId, e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(java.util.Map.of(
+                    "error", "Failed to process event"
+            ));
+        }
+    }
+
     // ============== Device Management Endpoints ==============
 
     /**

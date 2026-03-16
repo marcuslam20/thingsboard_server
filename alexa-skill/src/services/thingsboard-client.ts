@@ -248,4 +248,17 @@ export class ThingsBoardClient {
       `/api/alexa/skill/devices/${deviceId}/telemetry?keys=${keysParam}`
     );
   }
+
+  // ============== Skill Events ==============
+
+  /**
+   * Notify backend about a skill lifecycle event (e.g., SkillDisabled).
+   * Backend will revoke tokens or take appropriate action.
+   */
+  async notifySkillEvent(eventName: string, amazonUserId: string): Promise<void> {
+    await this.request('/api/alexa/skill/events', {
+      method: 'POST',
+      body: JSON.stringify({ eventName, amazonUserId }),
+    });
+  }
 }
