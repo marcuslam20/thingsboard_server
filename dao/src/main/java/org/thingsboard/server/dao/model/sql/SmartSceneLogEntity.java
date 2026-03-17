@@ -16,15 +16,15 @@
 package org.thingsboard.server.dao.model.sql;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import io.hypersistence.utils.hibernate.type.json.JsonBinaryType;
 import jakarta.persistence.Column;
-import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import lombok.Data;
+import org.hibernate.annotations.Type;
 import org.thingsboard.server.common.data.smarthome.SmartSceneLog;
 import org.thingsboard.server.dao.model.ModelConstants;
-import org.thingsboard.server.dao.util.mapping.JsonConverter;
 
 import java.util.UUID;
 
@@ -49,7 +49,7 @@ public class SmartSceneLogEntity {
     @Column(name = ModelConstants.SMART_SCENE_LOG_STATUS_PROPERTY)
     private String status;
 
-    @Convert(converter = JsonConverter.class)
+    @Type(JsonBinaryType.class)
     @Column(name = ModelConstants.SMART_SCENE_LOG_EXECUTION_DETAILS_PROPERTY, columnDefinition = "jsonb")
     private JsonNode executionDetails;
 
