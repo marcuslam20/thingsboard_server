@@ -33,14 +33,18 @@ import org.thingsboard.server.common.data.id.RoomId;
 import org.thingsboard.server.common.data.id.SmartHomeId;
 import org.thingsboard.server.common.data.id.UserId;
 import org.thingsboard.server.common.data.security.Authority;
+import org.thingsboard.server.common.data.Device;
+import org.thingsboard.server.common.data.exception.ThingsboardErrorCode;
 import org.thingsboard.server.common.data.smarthome.Room;
 import org.thingsboard.server.common.data.smarthome.RoomDevice;
 import org.thingsboard.server.common.data.smarthome.SmartHome;
+import org.thingsboard.server.common.data.smarthome.SmartHomeDevice;
 import org.thingsboard.server.common.data.smarthome.SmartHomeMember;
 import org.thingsboard.server.common.data.smarthome.SmartHomeMemberRole;
 import org.thingsboard.server.common.data.smarthome.SmartHomeMemberStatus;
 import org.thingsboard.server.dao.smarthome.RoomDeviceService;
 import org.thingsboard.server.dao.smarthome.RoomService;
+import org.thingsboard.server.dao.smarthome.SmartHomeDeviceService;
 import org.thingsboard.server.dao.smarthome.SmartHomeMemberService;
 import org.thingsboard.server.dao.smarthome.SmartHomeService;
 import org.thingsboard.server.queue.util.TbCoreComponent;
@@ -63,6 +67,7 @@ public class SmartHomeController extends BaseController {
     private final SmartHomeMemberService smartHomeMemberService;
     private final RoomService roomService;
     private final RoomDeviceService roomDeviceService;
+    private final SmartHomeDeviceService smartHomeDeviceService;
 
     // ========== Smart Home CRUD ==========
 
@@ -183,6 +188,85 @@ public class SmartHomeController extends BaseController {
                     org.thingsboard.server.common.data.exception.ThingsboardErrorCode.PERMISSION_DENIED);
         }
         smartHomeMemberService.removeMember(memberId);
+    }
+
+    // ========== Home Device Management ==========
+
+    @PreAuthorize("hasAnyAuthority('TENANT_ADMIN', 'CUSTOMER_USER')")
+    @GetMapping("/{homeId}/devices")
+    public List<SmartHomeDevice> getDevicesInHome(
+            @PathVariable("homeId") String strHomeId) throws ThingsboardException {
+        checkParameter("homeId", strHomeId);
+        SmartHomeId homeId = new SmartHomeId(toUUID(strHomeId));
+        checkNotNull(smartHomeService.findSmartHomeById(getTenantId(), homeId));
+        checkSmartHomeMembership(homeId);
+        return smartHomeDeviceService.findDevicesByHomeId(homeId);
+    }
+
+    @PreAuthorize("hasAnyAuthority('TENANT_ADMIN', 'CUSTOMER_USER')")
+    @PostMapping("/{homeId}/devices")
+    public SmartHomeDevice addDeviceToHome(
+            @PathVariable("homeId") String strHomeId,
+            @RequestBody SmartHomeDevice request) throws ThingsboardException {
+        checkParameter("homeId", strHomeId);
+        SmartHomeId homeId = new SmartHomeId(toUUID(strHomeId));
+        checkNotNull(smartHomeService.findSmartHomeById(getTenantId(), homeId));
+        checkSmartHomeRole(homeId, SmartHomeMemberRole.OWNER, SmartHomeMemberRole.ADMIN);
+
+        // Verify device exists and belongs to this tenant
+        DeviceId deviceId = request.getDeviceId();
+        checkNotNull(deviceService.findDeviceById(getTenantId(), deviceId));
+
+        // Check device is not already in another home
+        if (smartHomeDeviceService.isDeviceInAnyHome(deviceId)) {
+            throw new ThingsboardException("Device is already assigned to a home",
+                    ThingsboardErrorCode.BAD_REQUEST_PARAMS);
+        }
+
+        request.setSmartHomeId(homeId);
+        return checkNotNull(smartHomeDeviceService.addDeviceToHome(request));
+    }
+
+    @PreAuthorize("hasAnyAuthority('TENANT_ADMIN', 'CUSTOMER_USER')")
+    @PutMapping("/{homeId}/devices/{deviceId}")
+    public SmartHomeDevice updateDeviceInHome(
+            @PathVariable("homeId") String strHomeId,
+            @PathVariable("deviceId") String strDeviceId,
+            @RequestBody SmartHomeDevice request) throws ThingsboardException {
+        checkParameter("homeId", strHomeId);
+        checkParameter("deviceId", strDeviceId);
+        SmartHomeId homeId = new SmartHomeId(toUUID(strHomeId));
+        DeviceId deviceId = new DeviceId(toUUID(strDeviceId));
+        checkNotNull(smartHomeService.findSmartHomeById(getTenantId(), homeId));
+        checkSmartHomeRole(homeId, SmartHomeMemberRole.OWNER, SmartHomeMemberRole.ADMIN);
+
+        SmartHomeDevice existing = smartHomeDeviceService.findByDeviceId(deviceId)
+                .orElseThrow(() -> new ThingsboardException("Device not found in this home",
+                        ThingsboardErrorCode.ITEM_NOT_FOUND));
+
+        // Validate room belongs to this home if provided
+        if (request.getRoomId() != null) {
+            checkNotNull(roomService.findRoomById(getTenantId(), request.getRoomId()));
+        }
+
+        existing.setRoomId(request.getRoomId());
+        existing.setDeviceName(request.getDeviceName());
+        existing.setSortOrder(request.getSortOrder());
+        return checkNotNull(smartHomeDeviceService.updateDevice(existing));
+    }
+
+    @PreAuthorize("hasAnyAuthority('TENANT_ADMIN', 'CUSTOMER_USER')")
+    @DeleteMapping("/{homeId}/devices/{deviceId}")
+    public void removeDeviceFromHome(
+            @PathVariable("homeId") String strHomeId,
+            @PathVariable("deviceId") String strDeviceId) throws ThingsboardException {
+        checkParameter("homeId", strHomeId);
+        checkParameter("deviceId", strDeviceId);
+        SmartHomeId homeId = new SmartHomeId(toUUID(strHomeId));
+        DeviceId deviceId = new DeviceId(toUUID(strDeviceId));
+        checkNotNull(smartHomeService.findSmartHomeById(getTenantId(), homeId));
+        checkSmartHomeRole(homeId, SmartHomeMemberRole.OWNER, SmartHomeMemberRole.ADMIN);
+        smartHomeDeviceService.removeDeviceFromHome(homeId, deviceId);
     }
 
     // ========== Room Management ==========

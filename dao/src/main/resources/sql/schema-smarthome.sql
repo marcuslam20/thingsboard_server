@@ -117,17 +117,24 @@ CREATE TABLE IF NOT EXISTS room (
 
 CREATE INDEX IF NOT EXISTS idx_room_home ON room(smart_home_id);
 
--- Device-Room assignment
-CREATE TABLE IF NOT EXISTS room_device (
-    room_id uuid NOT NULL,
+-- Device-Home assignment (Tuya-like: device belongs to a home, optionally assigned to a room)
+CREATE TABLE IF NOT EXISTS smart_home_device (
+    id uuid NOT NULL CONSTRAINT smart_home_device_pkey PRIMARY KEY,
+    created_time bigint NOT NULL,
+    smart_home_id uuid NOT NULL,
     device_id uuid NOT NULL,
+    room_id uuid,
+    device_name varchar(255),
     sort_order int DEFAULT 0,
-    CONSTRAINT room_device_pkey PRIMARY KEY (room_id, device_id),
-    CONSTRAINT fk_room_device_room FOREIGN KEY (room_id) REFERENCES room(id) ON DELETE CASCADE,
-    CONSTRAINT fk_room_device_device FOREIGN KEY (device_id) REFERENCES device(id) ON DELETE CASCADE
+    CONSTRAINT smart_home_device_unq UNIQUE (device_id),
+    CONSTRAINT fk_shd_home FOREIGN KEY (smart_home_id) REFERENCES smart_home(id) ON DELETE CASCADE,
+    CONSTRAINT fk_shd_device FOREIGN KEY (device_id) REFERENCES device(id) ON DELETE CASCADE,
+    CONSTRAINT fk_shd_room FOREIGN KEY (room_id) REFERENCES room(id) ON DELETE SET NULL
 );
 
-CREATE INDEX IF NOT EXISTS idx_room_device_device ON room_device(device_id);
+CREATE INDEX IF NOT EXISTS idx_smart_home_device_home ON smart_home_device(smart_home_id);
+CREATE INDEX IF NOT EXISTS idx_smart_home_device_device ON smart_home_device(device_id);
+CREATE INDEX IF NOT EXISTS idx_smart_home_device_room ON smart_home_device(room_id);
 
 -- Smart Scenes
 CREATE TABLE IF NOT EXISTS smart_scene (

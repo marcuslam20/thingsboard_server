@@ -857,6 +857,13 @@ public class ModelConstants {
       public static final String ROOM_DEVICE_ROOM_ID_PROPERTY = "room_id";
       public static final String ROOM_DEVICE_DEVICE_ID_PROPERTY = "device_id";
       public static final String ROOM_DEVICE_SORT_ORDER_PROPERTY = "sort_order";
+
+      public static final String SMART_HOME_DEVICE_TABLE_NAME = "smart_home_device";
+      public static final String SMART_HOME_DEVICE_SMART_HOME_ID_PROPERTY = "smart_home_id";
+      public static final String SMART_HOME_DEVICE_DEVICE_ID_PROPERTY = "device_id";
+      public static final String SMART_HOME_DEVICE_ROOM_ID_PROPERTY = "room_id";
+      public static final String SMART_HOME_DEVICE_DEVICE_NAME_PROPERTY = "device_name";
+      public static final String SMART_HOME_DEVICE_SORT_ORDER_PROPERTY = "sort_order";
   
       public static final String DEVICE_PAIRING_TOKEN_TABLE_NAME = "device_pairing_token";
       public static final String DEVICE_PAIRING_TOKEN_DEVICE_PROFILE_ID_PROPERTY = "device_profile_id";
