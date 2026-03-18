@@ -28,10 +28,13 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.thingsboard.server.common.data.exception.ThingsboardException;
+import org.thingsboard.server.common.data.id.CustomerId;
 import org.thingsboard.server.common.data.id.DeviceId;
 import org.thingsboard.server.common.data.id.RoomId;
 import org.thingsboard.server.common.data.id.SmartHomeId;
 import org.thingsboard.server.common.data.id.UserId;
+import org.thingsboard.server.common.data.page.PageData;
+import org.thingsboard.server.common.data.page.PageLink;
 import org.thingsboard.server.common.data.security.Authority;
 import org.thingsboard.server.common.data.Device;
 import org.thingsboard.server.common.data.exception.ThingsboardErrorCode;
@@ -87,7 +90,48 @@ public class SmartHomeController extends BaseController {
             return smartHomeService.findSmartHomesByTenantId(getTenantId(),
                     createPageLink(1000, 0, null, null, null)).getData();
         }
-        return smartHomeService.findSmartHomesByUserId(currentUser.getId());
+        List<SmartHome> homes = smartHomeService.findSmartHomesByUserId(currentUser.getId());
+        if (homes.isEmpty()) {
+            // Auto-create default home for first-time user (Tuya-like)
+            homes = List.of(createDefaultHome(currentUser));
+        }
+        return homes;
+    }
+
+    /**
+     * Auto-create "Nhà của tôi" and assign existing customer devices to it.
+     */
+    private SmartHome createDefaultHome(SecurityUser currentUser) throws ThingsboardException {
+        log.info("Auto-creating default home for user {}", currentUser.getEmail());
+
+        SmartHome home = new SmartHome();
+        home.setTenantId(getTenantId());
+        home.setOwnerUserId(currentUser.getId());
+        home.setName("Nhà của tôi");
+        home = smartHomeService.saveSmartHome(home);
+
+        // Auto-assign existing customer devices to the new home
+        CustomerId customerId = currentUser.getCustomerId();
+        if (customerId != null && !customerId.isNullUid()) {
+            PageData<Device> devices = deviceService.findDevicesByTenantIdAndCustomerId(
+                    getTenantId(), customerId, new PageLink(1000));
+            int count = 0;
+            for (Device device : devices.getData()) {
+                if (!smartHomeDeviceService.isDeviceInAnyHome(device.getId())) {
+                    SmartHomeDevice shd = new SmartHomeDevice();
+                    shd.setSmartHomeId(home.getId());
+                    shd.setDeviceId(device.getId());
+                    smartHomeDeviceService.addDeviceToHome(shd);
+                    count++;
+                }
+            }
+            if (count > 0) {
+                log.info("Auto-assigned {} existing devices to default home for user {}",
+                        count, currentUser.getEmail());
+            }
+        }
+
+        return home;
     }
 
     @PreAuthorize("hasAnyAuthority('TENANT_ADMIN', 'CUSTOMER_USER')")
