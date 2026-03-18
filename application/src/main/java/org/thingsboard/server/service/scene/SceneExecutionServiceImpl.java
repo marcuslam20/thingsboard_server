@@ -17,28 +17,38 @@ package org.thingsboard.server.service.scene;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.thingsboard.server.common.data.AttributeScope;
 import org.thingsboard.server.common.data.Device;
 import org.thingsboard.server.common.data.id.DeviceId;
 import org.thingsboard.server.common.data.id.TenantId;
+import org.thingsboard.server.common.data.kv.AttributeKvEntry;
+import org.thingsboard.server.common.data.kv.BaseAttributeKvEntry;
+import org.thingsboard.server.common.data.kv.BooleanDataEntry;
+import org.thingsboard.server.common.data.kv.DoubleDataEntry;
+import org.thingsboard.server.common.data.kv.LongDataEntry;
+import org.thingsboard.server.common.data.kv.StringDataEntry;
 import org.thingsboard.server.common.data.rpc.ToDeviceRpcRequestBody;
+import org.thingsboard.server.common.data.smarthome.DataPoint;
+import org.thingsboard.server.common.data.smarthome.DpMode;
 import org.thingsboard.server.common.data.smarthome.SmartScene;
 import org.thingsboard.server.common.data.smarthome.SmartSceneLog;
 import org.thingsboard.server.common.msg.rpc.ToDeviceRpcRequest;
+import org.thingsboard.server.dao.attributes.AttributesService;
 import org.thingsboard.server.dao.device.DeviceService;
+import org.thingsboard.server.dao.smarthome.DataPointService;
 import org.thingsboard.server.dao.smarthome.SmartSceneLogService;
 import org.thingsboard.server.dao.smarthome.SmartSceneService;
 import org.thingsboard.server.queue.util.TbCoreComponent;
 import org.thingsboard.server.service.rpc.TbCoreDeviceRpcService;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
 @Slf4j
@@ -51,6 +61,8 @@ public class SceneExecutionServiceImpl implements SceneExecutionService {
     private final DeviceService deviceService;
     private final SmartSceneService smartSceneService;
     private final SmartSceneLogService smartSceneLogService;
+    private final DataPointService dataPointService;
+    private final AttributesService attributesService;
 
     private static final ObjectMapper mapper = new ObjectMapper();
     private static final int RPC_TIMEOUT_MS = 5000;
@@ -126,10 +138,22 @@ public class SceneExecutionServiceImpl implements SceneExecutionService {
     }
 
     /**
-     * Execute DEVICE_CONTROL action: send RPC "setDps" to device.
-     * Fire-and-forget — does not wait for device response.
+     * Execute DEVICE_CONTROL action: resolve DataPoint, validate, send RPC "setDps" to device,
+     * and save shared attributes for status API — same flow as sendDpCommand.
      *
-     * Action format:
+     * Supports two action formats:
+     *
+     * Format 1 (dpId — preferred, Tuya-compatible):
+     * {
+     *   "actionType": "DEVICE_CONTROL",
+     *   "entityId": "device-uuid",
+     *   "executorProperty": {
+     *     "dpId": 1,
+     *     "dpValue": true
+     *   }
+     * }
+     *
+     * Format 2 (dpCode — resolved to dpId via DataPoint system):
      * {
      *   "actionType": "DEVICE_CONTROL",
      *   "entityId": "device-uuid",
@@ -143,8 +167,6 @@ public class SceneExecutionServiceImpl implements SceneExecutionService {
         String deviceIdStr = action.get("entityId").asText();
         DeviceId deviceId = new DeviceId(UUID.fromString(deviceIdStr));
         JsonNode executorProperty = action.get("executorProperty");
-
-        String dpCode = executorProperty.get("dpCode").asText();
         JsonNode dpValue = executorProperty.get("dpValue");
 
         Device device = deviceService.findDeviceById(tenantId, deviceId);
@@ -152,12 +174,39 @@ public class SceneExecutionServiceImpl implements SceneExecutionService {
             throw new RuntimeException("Device not found: " + deviceIdStr);
         }
 
-        // Build RPC params: { "<dpCode>": <dpValue> }
+        // Resolve DataPoint: support both dpId (number) and dpCode (string)
+        DataPoint dp;
+        if (executorProperty.has("dpId")) {
+            int dpId = executorProperty.get("dpId").asInt();
+            dp = dataPointService.findDataPointByDeviceProfileIdAndDpId(device.getDeviceProfileId(), dpId);
+            if (dp == null) {
+                throw new RuntimeException("DP " + dpId + " not defined for product of device " + device.getName());
+            }
+        } else if (executorProperty.has("dpCode")) {
+            String dpCode = executorProperty.get("dpCode").asText();
+            dp = dataPointService.findDataPointByDeviceProfileIdAndCode(device.getDeviceProfileId(), dpCode);
+            if (dp == null) {
+                throw new RuntimeException("DP code '" + dpCode + "' not defined for product of device " + device.getName());
+            }
+        } else {
+            throw new RuntimeException("Action must contain 'dpId' or 'dpCode' in executorProperty");
+        }
+
+        // Validate mode — reject read-only DPs
+        if (dp.getMode() == DpMode.RO) {
+            throw new RuntimeException("DP " + dp.getDpId() + " (" + dp.getCode() + ") is read-only");
+        }
+
+        // Build RPC params with dpId as key (same as sendDpCommand): { "1": value }
         ObjectNode rpcParams = mapper.createObjectNode();
-        rpcParams.set(dpCode, dpValue);
+        rpcParams.set(String.valueOf(dp.getDpId()), dpValue);
+
+        // Save shared attribute for status API (same as sendDpCommand)
+        saveSharedAttribute(tenantId, deviceId, dp.getCode(), dpValue);
 
         sendFireAndForgetRpc(tenantId, device, "setDps", rpcParams);
-        log.debug("DEVICE_CONTROL: sent setDps({}: {}) to device {}", dpCode, dpValue, device.getName());
+        log.debug("DEVICE_CONTROL: sent setDps({}: {}) to device {} [dp={}, code={}]",
+                dp.getDpId(), dpValue, device.getName(), dp.getDpId(), dp.getCode());
     }
 
     /**
@@ -268,6 +317,36 @@ public class SceneExecutionServiceImpl implements SceneExecutionService {
             log.error("Error sending RPC to device {}", device.getName(), e);
             throw new RuntimeException("Failed to send command to device: " + device.getName(), e);
         }
+    }
+
+    /**
+     * Save DP value as shared attribute so status API can read it (same as sendDpCommand).
+     */
+    private void saveSharedAttribute(TenantId tenantId, DeviceId deviceId, String dpCode, JsonNode value) {
+        try {
+            long now = System.currentTimeMillis();
+            AttributeKvEntry attr = toAttributeKvEntry(dpCode, value, now);
+            if (attr != null) {
+                attributesService.save(tenantId, deviceId, AttributeScope.SHARED_SCOPE, Collections.singletonList(attr));
+                log.debug("Saved shared attribute {}={} for device {}", dpCode, value, deviceId);
+            }
+        } catch (Exception e) {
+            log.warn("Failed to save shared attribute for device {}: {}", deviceId, e.getMessage());
+            // Don't fail the action — attribute save is best-effort
+        }
+    }
+
+    private AttributeKvEntry toAttributeKvEntry(String key, JsonNode value, long ts) {
+        if (value.isBoolean()) {
+            return new BaseAttributeKvEntry(new BooleanDataEntry(key, value.asBoolean()), ts);
+        } else if (value.isInt() || value.isLong()) {
+            return new BaseAttributeKvEntry(new LongDataEntry(key, value.asLong()), ts);
+        } else if (value.isFloat() || value.isDouble()) {
+            return new BaseAttributeKvEntry(new DoubleDataEntry(key, value.asDouble()), ts);
+        } else if (value.isTextual()) {
+            return new BaseAttributeKvEntry(new StringDataEntry(key, value.asText()), ts);
+        }
+        return new BaseAttributeKvEntry(new StringDataEntry(key, value.toString()), ts);
     }
 
     private SmartSceneLog logExecution(SmartScene scene, String triggerType, String status, String details) {
