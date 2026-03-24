@@ -16,19 +16,19 @@
 package org.thingsboard.server.dao.model.sql;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import io.hypersistence.utils.hibernate.type.json.JsonBinaryType;
 import jakarta.persistence.Column;
-import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import jakarta.persistence.Version;
 import lombok.Data;
+import org.hibernate.annotations.Type;
 import org.thingsboard.server.common.data.id.SmartHomeId;
 import org.thingsboard.server.common.data.id.TenantId;
 import org.thingsboard.server.common.data.smarthome.SceneType;
 import org.thingsboard.server.common.data.smarthome.SmartScene;
 import org.thingsboard.server.dao.model.ModelConstants;
-import org.thingsboard.server.dao.util.mapping.JsonConverter;
 
 import java.util.UUID;
 
@@ -62,18 +62,18 @@ public class SmartSceneEntity {
     @Column(name = ModelConstants.SMART_SCENE_ICON_PROPERTY)
     private String icon;
 
-    @Convert(converter = JsonConverter.class)
+    @Type(JsonBinaryType.class)
     @Column(name = ModelConstants.SMART_SCENE_CONDITIONS_PROPERTY, columnDefinition = "jsonb")
     private JsonNode conditions;
 
     @Column(name = ModelConstants.SMART_SCENE_CONDITION_LOGIC_PROPERTY)
     private String conditionLogic;
 
-    @Convert(converter = JsonConverter.class)
+    @Type(JsonBinaryType.class)
     @Column(name = ModelConstants.SMART_SCENE_ACTIONS_PROPERTY, nullable = false, columnDefinition = "jsonb")
     private JsonNode actions;
 
-    @Convert(converter = JsonConverter.class)
+    @Type(JsonBinaryType.class)
     @Column(name = ModelConstants.SMART_SCENE_EFFECTIVE_TIME_PROPERTY, columnDefinition = "jsonb")
     private JsonNode effectiveTime;
 

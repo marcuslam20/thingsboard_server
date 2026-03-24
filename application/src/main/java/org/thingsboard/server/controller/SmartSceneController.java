@@ -15,9 +15,6 @@
  */
 package org.thingsboard.server.controller;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -44,6 +41,7 @@ import org.thingsboard.server.dao.smarthome.SmartHomeService;
 import org.thingsboard.server.dao.smarthome.SmartSceneLogService;
 import org.thingsboard.server.dao.smarthome.SmartSceneService;
 import org.thingsboard.server.queue.util.TbCoreComponent;
+import org.thingsboard.server.service.scene.SceneExecutionService;
 import org.thingsboard.server.service.security.model.SecurityUser;
 
 import java.util.List;
@@ -61,8 +59,7 @@ public class SmartSceneController extends BaseController {
     private final SmartSceneLogService smartSceneLogService;
     private final SmartHomeMemberService smartHomeMemberService;
     private final SmartHomeService smartHomeService;
-
-    private static final ObjectMapper mapper = new ObjectMapper();
+    private final SceneExecutionService sceneExecutionService;
 
     // ========== Scene CRUD ==========
 
@@ -162,19 +159,11 @@ public class SmartSceneController extends BaseController {
             throw new ThingsboardException("Scene not found", ThingsboardErrorCode.ITEM_NOT_FOUND);
         }
         checkSmartHomeMembership(scene.getSmartHomeId());
-        // MVP: Log execution with MANUAL trigger, SUCCESS status
-        // Actual RPC to devices will be implemented in Phase 7
-        ObjectNode details = mapper.createObjectNode();
-        details.put("sceneName", scene.getName());
-        details.put("actions", scene.getActions() != null ? scene.getActions().toString() : "[]");
-        details.put("executedBy", getCurrentUser().getId().getId().toString());
-        SmartSceneLog logEntry = SmartSceneLog.builder()
-                .sceneId(sceneId)
-                .triggerType(TriggerType.MANUAL.name())
-                .status("SUCCESS")
-                .executionDetails(details)
-                .build();
-        return checkNotNull(smartSceneLogService.logExecution(logEntry));
+        if (!scene.isEnabled()) {
+            throw new ThingsboardException("Scene is disabled", ThingsboardErrorCode.BAD_REQUEST_PARAMS);
+        }
+        return checkNotNull(sceneExecutionService.executeScene(
+                getTenantId(), scene, TriggerType.MANUAL.name()));
     }
 
     // ========== Scene Logs ==========
