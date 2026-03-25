@@ -23,6 +23,9 @@ public class SignupRequest {
     private String password;
     private String firstName;
     private String lastName;
-    private String tenantTitle; // optional
-    private String tenantId; // optional
+    private String companyName;  // Required — becomes Tenant title
+    private String country;     // Optional — stored in Tenant
+    // Legacy fields (kept for backward compatibility)
+    private String tenantTitle; // deprecated, use companyName
+    private String tenantId;    // deprecated — Tuya-style signup creates new Tenant
 }

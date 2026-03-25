@@ -61,11 +61,9 @@ import org.thingsboard.server.service.security.model.UserPrincipal;
 import org.thingsboard.server.service.security.model.token.JwtTokenFactory;
 import org.thingsboard.server.service.security.system.SystemSecurityService;
 import org.thingsboard.server.common.data.Customer;
-/////////////////////////////////////
 import org.thingsboard.server.common.data.Tenant;
+import org.thingsboard.server.service.entitiy.tenant.TbTenantService;
 import java.util.UUID;
-import org.thingsboard.server.common.data.id.TenantId;
-/// ////////////////////////////
 @RestController
 @TbCoreComponent
 @RequestMapping("/api")
@@ -76,10 +74,9 @@ public class AuthController extends BaseController {
     @Value("${server.rest.rate_limits.reset_password_per_user:5:3600}")
 
     private String defaultLimitsConfiguration;
-     // Them test///////////////////////////////////////////////
     private final TenantService tenantService;
     private final UserService userService;
-    /////////////////////////////////////////////////////////
+    private final TbTenantService tbTenantService;
     private final BCryptPasswordEncoder passwordEncoder;
     private final JwtTokenFactory tokenFactory;
     private final MailService mailService;
@@ -156,6 +153,46 @@ public class AuthController extends BaseController {
             return redirectTo("/activationLinkExpired");
         }
         return redirectTo("/login/createPassword?activateToken=" + activateToken);
+    }
+
+    @ApiOperation(value = "Verify Email and Activate Account (verifyEmail)",
+            notes = "Tuya-style email verification: Activates the account using the activation token. " +
+                    "Password was already set during signup, so no password input needed. " +
+                    "Returns JWT tokens on success, allowing immediate login.")
+    @GetMapping(value = "/noauth/activate/verify", params = {"activateToken"})
+    public ResponseEntity<?> verifyEmailAndActivate(
+            @Parameter(description = "The activation token from the email link.")
+            @RequestParam(value = "activateToken") String activateToken,
+            HttpServletRequest request) throws ThingsboardException {
+        try {
+            UserCredentials credentials = userService.findUserCredentialsByActivateToken(TenantId.SYS_TENANT_ID, activateToken);
+            if (credentials == null) {
+                return redirectTo("/login?error=invalidToken");
+            }
+            if (credentials.isActivationTokenExpired()) {
+                return redirectTo("/login?error=tokenExpired");
+            }
+            if (credentials.isEnabled()) {
+                return redirectTo("/login?message=alreadyActivated");
+            }
+
+            // Activate: enable account, clear activation token, keep existing password
+            credentials.setEnabled(true);
+            credentials.setActivateToken(null);
+            credentials.setActivateTokenExpTime(null);
+            User user = userService.findUserById(TenantId.SYS_TENANT_ID, credentials.getUserId());
+            credentials = userService.saveUserCredentials(user.getTenantId(), credentials);
+
+            log.info("Account activated via email verification: [{}]", user.getEmail());
+
+            // Redirect to login page with success message
+            String baseUrl = systemSecurityService.getBaseUrl(user.getTenantId(), null, request);
+            return redirectTo(baseUrl + "/login?message=accountActivated");
+
+        } catch (Exception e) {
+            log.error("Email verification failed", e);
+            throw handleException(e);
+        }
     }
 
     @ApiOperation(value = "Request reset password email (requestResetPasswordByEmail)",
@@ -280,143 +317,85 @@ public class AuthController extends BaseController {
         }
     }
 
-    // @ApiOperation(value = "Sign Up (signup)",
-    //     notes = "Public API to register a new tenant and its admin user. " +
-    //             "Creates a new Tenant and Tenant Admin user, then returns JWT tokens.")
-    // @PostMapping(value = "/noauth/signup")
-    // public ResponseEntity<?> signUp(@RequestBody SignupRequest signupRequest,
-    //                                 HttpServletRequest request) throws ThingsboardException {
-    //     try {
-    //         // Validate password
-    //         systemSecurityService.validatePassword(signupRequest.getPassword(), null);
-
-    //         // Tạo Tenant mới
-    //         Tenant tenant = new Tenant();
-    //         tenant.setTitle(signupRequest.getEmail()); // Dùng email làm tên Tenant
-    //         tenant = tenantService.saveTenant(tenant);
-
-    //         // Tạo User mới là Tenant Admin
-    //         User user = new User();
-    //         user.setTenantId(tenant.getId());
-    //         user.setAuthority(org.thingsboard.server.common.data.security.Authority.TENANT_ADMIN);
-    //         user.setEmail(signupRequest.getEmail());
-    //         user.setFirstName(signupRequest.getFirstName());
-    //         user.setLastName(signupRequest.getLastName());
-    //         user = userService.saveUser(tenant.getId(), user);
-
-
-    //         // Lưu credentials
-    //         UserCredentials credentials = userService.findUserCredentialsByUserId(tenant.getId(), user.getId());
-    //         if (credentials == null) {
-    //             credentials = new UserCredentials();
-    //             credentials.setUserId(user.getId());
-    //         }
-    //         credentials.setEnabled(true);
-    //         credentials.setActivateToken(null);
-    //         credentials.setPassword(passwordEncoder.encode(signupRequest.getPassword()));
-    //         credentials = userService.saveUserCredentials(tenant.getId(), credentials);
-    //         // Tạo JWT Token
-    //         UserPrincipal principal = new UserPrincipal(UserPrincipal.Type.USER_NAME, user.getEmail());
-    //         SecurityUser securityUser = new SecurityUser(user, credentials.isEnabled(), principal);
-    //         JwtPair tokenPair = tokenFactory.createTokenPair(securityUser);
-
-    //         // (Optional) Gửi mail chào mừng
-    //         try {
-    //             String baseUrl = systemSecurityService.getBaseUrl(tenant.getId(), null, request);
-    //             String loginUrl = String.format("%s/login", baseUrl);
-    //             mailService.sendAccountActivatedEmail(loginUrl, user.getEmail());
-    //         } catch (Exception e) {
-    //             log.warn("Signup succeeded but email not sent: {}", e.getMessage());
-    //         }
-
-    //         log.info("Tenant [{}] + user [{}] created successfully.", tenant.getTitle(), user.getEmail());
-    //         return ResponseEntity.ok(tokenPair);    
-
-    //     } catch (Exception e) {
-    //         log.error("Signup failed", e);
-    //         throw handleException(e);
-    //     }
-    // }
-
     @ApiOperation(value = "Sign Up (signup)",
-        notes = "Public API to register a new tenant and its admin user. " +
-                "Creates a new Tenant and Tenant Admin user, then returns JWT tokens.")
+        notes = "Tuya-style signup: Creates a new Tenant (company) and TENANT_ADMIN user. " +
+                "Sends activation email. User must verify email before logging in. " +
+                "Required fields: email, password, companyName. Optional: firstName, lastName, country.")
     @PostMapping(value = "/noauth/signup")
     public ResponseEntity<?> signUp(@RequestBody SignupRequest signupRequest,
                                     HttpServletRequest request) throws ThingsboardException {
         try {
-            // Validate password
-            systemSecurityService.validatePassword(signupRequest.getPassword(), null);
+            // Validate required fields
+            String email = signupRequest.getEmail();
+            String password = signupRequest.getPassword();
+            String companyName = signupRequest.getCompanyName();
 
-            // Get Tenant Id from request
-            String tenantIdStr = signupRequest.getTenantId();
-            if (tenantIdStr == null || tenantIdStr.trim().isEmpty()) {
-                throw new ThingsboardException("Tenant ID is required", ThingsboardErrorCode.BAD_REQUEST_PARAMS);
+            if (email == null || email.trim().isEmpty()) {
+                throw new ThingsboardException("Email is required", ThingsboardErrorCode.BAD_REQUEST_PARAMS);
+            }
+            if (password == null || password.trim().isEmpty()) {
+                throw new ThingsboardException("Password is required", ThingsboardErrorCode.BAD_REQUEST_PARAMS);
+            }
+            if (companyName == null || companyName.trim().isEmpty()) {
+                throw new ThingsboardException("Company name is required", ThingsboardErrorCode.BAD_REQUEST_PARAMS);
             }
 
-            UUID uuid;
-            try {
-                uuid = UUID.fromString(tenantIdStr.trim());
-            } catch (Exception e){
-                throw new ThingsboardException("Invalid Tenant ID format", ThingsboardErrorCode.BAD_REQUEST_PARAMS);
+            // Validate password against security policy
+            systemSecurityService.validatePassword(password, null);
+
+            // Check email uniqueness globally
+            if (userService.findUserByEmail(TenantId.SYS_TENANT_ID, email) != null) {
+                throw new ThingsboardException("This email address has already been registered", ThingsboardErrorCode.BAD_REQUEST_PARAMS);
             }
 
-            // Find Tenant by ID 
-            TenantId tenantId = TenantId.fromUUID(uuid);
-            Tenant tenant = tenantService.findTenantById(tenantId);
-            if (tenant == null) {
-                throw new ThingsboardException("Tenant not found with provided ID", ThingsboardErrorCode.BAD_REQUEST_PARAMS);
+            // Create new Tenant (Company)
+            Tenant tenant = new Tenant();
+            tenant.setTitle(companyName.trim());
+            tenant.setEmail(email.trim());
+            if (signupRequest.getCountry() != null && !signupRequest.getCountry().trim().isEmpty()) {
+                tenant.setCountry(signupRequest.getCountry().trim());
             }
+            // Save tenant with default rule chains, device profiles, dashboards
+            tenant = tbTenantService.save(tenant);
+            TenantId tenantId = tenant.getId();
 
-            // Validated email exists by tenant ID
-            if (userService.findUserByEmail(tenantId, signupRequest.getEmail()) != null) {
-                throw new ThingsboardException("Email already exists in this tenant", ThingsboardErrorCode.BAD_REQUEST_PARAMS);
-            }
-
-            // Tạo Customer moi
-            Customer customer = new Customer();
-            customer.setTenantId(tenantId);
-            customer.setTitle(signupRequest.getEmail());
-            customer = customerService.saveCustomer(customer);
-
-
-            // Tạo User mới là Tenant Admin
+            // Create TENANT_ADMIN user (Owner)
             User user = new User();
             user.setTenantId(tenantId);
-            user.setCustomerId(customer.getId());
-            user.setAuthority(org.thingsboard.server.common.data.security.Authority.CUSTOMER_USER);
-            user.setEmail(signupRequest.getEmail());
-            user.setFirstName(signupRequest.getFirstName());
-            user.setLastName(signupRequest.getLastName());
+            user.setAuthority(org.thingsboard.server.common.data.security.Authority.TENANT_ADMIN);
+            user.setEmail(email.trim());
+            if (signupRequest.getFirstName() != null) {
+                user.setFirstName(signupRequest.getFirstName().trim());
+            }
+            if (signupRequest.getLastName() != null) {
+                user.setLastName(signupRequest.getLastName().trim());
+            }
             user = userService.saveUser(tenantId, user);
 
-
-            // Lưu credentials
+            // Get credentials (auto-created by saveUser with activation token)
             UserCredentials credentials = userService.findUserCredentialsByUserId(tenantId, user.getId());
-            if (credentials == null) {
-                credentials = new UserCredentials();
-                credentials.setUserId(user.getId());
-            }
-            credentials.setEnabled(true);
-            credentials.setActivateToken(null);
-            credentials.setPassword(passwordEncoder.encode(signupRequest.getPassword()));
+            // Set password (user already provided it at signup, will be usable after activation)
+            credentials.setPassword(passwordEncoder.encode(password));
             credentials = userService.saveUserCredentials(tenantId, credentials);
-            // Tạo JWT Token
-            UserPrincipal principal = new UserPrincipal(UserPrincipal.Type.USER_NAME, user.getEmail());
-            SecurityUser securityUser = new SecurityUser(user, credentials.isEnabled(), principal);
-            JwtPair tokenPair = tokenFactory.createTokenPair(securityUser);
+            // Get activation token (already generated by saveUser)
+            String activateToken = credentials.getActivateToken();
 
-            // (Optional) Gửi mail chào mừng
+            // Send activation email
             try {
-                String baseUrl = systemSecurityService.getBaseUrl(tenant.getId(), customer.getId(), request);
-                String loginUrl = String.format("%s/login", baseUrl);
-                mailService.sendAccountActivatedEmail(loginUrl, user.getEmail());
+                String baseUrl = systemSecurityService.getBaseUrl(tenantId, null, request);
+                String activationLink = String.format("%s/api/noauth/activate/verify?activateToken=%s", baseUrl, activateToken);
+                mailService.sendActivationEmail(activationLink, 0, email.trim());
+                log.info("Activation email sent to [{}] for tenant [{}]", email, companyName);
             } catch (Exception e) {
-                log.warn("Signup succeeded but email not sent: {}", e.getMessage());
+                log.warn("Signup succeeded but activation email not sent: {}", e.getMessage());
             }
 
-            log.info("Customer user [{}] created under tenant [{}] ", user.getEmail(), tenant.getTitle());
-            return ResponseEntity.ok(tokenPair);    
+            log.info("Tenant [{}] + admin user [{}] created. Awaiting email verification.", companyName, email);
+            return ResponseEntity.ok()
+                .body(java.util.Map.of(
+                    "message", "Account created successfully. Please check your email to activate your account.",
+                    "email", email.trim()
+                ));
 
         } catch (Exception e) {
             log.error("Signup failed", e);
