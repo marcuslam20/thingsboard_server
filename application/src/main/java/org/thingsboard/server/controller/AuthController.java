@@ -31,6 +31,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
@@ -345,7 +346,7 @@ public class AuthController extends BaseController {
             }
 
             // Generate 6-digit code
-            String code = StringUtils.randomNumeric(SIGNUP_CODE_LENGTH);
+            String code = RandomStringUtils.randomNumeric(SIGNUP_CODE_LENGTH);
 
             // Store in cache with timestamp
             Cache cache = cacheManager.getCache(CacheConstants.SIGNUP_VERIFICATION_CACHE);
