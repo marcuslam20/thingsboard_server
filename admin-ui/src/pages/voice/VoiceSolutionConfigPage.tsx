@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import Button from '@mui/material/Button';
@@ -138,10 +139,11 @@ function evaluateFeatureSupport(features: VoiceFeature[], dataPoints: DataPoint[
   }));
 }
 
-const STEPS = ['Solution Configuration', 'Solution Release', 'Solution Activation'];
+const STEP_KEYS = ['voice.solution-configuration', 'voice.solution-release', 'voice.solution-activation'];
 
 // ===================== Component =====================
 export default function VoiceSolutionConfigPage() {
+  const { t } = useTranslation();
   const { platform } = useParams<{ platform: string }>();
   const [searchParams] = useSearchParams();
   const profileId = searchParams.get('profileId') || '';
@@ -312,8 +314,8 @@ export default function VoiceSolutionConfigPage() {
       {!isReadOnly && (
         <Paper elevation={0} sx={{ border: `1px solid ${tuyaColors.border}`, borderRadius: 1, p: 2, mb: 3 }}>
           <Stepper activeStep={activeStep} alternativeLabel>
-            {STEPS.map((label, index) => (
-              <Step key={label} completed={index < activeStep}>
+            {STEP_KEYS.map((key, index) => (
+              <Step key={key} completed={index < activeStep}>
                 <StepLabel
                   sx={{
                     '& .MuiStepLabel-label': { fontSize: '13px' },
@@ -321,7 +323,7 @@ export default function VoiceSolutionConfigPage() {
                     '& .MuiStepIcon-root.Mui-completed': { color: tuyaColors.success },
                   }}
                 >
-                  {label}
+                  {t(key)}
                 </StepLabel>
               </Step>
             ))}
@@ -338,17 +340,17 @@ export default function VoiceSolutionConfigPage() {
             <CheckCircleOutlineIcon sx={{ fontSize: 20, color: tuyaColors.success }} />
           )}
           <Typography sx={{ fontWeight: 500, fontSize: '14px', color: tuyaColors.textPrimary }}>
-            Category Defined in {platformName}
+            {t('voice.category-defined', { platform: platformName })}
           </Typography>
         </Box>
         <Box sx={{ ml: 3.5, display: 'flex', alignItems: 'center', gap: 1.5 }}>
           <Typography sx={{ fontSize: '13px', color: tuyaColors.textSecondary }}>
-            Category: <strong>{displayCategory}</strong>
+            {t('voice.category')}: <strong>{displayCategory}</strong>
             {categoryName && <> ({categoryName})</>}
           </Typography>
           {!isReadOnly && (
             <Button size="small" sx={{ fontSize: '11px', color: tuyaColors.info, textTransform: 'none', minWidth: 0, p: 0 }}>
-              Modify
+              {t('action.edit')}
             </Button>
           )}
         </Box>
@@ -363,7 +365,7 @@ export default function VoiceSolutionConfigPage() {
             <SettingsIcon sx={{ fontSize: 20, color: tuyaColors.orange }} />
           )}
           <Typography sx={{ fontWeight: 500, fontSize: '14px', color: tuyaColors.textPrimary }}>
-            Configure Voice Features
+            {t('voice.configure-features')}
           </Typography>
         </Box>
 
@@ -371,14 +373,14 @@ export default function VoiceSolutionConfigPage() {
         {!isReadOnly && recommendedFeatures.length > 0 && (
           <Box sx={{ ml: 3.5, mb: 2 }}>
             <Typography sx={{ fontSize: '12px', color: tuyaColors.textSecondary, mb: 1 }}>
-              Voice capabilities are auto-detected from your product's DataPoints. You can edit or add more capabilities.
+              {t('voice.auto-detected')}
             </Typography>
             <Paper
               elevation={0}
               sx={{ bgcolor: '#F8F9FA', borderRadius: 1, p: 1.5, display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}
             >
               <Typography sx={{ fontSize: '12px', color: tuyaColors.textHint, mr: 0.5 }}>
-                {recommendedFeatures.length} recommended:
+                {t('voice.recommended', { count: recommendedFeatures.length })}
               </Typography>
               {recommendedFeatures.map((f) => (
                 <Chip
@@ -398,10 +400,10 @@ export default function VoiceSolutionConfigPage() {
         {/* Feature Added header */}
         <Box sx={{ ml: 3.5, display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1.5 }}>
           <Typography sx={{ fontSize: '13px', fontWeight: 500, color: tuyaColors.textPrimary }}>
-            Feature Added
+            {t('voice.feature-added')}
           </Typography>
           <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
-            <Typography sx={{ fontSize: '12px', color: tuyaColors.textHint, mr: 0.5 }}>Utterance Example</Typography>
+            <Typography sx={{ fontSize: '12px', color: tuyaColors.textHint, mr: 0.5 }}>{t('voice.utterance-example')}</Typography>
             <Select
               size="small" value={utteranceLang}
               onChange={(e) => setUtteranceLang(e.target.value)}
@@ -419,7 +421,7 @@ export default function VoiceSolutionConfigPage() {
                 disabled={availableToAdd.length === 0}
                 sx={{ height: 28, fontSize: '11px', px: 1.5 }}
               >
-                Add Feature
+                {t('voice.add-feature')}
               </Button>
             )}
           </Box>
@@ -432,17 +434,17 @@ export default function VoiceSolutionConfigPage() {
               <TableHead>
                 <TableRow>
                   <TableCell sx={{ width: '5%' }}>#</TableCell>
-                  <TableCell sx={{ width: '22%' }}>Feature Name</TableCell>
-                  <TableCell sx={{ width: '33%' }}>Utterance Example</TableCell>
-                  <TableCell sx={{ width: '25%' }}>Supported Language</TableCell>
-                  <TableCell sx={{ width: '15%', textAlign: 'right' }}>Operation</TableCell>
+                  <TableCell sx={{ width: '22%' }}>{t('voice.feature-name')}</TableCell>
+                  <TableCell sx={{ width: '33%' }}>{t('voice.utterance-example')}</TableCell>
+                  <TableCell sx={{ width: '25%' }}>{t('voice.supported-language')}</TableCell>
+                  <TableCell sx={{ width: '15%', textAlign: 'right' }}>{t('device.operation')}</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
                 {addedFeatures.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={5} sx={{ textAlign: 'center', py: 4, color: tuyaColors.textHint }}>
-                      No voice features added yet. Click recommended features above or use "Add Feature".
+                      {t('voice.no-features')}
                     </TableCell>
                   </TableRow>
                 ) : (
@@ -507,7 +509,7 @@ export default function VoiceSolutionConfigPage() {
             onClick={handleModify}
             sx={{ px: 5, py: 1, fontSize: '14px' }}
           >
-            Modify Voice Solution
+            {t('voice.modify-solution')}
           </Button>
         ) : (
           <Button
@@ -517,18 +519,18 @@ export default function VoiceSolutionConfigPage() {
             sx={{ px: 5, py: 1, fontSize: '14px' }}
           >
             {saving ? <CircularProgress size={20} sx={{ color: '#fff', mr: 1 }} /> : null}
-            Confirm and Test
+            {t('voice.confirm-test')}
           </Button>
         )}
       </Box>
 
       {/* Add Feature Dialog */}
       <Dialog open={showAddDialog} onClose={() => setShowAddDialog(false)} maxWidth="sm" fullWidth>
-        <DialogTitle sx={{ fontSize: '16px', fontWeight: 500 }}>Add Voice Feature</DialogTitle>
+        <DialogTitle sx={{ fontSize: '16px', fontWeight: 500 }}>{t('voice.add-voice-feature')}</DialogTitle>
         <DialogContent>
           {availableToAdd.length === 0 ? (
             <Typography sx={{ py: 2, color: tuyaColors.textHint, textAlign: 'center' }}>
-              All available features have been added.
+              {t('voice.all-features-added')}
             </Typography>
           ) : (
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, mt: 1 }}>
@@ -548,7 +550,7 @@ export default function VoiceSolutionConfigPage() {
                     <Typography sx={{ fontSize: '13px', fontWeight: 500, color: tuyaColors.textPrimary }}>
                       {feature.featureName}
                       {!feature.supported && (
-                        <Chip label="No matching DP" size="small" sx={{ fontSize: '9px', height: 16, ml: 1, color: tuyaColors.warning }} />
+                        <Chip label={t('voice.no-matching-dp')} size="small" sx={{ fontSize: '9px', height: 16, ml: 1, color: tuyaColors.warning }} />
                       )}
                     </Typography>
                     <Typography sx={{ fontSize: '11px', color: tuyaColors.textHint, mt: 0.3 }}>
@@ -562,7 +564,7 @@ export default function VoiceSolutionConfigPage() {
           )}
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setShowAddDialog(false)} sx={{ color: tuyaColors.textSecondary }}>Close</Button>
+          <Button onClick={() => setShowAddDialog(false)} sx={{ color: tuyaColors.textSecondary }}>{t('action.close')}</Button>
         </DialogActions>
       </Dialog>
     </Box>

@@ -22,21 +22,21 @@ export default function EntityViewsPage() {
 
   const columns: ColumnDef<EntityViewInfo>[] = [
     { id: 'createdTime', label: t('common.created-time'), width: '170px', render: (r) => new Date(r.createdTime).toLocaleString() },
-    { id: 'name', label: 'Name', width: '25%' },
+    { id: 'name', label: t('entity-view.name'), width: '25%' },
     {
-      id: 'type', label: 'Type', width: '12%',
+      id: 'type', label: t('entity-view.type'), width: '12%',
       render: (r) => <Chip label={r.type} size="small" variant="outlined" />,
     },
     {
-      id: 'entityId', label: 'Entity Type', width: '12%', sortable: false,
+      id: 'entityId', label: t('entity-view.entity-type'), width: '12%', sortable: false,
       render: (r) => r.entityId?.entityType || '',
     },
-    { id: 'customerTitle', label: 'Customer', width: '15%', render: (r) => r.customerTitle || '' },
+    { id: 'customerTitle', label: t('common.customer'), width: '15%', render: (r) => r.customerTitle || '' },
   ];
 
   const rowActions: RowAction<EntityViewInfo>[] = [
-    { icon: <EditIcon fontSize="small" />, tooltip: 'Edit', onClick: (r) => { setEditView(r); setDialogOpen(true); } },
-    { icon: <DeleteIcon fontSize="small" color="error" />, tooltip: 'Delete', onClick: (r) => { setToDelete(r); setDeleteDialogOpen(true); } },
+    { icon: <EditIcon fontSize="small" />, tooltip: t('action.edit'), onClick: (r) => { setEditView(r); setDialogOpen(true); } },
+    { icon: <DeleteIcon fontSize="small" color="error" />, tooltip: t('action.delete'), onClick: (r) => { setToDelete(r); setDeleteDialogOpen(true); } },
   ];
 
   const fetchData = useCallback((pl: PageLink) => entityViewApi.getTenantEntityViewInfos(pl), []);
@@ -56,7 +56,7 @@ export default function EntityViewsPage() {
         columns={columns}
         fetchData={fetchData}
         onAdd={() => { setEditView(null); setDialogOpen(true); }}
-        addLabel="Add Entity View"
+        addLabel={t('entity-view.add')}
         rowActions={rowActions}
         onDeleteSelected={handleDeleteSelected}
         getRowId={(r) => r.id.id}
@@ -64,8 +64,8 @@ export default function EntityViewsPage() {
       />
       <EntityViewDialog open={dialogOpen} entityView={editView}
         onClose={() => { setDialogOpen(false); setEditView(null); }} onSaved={handleSaved} />
-      <ConfirmDialog open={deleteDialogOpen} title="Delete Entity View"
-        content={`Are you sure you want to delete entity view "${toDelete?.name}"?`}
+      <ConfirmDialog open={deleteDialogOpen} title={t('entity-view.delete-title')}
+        content={t('entity-view.delete-confirm', { name: toDelete?.name })}
         onConfirm={handleDelete} onCancel={() => { setDeleteDialogOpen(false); setToDelete(null); }} />
     </Box>
   );

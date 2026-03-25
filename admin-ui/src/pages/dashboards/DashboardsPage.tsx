@@ -10,8 +10,10 @@ import DashboardDialog from './DashboardDialog';
 import { Dashboard, DashboardInfo } from '@/models/dashboard.model';
 import { dashboardApi } from '@/api/dashboard.api';
 import { PageLink } from '@/models/page.model';
+import { useTranslation } from 'react-i18next';
 
 export default function DashboardsPage() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [refreshTrigger, setRefreshTrigger] = useState(0);
 
@@ -25,19 +27,19 @@ export default function DashboardsPage() {
   const columns: ColumnDef<DashboardInfo>[] = [
     {
       id: 'createdTime',
-      label: 'Created',
+      label: t('common.created-time'),
       width: '170px',
       render: (row) => new Date(row.createdTime).toLocaleString(),
     },
     {
       id: 'title',
-      label: 'Title',
+      label: t('dashboard.title'),
       width: '40%',
       render: (row) => row.title,
     },
     {
       id: 'assignedCustomers',
-      label: 'Assigned Customers',
+      label: t('dashboard.assigned-customers'),
       sortable: false,
       render: (row) => row.assignedCustomers?.map((c) => c.title).join(', ') || '',
     },
@@ -46,12 +48,12 @@ export default function DashboardsPage() {
   const rowActions: RowAction<DashboardInfo>[] = [
     {
       icon: <OpenInNewIcon fontSize="small" />,
-      tooltip: 'Open dashboard',
+      tooltip: t('dashboard.open'),
       onClick: (row) => navigate(`/dashboards/${row.id.id}`),
     },
     {
       icon: <EditIcon fontSize="small" />,
-      tooltip: 'Edit',
+      tooltip: t('action.edit'),
       onClick: (row) => {
         dashboardApi.getDashboard(row.id.id).then((d) => {
           setEditDashboard(d);
@@ -61,7 +63,7 @@ export default function DashboardsPage() {
     },
     {
       icon: <DeleteIcon fontSize="small" color="error" />,
-      tooltip: 'Delete',
+      tooltip: t('action.delete'),
       onClick: (row) => {
         setDashboardToDelete(row);
         setDeleteDialogOpen(true);
@@ -105,11 +107,11 @@ export default function DashboardsPage() {
   return (
     <Box>
       <EntityTable<DashboardInfo>
-        title="Dashboards"
+        title={t('dashboard.dashboards')}
         columns={columns}
         fetchData={fetchData}
         onAdd={handleAdd}
-        addLabel="Add Dashboard"
+        addLabel={t('dashboard.add')}
         onRowClick={handleRowClick}
         rowActions={rowActions}
         onDeleteSelected={handleDeleteSelected}
@@ -126,8 +128,8 @@ export default function DashboardsPage() {
 
       <ConfirmDialog
         open={deleteDialogOpen}
-        title="Delete Dashboard"
-        content={`Are you sure you want to delete dashboard "${dashboardToDelete?.title}"?`}
+        title={t('dashboard.delete-title')}
+        content={t('dashboard.delete-confirm', { title: dashboardToDelete?.title })}
         onConfirm={handleDelete}
         onCancel={() => { setDeleteDialogOpen(false); setDashboardToDelete(null); }}
       />

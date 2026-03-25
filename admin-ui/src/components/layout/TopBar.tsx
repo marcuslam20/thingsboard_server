@@ -8,7 +8,6 @@ import IconButton from '@mui/material/IconButton';
 import Button from '@mui/material/Button';
 import Menu from '@mui/material/Menu';
 import MenuItem from '@mui/material/MenuItem';
-import Avatar from '@mui/material/Avatar';
 import Divider from '@mui/material/Divider';
 import ListItemIcon from '@mui/material/ListItemIcon';
 import Badge from '@mui/material/Badge';
@@ -16,7 +15,6 @@ import Tooltip from '@mui/material/Tooltip';
 import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
 import DescriptionOutlinedIcon from '@mui/icons-material/DescriptionOutlined';
 import HeadsetMicOutlinedIcon from '@mui/icons-material/HeadsetMicOutlined';
-import LanguageIcon from '@mui/icons-material/Language';
 import NotificationsNoneIcon from '@mui/icons-material/NotificationsNone';
 import AppsIcon from '@mui/icons-material/Apps';
 import LogoutIcon from '@mui/icons-material/Logout';
@@ -25,22 +23,20 @@ import SecurityIcon from '@mui/icons-material/Security';
 import { useAppDispatch, useAppSelector } from '@/store/store';
 import { logout, selectUserDetails } from '@/store/auth.slice';
 import { tuyaColors } from '@/theme/theme';
+import { useTranslation } from 'react-i18next';
+import LanguageSwitcher from '@/components/LanguageSwitcher';
 
 export default function TopBar() {
+  const { t } = useTranslation();
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
   const user = useAppSelector(selectUserDetails);
   const [profileAnchor, setProfileAnchor] = useState<null | HTMLElement>(null);
-  const [langAnchor, setLangAnchor] = useState<null | HTMLElement>(null);
 
   const handleLogout = () => {
     setProfileAnchor(null);
     dispatch(logout()).then(() => navigate('/login'));
   };
-
-  const userInitials = user
-    ? `${user.firstName?.[0] || ''}${user.lastName?.[0] || ''}`.toUpperCase() || 'U'
-    : 'U';
 
   return (
     <AppBar
@@ -55,10 +51,10 @@ export default function TopBar() {
     >
       <Toolbar disableGutters sx={{ minHeight: '44px !important', px: 1.5, pl: '12px', gap: 0.5 }}>
         {/* Left: logo + platform name */}
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <img src="/osprey-logo.svg" alt="Osprey" style={{ height: 28, objectFit: 'contain' }} />
+        <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 0.8 }}>
+          <Box component="img" src="/osprey-logo.svg" alt="Osprey" sx={{ height: 28, position: 'relative', top: 4 }} />
           <Typography variant="subtitle1" sx={{ fontWeight: 600, color: tuyaColors.textPrimary }}>
-            Developer Platform
+            {t('login.developer-platform')}
           </Typography>
         </Box>
 
@@ -75,7 +71,7 @@ export default function TopBar() {
               '&:hover': { color: tuyaColors.orange, bgcolor: 'transparent' },
             }}
           >
-            Help
+            {t('topbar.help')}
           </Button>
           <Button
             size="small"
@@ -86,7 +82,7 @@ export default function TopBar() {
               '&:hover': { color: tuyaColors.orange, bgcolor: 'transparent' },
             }}
           >
-            Documents
+            {t('topbar.documents')}
           </Button>
           <Button
             size="small"
@@ -97,33 +93,13 @@ export default function TopBar() {
               '&:hover': { color: tuyaColors.orange, bgcolor: 'transparent' },
             }}
           >
-            Tech Support
+            {t('topbar.tech-support')}
           </Button>
 
           <Divider orientation="vertical" flexItem sx={{ mx: 0.5, my: 1.5 }} />
+
           {/* Language */}
-          <Tooltip title="Language">
-            <Button
-              size="small"
-              startIcon={<LanguageIcon sx={{ fontSize: '18px !important' }} />}
-              onClick={(e) => setLangAnchor(e.currentTarget)}
-              sx={{
-                color: tuyaColors.textSecondary,
-                fontSize: '0.8125rem',
-                '&:hover': { color: tuyaColors.orange, bgcolor: 'transparent' },
-              }}
-            >
-              English(EN)
-            </Button>
-          </Tooltip>
-          <Menu
-            anchorEl={langAnchor}
-            open={Boolean(langAnchor)}
-            onClose={() => setLangAnchor(null)}
-          >
-            <MenuItem onClick={() => setLangAnchor(null)} selected>English</MenuItem>
-            <MenuItem onClick={() => setLangAnchor(null)}>Tiếng Việt</MenuItem>
-          </Menu>
+          <LanguageSwitcher color={tuyaColors.textSecondary} />
 
           {/* My Space */}
           <Button
@@ -134,13 +110,13 @@ export default function TopBar() {
               '&:hover': { color: tuyaColors.orange, bgcolor: 'transparent' },
             }}
           >
-            My Space
+            {t('topbar.my-space')}
           </Button>
 
           <Divider orientation="vertical" flexItem sx={{ mx: 0.5, my: 1.5 }} />
 
           {/* Notifications */}
-          <Tooltip title="Notifications">
+          <Tooltip title={t('notification.notifications')}>
             <IconButton size="small" onClick={() => navigate('/notifications')}>
               <Badge badgeContent={0} color="error" variant="dot">
                 <NotificationsNoneIcon sx={{ fontSize: 20, color: tuyaColors.textSecondary }} />
@@ -149,7 +125,7 @@ export default function TopBar() {
           </Tooltip>
 
           {/* Apps grid */}
-          <Tooltip title="Applications">
+          <Tooltip title={t('topbar.applications')}>
             <IconButton size="small">
               <AppsIcon sx={{ fontSize: 20, color: tuyaColors.textSecondary }} />
             </IconButton>
@@ -179,16 +155,16 @@ export default function TopBar() {
             <Divider />
             <MenuItem onClick={() => { setProfileAnchor(null); navigate('/profile'); }}>
               <ListItemIcon><PersonOutlineIcon fontSize="small" /></ListItemIcon>
-              Profile
+              {t('profile.profile')}
             </MenuItem>
             <MenuItem onClick={() => { setProfileAnchor(null); navigate('/security-settings/general'); }}>
               <ListItemIcon><SecurityIcon fontSize="small" /></ListItemIcon>
-              Security
+              {t('security.security')}
             </MenuItem>
             <Divider />
             <MenuItem onClick={handleLogout} sx={{ color: tuyaColors.error }}>
               <ListItemIcon><LogoutIcon fontSize="small" sx={{ color: tuyaColors.error }} /></ListItemIcon>
-              Logout
+              {t('login.logout')}
             </MenuItem>
           </Menu>
         </Box>

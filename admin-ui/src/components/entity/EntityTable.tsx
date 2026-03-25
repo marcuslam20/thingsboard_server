@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import Box from '@mui/material/Box';
 import Table from '@mui/material/Table';
 import TableBody from '@mui/material/TableBody';
@@ -63,6 +64,7 @@ export default function EntityTable<T>({
   addLabel = 'Add',
   refreshTrigger = 0,
 }: EntityTableProps<T>) {
+  const { t } = useTranslation();
   const [data, setData] = useState<T[]>([]);
   const [totalElements, setTotalElements] = useState(0);
   const [page, setPage] = useState(0);
@@ -147,10 +149,10 @@ export default function EntityTable<T>({
         {selected.size > 0 ? (
           <>
             <Typography sx={{ flex: 1 }} color="inherit" variant="subtitle1">
-              {selected.size} selected
+              {t('common.n-selected', { count: selected.size })}
             </Typography>
             {onDeleteSelected && (
-              <Tooltip title="Delete selected">
+              <Tooltip title={t('action.delete-selected')}>
                 <IconButton onClick={handleDeleteSelected} color="error">
                   <DeleteIcon />
                 </IconButton>
@@ -164,7 +166,7 @@ export default function EntityTable<T>({
             </Typography>
             <TextField
               size="small"
-              placeholder="Search..."
+              placeholder={`${t('action.search')}...`}
               value={search}
               onChange={(e) => handleSearch(e.target.value)}
               InputProps={{
@@ -176,7 +178,7 @@ export default function EntityTable<T>({
               }}
               sx={{ width: 220 }}
             />
-            <Tooltip title="Refresh">
+            <Tooltip title={t('action.refresh')}>
               <IconButton onClick={loadData}>
                 <RefreshIcon />
               </IconButton>
@@ -223,7 +225,7 @@ export default function EntityTable<T>({
                 </TableCell>
               ))}
               {rowActions && rowActions.length > 0 && (
-                <TableCell sx={{ width: rowActions.length * 48 + 16 }}>Actions</TableCell>
+                <TableCell sx={{ width: rowActions.length * 48 + 16 }}>{t('common.actions')}</TableCell>
               )}
             </TableRow>
           </TableHead>
@@ -237,7 +239,7 @@ export default function EntityTable<T>({
             ) : data.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={columns.length + (onDeleteSelected ? 1 : 0) + (rowActions ? 1 : 0)} align="center" sx={{ py: 4 }}>
-                  <Typography color="text.secondary">No data found</Typography>
+                  <Typography color="text.secondary">{t('common.no-data-found')}</Typography>
                 </TableCell>
               </TableRow>
             ) : (

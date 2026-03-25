@@ -15,6 +15,7 @@ import VisibilityOff from '@mui/icons-material/VisibilityOff';
 import { useAppDispatch, useAppSelector } from '@/store/store';
 import { login, selectRequires2FA, selectRequiresForce2FA } from '@/store/auth.slice';
 import { useTranslation } from 'react-i18next';
+import LanguageSwitcher from '@/components/LanguageSwitcher';
 
 interface LoginForm {
   username: string;
@@ -77,7 +78,7 @@ export default function LoginPage() {
             sx={{ height: 28, position: 'relative', top: 4 }}
           />
           <Typography sx={{ color: '#fff', fontSize: 14, fontWeight: 400, opacity: 0.7 }}>
-            Developer Platform
+            {t('login.developer-platform')}
           </Typography>
         </Box>
 
@@ -131,20 +132,20 @@ export default function LoginPage() {
               mb: 1,
             }}
           >
-            Create your{' '}
+            {t('login.tagline-1')}{' '}
             <br />
-            smart product{' '}
+            {t('login.tagline-2')}{' '}
             <Box component="span" sx={{ color: '#FF4D4F', fontStyle: 'italic' }}>
-              right now
+              {t('login.tagline-3')}
             </Box>
           </Typography>
           <Typography sx={{ color: 'rgba(255,255,255,0.5)', fontSize: 14, mt: 2, maxWidth: 360 }}>
-            Build smart solutions and help enterprises connect your devices efficiently, securely
+            {t('login.tagline-desc')}
           </Typography>
         </Box>
 
         {/* Footer */}
-        <Typography sx={{ color: 'rgba(255,255,255,0.3)', fontSize: 12, mt: 4 }}>
+        <Typography sx={{ color: 'rgba(255,255,255,0.4)', fontSize: 12, fontWeight: 500, mt: 4 }}>
           &copy;{new Date().getFullYear()} Osprey IoT Platform
         </Typography>
       </Box>
@@ -164,10 +165,8 @@ export default function LoginPage() {
         }}
       >
         {/* Language selector (top-right) */}
-        <Box sx={{ position: 'absolute', top: 24, right: 32 }}>
-          <Typography sx={{ color: '#999', fontSize: 13 }}>
-            English
-          </Typography>
+        <Box sx={{ position: 'absolute', top: 20, right: 28 }}>
+          <LanguageSwitcher />
         </Box>
 
         <Box sx={{ width: '100%', maxWidth: 380 }}>
@@ -180,7 +179,7 @@ export default function LoginPage() {
               textAlign: 'left',
             }}
           >
-            Log in with Osprey Account
+            {t('login.title')}
           </Typography>
 
           {loading && <LinearProgress sx={{ mb: 2, borderRadius: 1 }} />}
@@ -193,14 +192,14 @@ export default function LoginPage() {
 
           <form onSubmit={handleSubmit(onSubmit)}>
             <Typography sx={{ fontSize: 12, color: '#666', mb: 0.5 }}>
-              Osprey Account
+              {t('login.account-label')}
             </Typography>
             <TextField
               {...register('username', {
                 required: t('signup.email-required'),
                 pattern: { value: /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/i, message: t('signup.email-invalid') },
               })}
-              placeholder="Email address"
+              placeholder={t('login.username')}
               fullWidth
               size="small"
               error={!!errors.username}
@@ -210,20 +209,20 @@ export default function LoginPage() {
 
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.5 }}>
               <Typography sx={{ fontSize: 12, color: '#666' }}>
-                Password
+                {t('login.password')}
               </Typography>
               <Link
                 component={RouterLink}
                 to="/resetPassword"
                 sx={{ fontSize: 12, color: '#008BD5', textDecoration: 'none', '&:hover': { textDecoration: 'underline' } }}
               >
-                Forgot Password?
+                {t('login.forgot-password')}
               </Link>
             </Box>
             <TextField
               {...register('password', { required: t('signup.password-required') })}
               type={showPassword ? 'text' : 'password'}
-              placeholder="Password"
+              placeholder={t('login.password')}
               fullWidth
               size="small"
               error={!!errors.password}
@@ -258,7 +257,7 @@ export default function LoginPage() {
                 '&.Mui-disabled': { bgcolor: '#FFB088', color: '#fff' },
               }}
             >
-              Log in
+              {t('login.login')}
             </Button>
 
             <Box sx={{ textAlign: 'left' }}>
@@ -267,7 +266,7 @@ export default function LoginPage() {
                 to="/signup"
                 sx={{ fontSize: 12, color: '#008BD5', textDecoration: 'none', '&:hover': { textDecoration: 'underline' } }}
               >
-                Sign Up
+                {t('login.signup')}
               </Link>
             </Box>
           </form>
@@ -285,10 +284,10 @@ export default function LoginPage() {
             gap: 3,
           }}
         >
-          <Typography sx={{ color: '#ccc', fontSize: 12 }}>
+          <Typography sx={{ color: '#aaa', fontSize: 12, fontWeight: 500 }}>
             &copy;{new Date().getFullYear()} Osprey IoT
           </Typography>
-          <Typography sx={{ color: '#ccc', fontSize: 12 }}>
+          <Typography sx={{ color: '#aaa', fontSize: 12, fontWeight: 500 }}>
             Time zone: GMT+7
           </Typography>
         </Box>

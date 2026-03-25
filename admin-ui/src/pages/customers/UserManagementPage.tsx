@@ -1,5 +1,6 @@
 import { useState, useCallback, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import Button from '@mui/material/Button';
@@ -22,6 +23,7 @@ import { Customer, customerApi } from '@/api/customer.api';
 import { tuyaColors } from '@/theme/theme';
 
 export default function UserManagementPage() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [data, setData] = useState<Customer[]>([]);
   const [totalElements, setTotalElements] = useState(0);
@@ -78,10 +80,10 @@ export default function UserManagementPage() {
       {/* Page Header */}
       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2.5 }}>
         <Typography variant="h5" sx={{ fontWeight: 400 }}>
-          App User Management
+          {t('user-mgmt.title')}
         </Typography>
         <Chip
-          label="China Data Center"
+          label={t('user-mgmt.data-center')}
           size="small"
           variant="outlined"
           sx={{
@@ -104,7 +106,7 @@ export default function UserManagementPage() {
           }}
         >
           <Typography variant="subtitle1" sx={{ color: tuyaColors.orangeDark, fontWeight: 500 }}>
-            All Apps
+            {t('user-mgmt.all-apps')}
           </Typography>
         </Box>
       </Box>
@@ -112,10 +114,10 @@ export default function UserManagementPage() {
       {/* Filter Bar */}
       <Paper elevation={0} sx={{ p: '10px 0', mb: 0, boxShadow: 'none', borderRadius: 0 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
-          <Typography sx={{ fontSize: '12px', color: tuyaColors.textSecondary, mr: 0.5 }}>Enter:</Typography>
+          <Typography sx={{ fontSize: '12px', color: tuyaColors.textSecondary, mr: 0.5 }}>{t('common.enter')}</Typography>
           <TextField
             size="small"
-            placeholder="Search phone number/email/user name/UID"
+            placeholder={t('user-mgmt.search-placeholder')}
             value={searchText}
             onChange={(e) => setSearchText(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
@@ -137,7 +139,7 @@ export default function UserManagementPage() {
             onClick={handleSearch}
             sx={{ minWidth: 0, px: 2, height: 28, fontSize: '12px' }}
           >
-            Search
+            {t('action.search')}
           </Button>
           <Button
             variant="outlined"
@@ -147,7 +149,7 @@ export default function UserManagementPage() {
               color: tuyaColors.textSecondary, borderColor: tuyaColors.border,
             }}
           >
-            Reset
+            {t('action.reset')}
           </Button>
 
           <Box sx={{ flex: 1 }} />
@@ -160,7 +162,7 @@ export default function UserManagementPage() {
               color: tuyaColors.textSecondary, borderColor: tuyaColors.border,
             }}
           >
-            Export Data
+            {t('user-mgmt.export-data')}
           </Button>
         </Box>
       </Paper>
@@ -171,14 +173,14 @@ export default function UserManagementPage() {
           <Table sx={{ '& td': { fontSize: '12px' }, '& th': { fontSize: '12px' } }}>
             <TableHead>
               <TableRow>
-                <TableCell sx={{ width: '8%', fontWeight: 500 }}>App</TableCell>
-                <TableCell sx={{ width: '14%', fontWeight: 500 }}>UID</TableCell>
-                <TableCell sx={{ width: '16%', fontWeight: 500 }}>User Account</TableCell>
-                <TableCell sx={{ width: '13%', fontWeight: 500 }}>Bind Phone Number</TableCell>
-                <TableCell sx={{ width: '16%', fontWeight: 500 }}>Bind Email</TableCell>
-                <TableCell sx={{ width: '10%', fontWeight: 500 }}>User Name</TableCell>
-                <TableCell sx={{ width: '13%', fontWeight: 500 }}>Registration Time</TableCell>
-                <TableCell sx={{ width: '10%', fontWeight: 500 }}>Bound Devices</TableCell>
+                <TableCell sx={{ width: '8%', fontWeight: 500 }}>{t('user-mgmt.col-app')}</TableCell>
+                <TableCell sx={{ width: '14%', fontWeight: 500 }}>{t('user-mgmt.col-uid')}</TableCell>
+                <TableCell sx={{ width: '16%', fontWeight: 500 }}>{t('user-mgmt.col-user-account')}</TableCell>
+                <TableCell sx={{ width: '13%', fontWeight: 500 }}>{t('user-mgmt.col-bind-phone')}</TableCell>
+                <TableCell sx={{ width: '16%', fontWeight: 500 }}>{t('user-mgmt.col-bind-email')}</TableCell>
+                <TableCell sx={{ width: '10%', fontWeight: 500 }}>{t('user-mgmt.col-user-name')}</TableCell>
+                <TableCell sx={{ width: '13%', fontWeight: 500 }}>{t('user-mgmt.col-registration-time')}</TableCell>
+                <TableCell sx={{ width: '10%', fontWeight: 500 }}>{t('user-mgmt.col-bound-devices')}</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -192,7 +194,7 @@ export default function UserManagementPage() {
                 <TableRow>
                   <TableCell colSpan={8} align="center" sx={{ py: 6 }}>
                     <PeopleOutlineIcon sx={{ fontSize: 48, color: tuyaColors.textHint, mb: 1, display: 'block', mx: 'auto' }} />
-                    <Typography color="text.secondary" sx={{ fontSize: '13px' }}>No users found</Typography>
+                    <Typography color="text.secondary" sx={{ fontSize: '13px' }}>{t('user-mgmt.no-users')}</Typography>
                   </TableCell>
                 </TableRow>
               ) : (
@@ -268,7 +270,7 @@ export default function UserManagementPage() {
                           '&:hover': { textDecoration: 'underline' },
                         }}
                       >
-                        View Detail
+                        {t('user-mgmt.view-detail')}
                       </Typography>
                     </TableCell>
                   </TableRow>
@@ -281,7 +283,7 @@ export default function UserManagementPage() {
         {/* Pagination */}
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 2, py: 1, borderTop: `1px solid ${tuyaColors.border}` }}>
           <Typography sx={{ fontSize: '12px', color: tuyaColors.textHint }}>
-            {totalElements} records found
+            {t('user-mgmt.records-found', { count: totalElements })}
           </Typography>
           <TablePagination
             component="div"

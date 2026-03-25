@@ -23,11 +23,11 @@ export default function UsersPage() {
 
   const columns: ColumnDef<User>[] = [
     { id: 'createdTime', label: t('common.created-time'), width: '170px', render: (r) => new Date(r.createdTime).toLocaleString() },
-    { id: 'email', label: 'Email', width: '25%' },
-    { id: 'firstName', label: 'First Name', width: '15%' },
-    { id: 'lastName', label: 'Last Name', width: '15%' },
+    { id: 'email', label: t('user.email'), width: '25%' },
+    { id: 'firstName', label: t('user.first-name'), width: '15%' },
+    { id: 'lastName', label: t('user.last-name'), width: '15%' },
     {
-      id: 'authority', label: 'Authority', width: '15%',
+      id: 'authority', label: t('user.authority'), width: '15%',
       render: (r) => {
         const colorMap: Record<string, 'primary' | 'warning' | 'success'> = {
           SYS_ADMIN: 'primary', TENANT_ADMIN: 'warning', CUSTOMER_USER: 'success',
@@ -38,8 +38,8 @@ export default function UsersPage() {
   ];
 
   const rowActions: RowAction<User>[] = [
-    { icon: <EditIcon fontSize="small" />, tooltip: 'Edit', onClick: (r) => { setEditUser(r); setDialogOpen(true); } },
-    { icon: <DeleteIcon fontSize="small" color="error" />, tooltip: 'Delete', onClick: (r) => { setToDelete(r); setDeleteDialogOpen(true); } },
+    { icon: <EditIcon fontSize="small" />, tooltip: t('action.edit'), onClick: (r) => { setEditUser(r); setDialogOpen(true); } },
+    { icon: <DeleteIcon fontSize="small" color="error" />, tooltip: t('action.delete'), onClick: (r) => { setToDelete(r); setDeleteDialogOpen(true); } },
   ];
 
   const fetchData = useCallback((pl: PageLink) => userApi.getUsers(pl), []);
@@ -59,7 +59,7 @@ export default function UsersPage() {
         columns={columns}
         fetchData={fetchData}
         onAdd={() => { setEditUser(null); setDialogOpen(true); }}
-        addLabel="Add User"
+        addLabel={t('user.add')}
         rowActions={rowActions}
         onDeleteSelected={handleDeleteSelected}
         getRowId={(r) => r.id.id}
@@ -67,8 +67,8 @@ export default function UsersPage() {
       />
       <UserDialog open={dialogOpen} user={editUser}
         onClose={() => { setDialogOpen(false); setEditUser(null); }} onSaved={handleSaved} />
-      <ConfirmDialog open={deleteDialogOpen} title="Delete User"
-        content={`Are you sure you want to delete user "${toDelete?.email}"?`}
+      <ConfirmDialog open={deleteDialogOpen} title={t('user.delete-title')}
+        content={t('user.delete-confirm', { email: toDelete?.email })}
         onConfirm={handleDelete} onCancel={() => { setDeleteDialogOpen(false); setToDelete(null); }} />
     </Box>
   );

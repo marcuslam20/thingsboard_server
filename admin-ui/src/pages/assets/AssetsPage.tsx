@@ -24,16 +24,16 @@ export default function AssetsPage() {
 
   const columns: ColumnDef<AssetInfo>[] = [
     { id: 'createdTime', label: t('common.created-time'), width: '170px', render: (r) => new Date(r.createdTime).toLocaleString() },
-    { id: 'name', label: 'Name', width: '25%' },
-    { id: 'assetProfileName', label: 'Asset Profile', width: '20%' },
-    { id: 'label', label: 'Label', width: '15%' },
-    { id: 'customerTitle', label: 'Customer', width: '15%' },
+    { id: 'name', label: t('asset.name'), width: '25%' },
+    { id: 'assetProfileName', label: t('asset.asset-profile'), width: '20%' },
+    { id: 'label', label: t('asset.label'), width: '15%' },
+    { id: 'customerTitle', label: t('common.customer'), width: '15%' },
   ];
 
   const rowActions: RowAction<AssetInfo>[] = [
-    { icon: <VisibilityIcon fontSize="small" />, tooltip: 'View', onClick: (r) => navigate(`/entities/assets/${r.id.id}`) },
-    { icon: <EditIcon fontSize="small" />, tooltip: 'Edit', onClick: (r) => { setEditAsset(r); setDialogOpen(true); } },
-    { icon: <DeleteIcon fontSize="small" color="error" />, tooltip: 'Delete', onClick: (r) => { setToDelete(r); setDeleteDialogOpen(true); } },
+    { icon: <VisibilityIcon fontSize="small" />, tooltip: t('action.view'), onClick: (r) => navigate(`/entities/assets/${r.id.id}`) },
+    { icon: <EditIcon fontSize="small" />, tooltip: t('action.edit'), onClick: (r) => { setEditAsset(r); setDialogOpen(true); } },
+    { icon: <DeleteIcon fontSize="small" color="error" />, tooltip: t('action.delete'), onClick: (r) => { setToDelete(r); setDeleteDialogOpen(true); } },
   ];
 
   const fetchData = useCallback((pl: PageLink) => assetApi.getTenantAssetInfos(pl), []);
@@ -53,7 +53,7 @@ export default function AssetsPage() {
         columns={columns}
         fetchData={fetchData}
         onAdd={() => { setEditAsset(null); setDialogOpen(true); }}
-        addLabel="Add Asset"
+        addLabel={t('asset.add')}
         rowActions={rowActions}
         onRowClick={(r) => navigate(`/entities/assets/${r.id.id}`)}
         onDeleteSelected={handleDeleteSelected}
@@ -62,8 +62,8 @@ export default function AssetsPage() {
       />
       <AssetDialog open={dialogOpen} asset={editAsset}
         onClose={() => { setDialogOpen(false); setEditAsset(null); }} onSaved={handleSaved} />
-      <ConfirmDialog open={deleteDialogOpen} title="Delete Asset"
-        content={`Are you sure you want to delete asset "${toDelete?.name}"?`}
+      <ConfirmDialog open={deleteDialogOpen} title={t('asset.delete-title')}
+        content={t('asset.delete-confirm', { name: toDelete?.name })}
         onConfirm={handleDelete} onCancel={() => { setDeleteDialogOpen(false); setToDelete(null); }} />
     </Box>
   );

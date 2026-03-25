@@ -23,16 +23,16 @@ export default function TenantsPage() {
 
   const columns: ColumnDef<TenantInfo>[] = [
     { id: 'createdTime', label: t('common.created-time'), width: '170px', render: (r) => new Date(r.createdTime).toLocaleString() },
-    { id: 'title', label: 'Title', width: '25%' },
-    { id: 'tenantProfileName', label: 'Tenant Profile', width: '20%' },
-    { id: 'email', label: 'Email', width: '15%' },
-    { id: 'country', label: 'Country', width: '10%' },
-    { id: 'city', label: 'City', width: '10%' },
+    { id: 'title', label: t('tenant.title'), width: '25%' },
+    { id: 'tenantProfileName', label: t('tenant.tenant-profile'), width: '20%' },
+    { id: 'email', label: t('common.email'), width: '15%' },
+    { id: 'country', label: t('common.country'), width: '10%' },
+    { id: 'city', label: t('common.city'), width: '10%' },
   ];
 
   const rowActions: RowAction<TenantInfo>[] = [
-    { icon: <EditIcon fontSize="small" />, tooltip: 'Edit', onClick: (r) => { setEditTenant(r); setDialogOpen(true); } },
-    { icon: <DeleteIcon fontSize="small" color="error" />, tooltip: 'Delete', onClick: (r) => { setToDelete(r); setDeleteDialogOpen(true); } },
+    { icon: <EditIcon fontSize="small" />, tooltip: t('action.edit'), onClick: (r) => { setEditTenant(r); setDialogOpen(true); } },
+    { icon: <DeleteIcon fontSize="small" color="error" />, tooltip: t('action.delete'), onClick: (r) => { setToDelete(r); setDeleteDialogOpen(true); } },
   ];
 
   const fetchData = useCallback((pl: PageLink) => tenantApi.getTenants(pl), []);
@@ -53,7 +53,7 @@ export default function TenantsPage() {
         fetchData={fetchData}
         onAdd={() => { setEditTenant(null); setDialogOpen(true); }}
         onRowClick={(r) => navigate(`/tenants/${r.id.id}`)}
-        addLabel="Add Tenant"
+        addLabel={t('tenant.add')}
         rowActions={rowActions}
         onDeleteSelected={handleDeleteSelected}
         getRowId={(r) => r.id.id}
@@ -61,8 +61,8 @@ export default function TenantsPage() {
       />
       <TenantDialog open={dialogOpen} tenant={editTenant}
         onClose={() => { setDialogOpen(false); setEditTenant(null); }} onSaved={handleSaved} />
-      <ConfirmDialog open={deleteDialogOpen} title="Delete Tenant"
-        content={`Are you sure you want to delete tenant "${toDelete?.title}"?`}
+      <ConfirmDialog open={deleteDialogOpen} title={t('tenant.delete-title')}
+        content={t('tenant.delete-confirm', { title: toDelete?.title })}
         onConfirm={handleDelete} onCancel={() => { setDeleteDialogOpen(false); setToDelete(null); }} />
     </Box>
   );

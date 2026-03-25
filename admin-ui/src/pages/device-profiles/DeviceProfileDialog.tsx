@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useForm, Controller } from 'react-hook-form';
+import { useTranslation } from 'react-i18next';
 import Dialog from '@mui/material/Dialog';
 import DialogTitle from '@mui/material/DialogTitle';
 import DialogContent from '@mui/material/DialogContent';
@@ -31,6 +32,7 @@ interface Props {
 }
 
 export default function DeviceProfileDialog({ open, profile, onClose, onSaved }: Props) {
+  const { t } = useTranslation();
   const isEdit = !!profile;
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -90,7 +92,7 @@ export default function DeviceProfileDialog({ open, profile, onClose, onSaved }:
       onSaved();
     } catch (err: unknown) {
       const e = err as { response?: { data?: { message?: string } } };
-      setError(e.response?.data?.message || 'Failed to save device profile');
+      setError(e.response?.data?.message || t('product.save-failed'));
     } finally {
       setLoading(false);
     }
@@ -98,16 +100,16 @@ export default function DeviceProfileDialog({ open, profile, onClose, onSaved }:
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
-      <DialogTitle>{isEdit ? 'Edit Product' : 'Create Product'}</DialogTitle>
+      <DialogTitle>{isEdit ? t('product.edit') : t('product.create')}</DialogTitle>
       {loading && <LinearProgress />}
       <form onSubmit={handleSubmit(onSubmit)}>
         <DialogContent>
           {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
-          <Controller name="name" control={control} rules={{ required: 'Name is required' }}
-            render={({ field }) => <TextField {...field} label="Product Name" fullWidth margin="normal" error={!!errors.name} helperText={errors.name?.message} autoFocus />} />
+          <Controller name="name" control={control} rules={{ required: t('product.name-required') }}
+            render={({ field }) => <TextField {...field} label={t('product.product-name')} fullWidth margin="normal" error={!!errors.name} helperText={errors.name?.message} autoFocus />} />
           <Controller name="categoryId" control={control}
             render={({ field }) => (
-              <TextField {...field} select label="Category" fullWidth margin="normal">
+              <TextField {...field} select label={t('product.category')} fullWidth margin="normal">
                 <MenuItem value="">
                   <em>None</em>
                 </MenuItem>
@@ -120,7 +122,7 @@ export default function DeviceProfileDialog({ open, profile, onClose, onSaved }:
             )} />
           <Controller name="type" control={control}
             render={({ field }) => (
-              <TextField {...field} select label="Profile Type" fullWidth margin="normal" disabled={isEdit}>
+              <TextField {...field} select label={t('product.profile-type')} fullWidth margin="normal" disabled={isEdit}>
                 {Object.values(DeviceProfileType).map((t) => (
                   <MenuItem key={t} value={t}>{t}</MenuItem>
                 ))}
@@ -128,20 +130,20 @@ export default function DeviceProfileDialog({ open, profile, onClose, onSaved }:
             )} />
           <Controller name="transportType" control={control}
             render={({ field }) => (
-              <TextField {...field} select label="Protocol" fullWidth margin="normal" disabled={isEdit}>
+              <TextField {...field} select label={t('product.protocol')} fullWidth margin="normal" disabled={isEdit}>
                 {Object.values(DeviceTransportType).map((t) => (
                   <MenuItem key={t} value={t}>{t}</MenuItem>
                 ))}
               </TextField>
             )} />
           <Controller name="productModel" control={control}
-            render={({ field }) => <TextField {...field} label="Product Model" fullWidth margin="normal" placeholder="e.g. ESP32-S3" />} />
+            render={({ field }) => <TextField {...field} label={t('product.product-model')} fullWidth margin="normal" placeholder="e.g. ESP32-S3" />} />
           <Controller name="description" control={control}
-            render={({ field }) => <TextField {...field} label="Description" fullWidth margin="normal" multiline rows={2} />} />
+            render={({ field }) => <TextField {...field} label={t('common.description')} fullWidth margin="normal" multiline rows={2} />} />
         </DialogContent>
         <DialogActions>
-          <Button onClick={onClose}>Cancel</Button>
-          <Button type="submit" variant="contained" disabled={loading}>{isEdit ? 'Save' : 'Create'}</Button>
+          <Button onClick={onClose}>{t('action.cancel')}</Button>
+          <Button type="submit" variant="contained" disabled={loading}>{isEdit ? t('action.save') : t('product.create')}</Button>
         </DialogActions>
       </form>
     </Dialog>
