@@ -21,6 +21,7 @@ import Tab from '@mui/material/Tab';
 import { useAppSelector } from '@/store/store';
 import { selectAuthority } from '@/store/auth.slice';
 import { Authority } from '@/models/authority.model';
+import { useTranslation } from 'react-i18next';
 import GeneralSettingsTab from './tabs/GeneralSettingsTab';
 import MailServerTab from './tabs/MailServerTab';
 import NotificationsTab from './tabs/NotificationsTab';
@@ -35,6 +36,7 @@ interface TabDef {
 }
 
 export default function AdminPage() {
+  const { t } = useTranslation();
   const location = useLocation();
   const navigate = useNavigate();
   const authority = useAppSelector(selectAuthority);
@@ -42,31 +44,31 @@ export default function AdminPage() {
   const tabs: TabDef[] = [
     {
       id: 'general',
-      label: 'General',
+      label: t('admin.general'),
       authorities: [Authority.SYS_ADMIN],
       component: <GeneralSettingsTab />,
     },
     {
       id: 'mail',
-      label: 'Outgoing Mail',
+      label: t('admin.outgoing-mail'),
       authorities: [Authority.SYS_ADMIN],
       component: <MailServerTab />,
     },
     {
       id: 'notifications',
-      label: 'Notifications',
+      label: t('admin.notifications'),
       authorities: [Authority.SYS_ADMIN, Authority.TENANT_ADMIN],
       component: <NotificationsTab />,
     },
     {
       id: 'home',
-      label: 'Home',
+      label: t('admin.home-settings'),
       authorities: [Authority.TENANT_ADMIN],
       component: <HomeSettingsTab />,
     },
     {
       id: 'repository',
-      label: 'Repository',
+      label: t('admin.repository'),
       authorities: [Authority.TENANT_ADMIN],
       component: <RepositorySettingsTab />,
     },
@@ -86,7 +88,7 @@ export default function AdminPage() {
   if (filteredTabs.length === 0) {
     return (
       <Box sx={{ p: 3 }}>
-        <Typography color="text.secondary">No settings available for your role.</Typography>
+        <Typography color="text.secondary">{t('admin.no-settings')}</Typography>
       </Box>
     );
   }
@@ -94,7 +96,7 @@ export default function AdminPage() {
   return (
     <Box>
       <Typography variant="h5" sx={{ mb: 2, fontWeight: 500 }}>
-        System Settings
+        {t('admin.system-settings')}
       </Typography>
 
       <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>

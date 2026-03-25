@@ -38,15 +38,15 @@ export default function CustomersPage() {
 
   const columns: ColumnDef<Customer>[] = [
     { id: 'createdTime', label: t('common.created-time'), width: '170px', render: (r) => new Date(r.createdTime).toLocaleString() },
-    { id: 'title', label: 'Title', width: '25%' },
-    { id: 'email', label: 'Email', width: '20%' },
-    { id: 'country', label: 'Country', width: '15%' },
-    { id: 'city', label: 'City', width: '15%' },
+    { id: 'title', label: t('customer.title'), width: '25%' },
+    { id: 'email', label: t('customer.email'), width: '20%' },
+    { id: 'country', label: t('customer.country'), width: '15%' },
+    { id: 'city', label: t('customer.city'), width: '15%' },
   ];
 
   const rowActions: RowAction<Customer>[] = [
-    { icon: <EditIcon fontSize="small" />, tooltip: 'Edit', onClick: (r) => { setEditCustomer(r); setDialogOpen(true); } },
-    { icon: <DeleteIcon fontSize="small" color="error" />, tooltip: 'Delete', onClick: (r) => { setToDelete(r); setDeleteDialogOpen(true); } },
+    { icon: <EditIcon fontSize="small" />, tooltip: t('action.edit'), onClick: (r) => { setEditCustomer(r); setDialogOpen(true); } },
+    { icon: <DeleteIcon fontSize="small" color="error" />, tooltip: t('action.delete'), onClick: (r) => { setToDelete(r); setDeleteDialogOpen(true); } },
   ];
 
   const fetchData = useCallback((pl: PageLink) => customerApi.getCustomers(pl), []);
@@ -67,7 +67,7 @@ export default function CustomersPage() {
         fetchData={fetchData}
         onAdd={() => { setEditCustomer(null); setDialogOpen(true); }}
         onRowClick={(r) => navigate(`/customers/${r.id.id}`)}
-        addLabel="Add Customer"
+        addLabel={t('customer.add')}
         rowActions={rowActions}
         onDeleteSelected={handleDeleteSelected}
         getRowId={(r) => r.id.id}
@@ -75,8 +75,8 @@ export default function CustomersPage() {
       />
       <CustomerDialog open={dialogOpen} customer={editCustomer}
         onClose={() => { setDialogOpen(false); setEditCustomer(null); }} onSaved={handleSaved} />
-      <ConfirmDialog open={deleteDialogOpen} title="Delete Customer"
-        content={`Are you sure you want to delete customer "${toDelete?.title}"?`}
+      <ConfirmDialog open={deleteDialogOpen} title={t('customer.delete-title')}
+        content={t('customer.delete-confirm', { name: toDelete?.title })}
         onConfirm={handleDelete} onCancel={() => { setDeleteDialogOpen(false); setToDelete(null); }} />
     </Box>
   );

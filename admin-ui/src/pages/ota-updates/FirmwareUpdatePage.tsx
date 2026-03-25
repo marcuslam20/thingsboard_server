@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import Button from '@mui/material/Button';
@@ -30,6 +31,7 @@ function formatDateTime(ts: number): string {
 }
 
 export default function FirmwareUpdatePage() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
 
@@ -111,12 +113,12 @@ export default function FirmwareUpdatePage() {
     <Box>
       {/* Page Header */}
       <Box sx={{ mb: 0.5 }}>
-        <Typography variant="h5" sx={{ mb: 0.5 }}>Firmware Update</Typography>
+        <Typography variant="h5" sx={{ mb: 0.5 }}>{t('firmware.update-title')}</Typography>
         <Typography variant="body2" sx={{ color: tuyaColors.textSecondary, fontSize: '13px', mb: 0.5 }}>
-          For the MCU SDK or TuyaOS based devices that have been delivered, you can deploy firmware updates to them over the air (OTA) without flashing firmware.
+          {t('firmware.update-description')}
         </Typography>
         <Link href="#" sx={{ fontSize: '12px', color: tuyaColors.info, textDecoration: 'none', '&:hover': { textDecoration: 'underline' } }}>
-          View Docs
+          {t('firmware.management-view-docs')}
         </Link>
       </Box>
 
@@ -130,7 +132,7 @@ export default function FirmwareUpdatePage() {
             mb: '-1px',
           }}
         >
-          My Updates
+          {t('firmware.my-updates')}
         </Box>
       </Box>
 
@@ -138,7 +140,7 @@ export default function FirmwareUpdatePage() {
         <Box sx={{ py: 6, textAlign: 'center' }}>
           <DevicesOtherIcon sx={{ fontSize: 48, color: tuyaColors.textHint, mb: 1, display: 'block', mx: 'auto' }} />
           <Typography variant="body2" sx={{ color: tuyaColors.textHint }}>
-            No products found. Create a product (Device Profile) first.
+            {t('firmware.no-products')}
           </Typography>
         </Box>
       ) : (
@@ -156,13 +158,13 @@ export default function FirmwareUpdatePage() {
               <Box sx={{ flex: 1 }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 0.5 }}>
                   <Typography sx={{ fontWeight: 500, fontSize: '14px', color: tuyaColors.textPrimary }}>
-                    {selectedProfile?.name || 'Select a product'}
+                    {selectedProfile?.name || t('firmware.select-product')}
                   </Typography>
                   <Link
                     component="button"
                     sx={{ fontSize: '12px', color: tuyaColors.info, textDecoration: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 0.25 }}
                   >
-                    Change Product
+                    {t('firmware.change-product')}
                     <Select
                       size="small"
                       value={selectedProfileId}
@@ -193,10 +195,10 @@ export default function FirmwareUpdatePage() {
                   </Select>
                 </Box>
                 <Typography sx={{ fontSize: '11px', color: tuyaColors.textHint }}>
-                  Custom
-                  {selectedProfile && <> | PID: {selectedProfileId.substring(0, 16)}</>}
-                  {categoryName && <> | Category: {categoryName}</>}
-                  {selectedProfile?.transportType && <> | Protocol Type: {selectedProfile.transportType}</>}
+                  {t('debug.custom')}
+                  {selectedProfile && <> | {t('debug.pid')}: {selectedProfileId.substring(0, 16)}</>}
+                  {categoryName && <> | {t('debug.category')}: {categoryName}</>}
+                  {selectedProfile?.transportType && <> | {t('debug.protocol')}: {selectedProfile.transportType}</>}
                 </Typography>
               </Box>
 
@@ -208,7 +210,7 @@ export default function FirmwareUpdatePage() {
                   '&:hover': { textDecoration: 'underline' }, flexShrink: 0,
                 }}
               >
-                Development Details
+                {t('firmware.development-details')}
               </Link>
             </Box>
           </Paper>
@@ -220,7 +222,7 @@ export default function FirmwareUpdatePage() {
           }}>
             <InfoOutlinedIcon sx={{ fontSize: 16, color: tuyaColors.info }} />
             <Typography sx={{ fontSize: '12px', color: tuyaColors.textPrimary }}>
-              A new version can be updated. Please click the button <strong>New Update Deployment</strong> to Update.
+              {t('firmware.update-info')}
             </Typography>
           </Box>
 
@@ -231,7 +233,7 @@ export default function FirmwareUpdatePage() {
               value="all"
               sx={{ height: 28, fontSize: '12px', minWidth: 220, '& .MuiOutlinedInput-notchedOutline': { borderColor: tuyaColors.border } }}
             >
-              <MenuItem value="all" sx={{ fontSize: '12px' }}>General firmware scheme</MenuItem>
+              <MenuItem value="all" sx={{ fontSize: '12px' }}>{t('firmware.general-scheme')}</MenuItem>
             </Select>
 
             <Link
@@ -239,7 +241,7 @@ export default function FirmwareUpdatePage() {
               onClick={() => navigate('/firmware/management')}
               sx={{ fontSize: '12px', color: tuyaColors.textSecondary, textDecoration: 'none', cursor: 'pointer', '&:hover': { textDecoration: 'underline' } }}
             >
-              Go to Firmware Management
+              {t('firmware.go-to-management')}
             </Link>
 
             <Box sx={{ flex: 1 }} />
@@ -248,13 +250,13 @@ export default function FirmwareUpdatePage() {
               variant="outlined"
               sx={{ height: 32, fontSize: '12px', px: 2, color: tuyaColors.textPrimary, borderColor: tuyaColors.border }}
             >
-              Common Verification Device
+              {t('firmware.common-verification')}
             </Button>
             <Button
               variant="contained"
               sx={{ height: 32, fontSize: '13px', px: 2 }}
             >
-              New Update Deployment
+              {t('firmware.new-deployment')}
             </Button>
           </Box>
 
@@ -264,15 +266,15 @@ export default function FirmwareUpdatePage() {
               <Table size="small">
                 <TableHead>
                   <TableRow>
-                    <TableCell sx={{ width: '16%' }}>Firmware Name/Key</TableCell>
-                    <TableCell sx={{ width: '10%' }}>Firmware Type</TableCell>
-                    <TableCell sx={{ width: '16%' }}>Firmware Version</TableCell>
-                    <TableCell sx={{ width: '14%' }}>Creation/Update Time</TableCell>
-                    <TableCell sx={{ width: '10%' }}>Firmware Source</TableCell>
-                    <TableCell sx={{ width: '10%' }}>Update Method</TableCell>
-                    <TableCell sx={{ width: '10%' }}>Description</TableCell>
-                    <TableCell sx={{ width: '8%' }}>Firmware Update</TableCell>
-                    <TableCell sx={{ width: '6%', textAlign: 'right' }}>Operation</TableCell>
+                    <TableCell sx={{ width: '16%' }}>{t('firmware.firmware-name-key')}</TableCell>
+                    <TableCell sx={{ width: '10%' }}>{t('firmware.type')}</TableCell>
+                    <TableCell sx={{ width: '16%' }}>{t('firmware.firmware-version')}</TableCell>
+                    <TableCell sx={{ width: '14%' }}>{t('firmware.creation-update-time')}</TableCell>
+                    <TableCell sx={{ width: '10%' }}>{t('firmware.firmware-source')}</TableCell>
+                    <TableCell sx={{ width: '10%' }}>{t('firmware.update-method')}</TableCell>
+                    <TableCell sx={{ width: '10%' }}>{t('common.description')}</TableCell>
+                    <TableCell sx={{ width: '8%' }}>{t('firmware.firmware-update')}</TableCell>
+                    <TableCell sx={{ width: '6%', textAlign: 'right' }}>{t('device.operation')}</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
@@ -286,7 +288,7 @@ export default function FirmwareUpdatePage() {
                     <TableRow>
                       <TableCell colSpan={9} align="center" sx={{ py: 6 }}>
                         <DevicesOtherIcon sx={{ fontSize: 36, color: tuyaColors.textHint, mb: 0.5, display: 'block', mx: 'auto' }} />
-                        <Typography variant="body2" sx={{ color: tuyaColors.textHint }}>No firmware updates found</Typography>
+                        <Typography variant="body2" sx={{ color: tuyaColors.textHint }}>{t('firmware.no-updates')}</Typography>
                       </TableCell>
                     </TableRow>
                   ) : (
@@ -299,7 +301,7 @@ export default function FirmwareUpdatePage() {
                           </Box>
                         </TableCell>
                         <TableCell>
-                          <Typography sx={{ fontSize: '12px' }}>{pkg.type === 'FIRMWARE' ? 'MCU Firmware' : 'Software'}</Typography>
+                          <Typography sx={{ fontSize: '12px' }}>{pkg.type === 'FIRMWARE' ? t('firmware.mcu-firmware') : t('firmware.software')}</Typography>
                         </TableCell>
                         <TableCell>
                           <Typography sx={{ fontSize: '12px' }}>{pkg.version}</Typography>
@@ -308,7 +310,7 @@ export default function FirmwareUpdatePage() {
                           <Typography sx={{ fontSize: '11px', color: tuyaColors.textSecondary }}>{formatDateTime(pkg.createdTime)}</Typography>
                         </TableCell>
                         <TableCell>
-                          <Typography sx={{ fontSize: '12px', color: tuyaColors.textHint }}>Upload</Typography>
+                          <Typography sx={{ fontSize: '12px', color: tuyaColors.textHint }}>{t('firmware.upload')}</Typography>
                         </TableCell>
                         <TableCell>
                           <Typography sx={{ fontSize: '12px', color: tuyaColors.textHint }}>—</Typography>
@@ -324,7 +326,7 @@ export default function FirmwareUpdatePage() {
                             component="button"
                             sx={{ color: tuyaColors.info, fontSize: '12px', textDecoration: 'none', cursor: 'pointer', '&:hover': { textDecoration: 'underline' } }}
                           >
-                            Details
+                            {t('firmware.details')}
                           </Link>
                         </TableCell>
                       </TableRow>

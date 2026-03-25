@@ -37,17 +37,11 @@ import ReceiptIcon from '@mui/icons-material/Receipt';
 import CreditCardIcon from '@mui/icons-material/CreditCard';
 import NewReleasesIcon from '@mui/icons-material/NewReleases';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useAppSelector } from '@/store/store';
 import { selectAuthority, selectUserDetails } from '@/store/auth.slice';
 import { Authority } from '@/models/authority.model';
 import { tuyaColors } from '@/theme/theme';
-
-const tutorialSteps = [
-  { label: 'Create Product', description: 'Define device profiles and data points' },
-  { label: 'Add Devices', description: 'Register and pair IoT devices' },
-  { label: 'Build Dashboard', description: 'Create data visualization' },
-  { label: 'Test & Release', description: 'Debug and deploy' },
-];
 
 interface ConsoleCard {
   id: string;
@@ -60,15 +54,23 @@ interface ConsoleCard {
 }
 
 export default function HomePage() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const authority = useAppSelector(selectAuthority);
   const user = useAppSelector(selectUserDetails);
 
+  const tutorialSteps = [
+    { label: t('home.step-create-product'), description: t('home.step-create-product-desc') },
+    { label: t('home.step-add-devices'), description: t('home.step-add-devices-desc') },
+    { label: t('home.step-build-dashboard'), description: t('home.step-build-dashboard-desc') },
+    { label: t('home.step-test-release'), description: t('home.step-test-release-desc') },
+  ];
+
   const consoleCards: ConsoleCard[] = [
     {
       id: 'product',
-      title: 'Product Development',
-      description: 'Create and manage device profiles, data points, and firmware',
+      title: t('home.product-development'),
+      description: t('home.product-development-desc'),
       icon: <DevicesOtherIcon sx={{ fontSize: 32 }} />,
       color: tuyaColors.orange,
       path: '/profiles/deviceProfiles',
@@ -76,8 +78,8 @@ export default function HomePage() {
     },
     {
       id: 'dashboard',
-      title: 'App Development',
-      description: 'Build dashboards and configure widgets for data visualization',
+      title: t('home.app-development'),
+      description: t('home.app-development-desc'),
       icon: <DashboardOutlinedIcon sx={{ fontSize: 32 }} />,
       color: '#1890FF',
       path: '/dashboards',
@@ -85,8 +87,8 @@ export default function HomePage() {
     },
     {
       id: 'cloud',
-      title: 'Cloud Development',
-      description: 'Configure rule chains, edge computing, and gateway management',
+      title: t('home.cloud-development'),
+      description: t('home.cloud-development-desc'),
       icon: <CloudOutlinedIcon sx={{ fontSize: 32 }} />,
       color: '#52C41A',
       path: '/ruleChains',
@@ -94,8 +96,8 @@ export default function HomePage() {
     },
     {
       id: 'ai-agent',
-      title: 'AI Agent',
-      description: 'Manage assets, entity views, and intelligent automation',
+      title: t('home.ai-agent'),
+      description: t('home.ai-agent-desc'),
       icon: <SmartToyOutlinedIcon sx={{ fontSize: 32 }} />,
       color: '#722ED1',
       path: '/entities/assets',
@@ -138,18 +140,18 @@ export default function HomePage() {
             TB
           </Box>
           <Typography variant="h5" sx={{ fontWeight: 600 }}>
-            Welcome to the Developer Platform
+            {t('home.welcome')}
           </Typography>
         </Box>
         <Typography variant="body1" sx={{ color: tuyaColors.textSecondary, mb: 2, ml: 7 }}>
-          Hello{user?.firstName ? ` ${user.firstName}` : ''}, how can we assist you?
+          {t('home.greeting', { name: user?.firstName || '' })}
         </Typography>
       </Paper>
 
       {/* Innovative Tutorials - Stepper */}
       <Paper sx={{ p: 3, mb: 3, border: `1px solid ${tuyaColors.border}`, borderRadius: 2 }}>
         <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 2 }}>
-          Innovative Tutorials
+          {t('home.innovative-tutorials')}
         </Typography>
         <Stepper activeStep={0} alternativeLabel>
           {tutorialSteps.map((step, index) => (
@@ -178,14 +180,14 @@ export default function HomePage() {
             size="small"
             onClick={() => navigate('/profiles/deviceProfiles')}
           >
-            Get Started
+            {t('home.get-started')}
           </Button>
           <Button
             variant="outlined"
             size="small"
             sx={{ borderColor: tuyaColors.border, color: tuyaColors.textSecondary }}
           >
-            Read Document
+            {t('home.read-document')}
           </Button>
         </Box>
       </Paper>
@@ -195,7 +197,7 @@ export default function HomePage() {
         {/* Left: Console cards */}
         <Box sx={{ flex: 1 }}>
           <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 2 }}>
-            Developer Console
+            {t('home.developer-console')}
           </Typography>
           <Grid container spacing={2}>
             {filteredCards.map((card) => (
@@ -268,14 +270,14 @@ export default function HomePage() {
           }}
         >
           <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 2 }}>
-            My Space
+            {t('home.my-space')}
           </Typography>
 
           {[
-            { icon: <BusinessIcon sx={{ fontSize: 18 }} />, label: 'Enterprise Info', path: '/profile' },
-            { icon: <SecurityIcon sx={{ fontSize: 18 }} />, label: 'Authorization', path: '/security-settings/general' },
-            { icon: <ReceiptIcon sx={{ fontSize: 18 }} />, label: 'Invoiced', path: '/usage' },
-            { icon: <CreditCardIcon sx={{ fontSize: 18 }} />, label: 'Contract', path: '/usage' },
+            { icon: <BusinessIcon sx={{ fontSize: 18 }} />, label: t('home.enterprise-info'), path: '/profile' },
+            { icon: <SecurityIcon sx={{ fontSize: 18 }} />, label: t('home.authorization'), path: '/security-settings/general' },
+            { icon: <ReceiptIcon sx={{ fontSize: 18 }} />, label: t('home.invoiced'), path: '/usage' },
+            { icon: <CreditCardIcon sx={{ fontSize: 18 }} />, label: t('home.contract'), path: '/usage' },
           ].map((item, i) => (
             <Box
               key={i}
@@ -302,7 +304,7 @@ export default function HomePage() {
 
           {/* Service Expiration */}
           <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1 }}>
-            Service Status
+            {t('home.service-status')}
           </Typography>
           <Box
             sx={{
@@ -315,11 +317,11 @@ export default function HomePage() {
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
               <NewReleasesIcon sx={{ fontSize: 16, color: tuyaColors.orange }} />
               <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                Platform Active
+                {t('home.platform-active')}
               </Typography>
             </Box>
             <Typography variant="caption" sx={{ color: tuyaColors.textHint }}>
-              IoT Core service is running
+              {t('home.iot-core-running')}
             </Typography>
           </Box>
 
@@ -327,23 +329,23 @@ export default function HomePage() {
 
           {/* Recommended */}
           <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1 }}>
-            Quick Actions
+            {t('home.quick-actions')}
           </Typography>
           <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.75 }}>
             <Chip
-              label="New Device"
+              label={t('home.new-device')}
               size="small"
               onClick={() => navigate('/entities/devices')}
               sx={{ cursor: 'pointer', '&:hover': { bgcolor: tuyaColors.sidebarActive, color: tuyaColors.orange } }}
             />
             <Chip
-              label="New Dashboard"
+              label={t('home.new-dashboard')}
               size="small"
               onClick={() => navigate('/dashboards')}
               sx={{ cursor: 'pointer', '&:hover': { bgcolor: tuyaColors.sidebarActive, color: tuyaColors.orange } }}
             />
             <Chip
-              label="View Alarms"
+              label={t('home.view-alarms')}
               size="small"
               onClick={() => navigate('/alarms')}
               sx={{ cursor: 'pointer', '&:hover': { bgcolor: tuyaColors.sidebarActive, color: tuyaColors.orange } }}

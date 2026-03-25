@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import Button from '@mui/material/Button';
@@ -54,6 +55,7 @@ function getTypeLabel(dpType: DpType): string {
 }
 
 export default function DeviceDebugConsole({ deviceId, deviceName, deviceProfileId, active, onBack }: Props) {
+  const { t } = useTranslation();
   const [dataPoints, setDataPoints] = useState<DataPoint[]>([]);
   const [currentValues, setCurrentValues] = useState<Record<string, unknown>>({});
   const [editValues, setEditValues] = useState<Record<string, unknown>>({});
@@ -146,7 +148,7 @@ export default function DeviceDebugConsole({ deviceId, deviceName, deviceProfile
 
   const renderControl = (dp: DataPoint) => {
     if (dp.mode === DpMode.RO) {
-      return <Typography sx={{ fontSize: '11px', color: tuyaColors.textHint }}>Read Only</Typography>;
+      return <Typography sx={{ fontSize: '11px', color: tuyaColors.textHint }}>{t('debug.read-only')}</Typography>;
     }
 
     const value = editValues[dp.code] ?? currentValues[dp.code];
@@ -221,7 +223,7 @@ export default function DeviceDebugConsole({ deviceId, deviceName, deviceProfile
         return (
           <TextField
             size="small"
-            placeholder="Hex value"
+            placeholder={t('debug.hex-value')}
             value={value !== undefined ? String(value) : ''}
             onChange={(e) => setEditValues((prev) => ({ ...prev, [dp.code]: e.target.value }))}
             sx={{ width: 180, '& .MuiInputBase-root': { height: 24, fontSize: '11px' } }}
@@ -231,7 +233,7 @@ export default function DeviceDebugConsole({ deviceId, deviceName, deviceProfile
       case DpType.FAULT:
         return (
           <Chip
-            label={value !== undefined ? String(value) : 'No fault'}
+            label={value !== undefined ? String(value) : t('debug.no-fault')}
             size="small"
             sx={{ fontSize: '10px', height: 20 }}
           />
@@ -264,13 +266,13 @@ export default function DeviceDebugConsole({ deviceId, deviceName, deviceProfile
           }}
         >
           <ArrowBackIcon sx={{ fontSize: 16 }} />
-          Back
+          {t('debug.back')}
         </Link>
         <Typography variant="subtitle1" sx={{ fontWeight: 500, color: tuyaColors.textPrimary }}>
           {deviceName}
         </Typography>
         <Chip
-          label={active ? 'Online' : 'Offline'}
+          label={active ? t('debug.online') : t('debug.offline')}
           size="small"
           sx={{
             fontSize: '10px', height: 20,
@@ -286,7 +288,7 @@ export default function DeviceDebugConsole({ deviceId, deviceName, deviceProfile
           onClick={handleRefresh}
           sx={{ height: 24, fontSize: '11px', color: tuyaColors.textSecondary, borderColor: tuyaColors.border }}
         >
-          Refresh
+          {t('action.refresh')}
         </Button>
       </Box>
 
@@ -295,13 +297,13 @@ export default function DeviceDebugConsole({ deviceId, deviceName, deviceProfile
         <Table size="small">
           <TableHead>
             <TableRow>
-              <TableCell sx={{ width: '6%' }}>DP ID</TableCell>
-              <TableCell sx={{ width: '12%' }}>DP Name</TableCell>
-              <TableCell sx={{ width: '10%' }}>Code</TableCell>
-              <TableCell sx={{ width: '8%' }}>Type</TableCell>
-              <TableCell sx={{ width: '14%' }}>Current Value</TableCell>
-              <TableCell sx={{ width: '30%' }}>Control</TableCell>
-              <TableCell sx={{ width: '10%' }}>Action</TableCell>
+              <TableCell sx={{ width: '6%' }}>{t('debug.dp-id')}</TableCell>
+              <TableCell sx={{ width: '12%' }}>{t('debug.dp-name')}</TableCell>
+              <TableCell sx={{ width: '10%' }}>{t('debug.code')}</TableCell>
+              <TableCell sx={{ width: '8%' }}>{t('debug.type')}</TableCell>
+              <TableCell sx={{ width: '14%' }}>{t('debug.current-value')}</TableCell>
+              <TableCell sx={{ width: '30%' }}>{t('debug.control')}</TableCell>
+              <TableCell sx={{ width: '10%' }}>{t('debug.action')}</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
@@ -309,7 +311,7 @@ export default function DeviceDebugConsole({ deviceId, deviceName, deviceProfile
               <TableRow>
                 <TableCell colSpan={7} align="center" sx={{ py: 4 }}>
                   <Typography variant="body2" sx={{ color: tuyaColors.textHint }}>
-                    No data points defined for this product
+                    {t('debug.no-data-points')}
                   </Typography>
                 </TableCell>
               </TableRow>
@@ -337,7 +339,7 @@ export default function DeviceDebugConsole({ deviceId, deviceName, deviceProfile
                         disabled={sendingDp === dp.code}
                         sx={{ height: 22, fontSize: '10px', minWidth: 50 }}
                       >
-                        {sendingDp === dp.code ? <CircularProgress size={12} sx={{ color: '#fff' }} /> : 'Send'}
+                        {sendingDp === dp.code ? <CircularProgress size={12} sx={{ color: '#fff' }} /> : t('debug.send')}
                       </Button>
                     )}
                   </TableCell>
@@ -351,7 +353,7 @@ export default function DeviceDebugConsole({ deviceId, deviceName, deviceProfile
       {/* Command Log */}
       <Box sx={{ mb: 2 }}>
         <Typography variant="subtitle1" sx={{ fontWeight: 500, color: tuyaColors.textPrimary, mb: 1 }}>
-          Command Log
+          {t('debug.command-log')}
         </Typography>
         <Paper
           elevation={0}
@@ -363,7 +365,7 @@ export default function DeviceDebugConsole({ deviceId, deviceName, deviceProfile
           {commandLogs.length === 0 ? (
             <Box sx={{ py: 3, textAlign: 'center' }}>
               <Typography variant="body2" sx={{ color: tuyaColors.textHint }}>
-                No commands sent yet
+                {t('debug.no-commands')}
               </Typography>
             </Box>
           ) : (

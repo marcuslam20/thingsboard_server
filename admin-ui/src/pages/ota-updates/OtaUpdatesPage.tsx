@@ -44,23 +44,23 @@ export default function OtaUpdatesPage() {
 
   const columns: ColumnDef<OtaPackageInfo>[] = [
     { id: 'createdTime', label: t('common.created-time'), width: '160px', render: (r) => new Date(r.createdTime).toLocaleString() },
-    { id: 'title', label: 'Title', width: '22%' },
-    { id: 'version', label: 'Version', width: '10%' },
+    { id: 'title', label: t('ota-update.title'), width: '22%' },
+    { id: 'version', label: t('ota-update.version'), width: '10%' },
     {
-      id: 'type', label: 'Type', width: '10%',
+      id: 'type', label: t('ota-update.type'), width: '10%',
       render: (r) => <Chip label={r.type} size="small" color={r.type === 'FIRMWARE' ? 'primary' : 'secondary'} variant="outlined" />,
     },
-    { id: 'deviceProfileName', label: 'Device Profile', width: '15%', render: (r) => r.deviceProfileName || '' },
-    { id: 'tag', label: 'Tag', width: '10%', render: (r) => r.tag || '' },
+    { id: 'deviceProfileName', label: t('ota-update.device-profile'), width: '15%', render: (r) => r.deviceProfileName || '' },
+    { id: 'tag', label: t('ota-update.tag'), width: '10%', render: (r) => r.tag || '' },
     {
-      id: 'hasData', label: 'Data', width: '10%', sortable: false,
-      render: (r) => r.hasData ? <Chip label={formatBytes(r.dataSize)} size="small" color="success" variant="outlined" /> : <Chip label="No data" size="small" variant="outlined" />,
+      id: 'hasData', label: t('ota-update.data'), width: '10%', sortable: false,
+      render: (r) => r.hasData ? <Chip label={formatBytes(r.dataSize)} size="small" color="success" variant="outlined" /> : <Chip label={t('ota-update.no-data')} size="small" variant="outlined" />,
     },
   ];
 
   const rowActions: RowAction<OtaPackageInfo>[] = [
-    { icon: <EditIcon fontSize="small" />, tooltip: 'Edit', onClick: (r) => { setEditPkg(r); setDialogOpen(true); } },
-    { icon: <DeleteIcon fontSize="small" color="error" />, tooltip: 'Delete', onClick: (r) => { setToDelete(r); setDeleteDialogOpen(true); } },
+    { icon: <EditIcon fontSize="small" />, tooltip: t('action.edit'), onClick: (r) => { setEditPkg(r); setDialogOpen(true); } },
+    { icon: <DeleteIcon fontSize="small" color="error" />, tooltip: t('action.delete'), onClick: (r) => { setToDelete(r); setDeleteDialogOpen(true); } },
   ];
 
   const fetchData = useCallback((pl: PageLink) => otaUpdateApi.getOtaPackagesV2(pl), []);
@@ -80,7 +80,7 @@ export default function OtaUpdatesPage() {
         columns={columns}
         fetchData={fetchData}
         onAdd={() => { setEditPkg(null); setDialogOpen(true); }}
-        addLabel="Add OTA Package"
+        addLabel={t('ota-update.add')}
         rowActions={rowActions}
         onDeleteSelected={handleDeleteSelected}
         getRowId={(r) => r.id.id}
@@ -88,8 +88,8 @@ export default function OtaUpdatesPage() {
       />
       <OtaUpdateDialog open={dialogOpen} otaPackage={editPkg}
         onClose={() => { setDialogOpen(false); setEditPkg(null); }} onSaved={handleSaved} />
-      <ConfirmDialog open={deleteDialogOpen} title="Delete OTA Package"
-        content={`Are you sure you want to delete OTA package "${toDelete?.title} v${toDelete?.version}"?`}
+      <ConfirmDialog open={deleteDialogOpen} title={t('ota-update.delete-title')}
+        content={t('ota-update.delete-confirm', { title: toDelete?.title, version: toDelete?.version })}
         onConfirm={handleDelete} onCancel={() => { setDeleteDialogOpen(false); setToDelete(null); }} />
     </Box>
   );

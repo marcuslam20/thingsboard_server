@@ -1,5 +1,6 @@
 import { useState, useCallback, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import Button from '@mui/material/Button';
@@ -59,6 +60,7 @@ function AuthImage({ src, size = 36 }: { src: string; size?: number }) {
 }
 
 export default function ProductProfileListPage() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [data, setData] = useState<DeviceProfile[]>([]);
   const [totalElements, setTotalElements] = useState(0);
@@ -110,7 +112,7 @@ export default function ProductProfileListPage() {
       {/* Page Header */}
       <Box sx={{ mb: 2.5 }}>
         <Typography variant="h5" sx={{ mb: 0.5 }}>
-          Product Profile
+          {t('product.product-profile')}
         </Typography>
       </Box>
 
@@ -119,7 +121,7 @@ export default function ProductProfileListPage() {
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, flexWrap: 'wrap' }}>
           <TextField
             size="small"
-            placeholder="Search by Product ID/PI"
+            placeholder={t('product.search-placeholder')}
             value={searchText}
             onChange={(e) => setSearchText(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
@@ -141,14 +143,14 @@ export default function ProductProfileListPage() {
             onClick={handleSearch}
             sx={{ minWidth: 0, px: 2, height: 32, fontSize: '13px', color: tuyaColors.textPrimary, borderColor: tuyaColors.border }}
           >
-            Search
+            {t('product.search')}
           </Button>
           <Button
             variant="outlined"
             onClick={handleReset}
             sx={{ minWidth: 0, px: 2, height: 32, fontSize: '13px', color: tuyaColors.textSecondary, borderColor: tuyaColors.border }}
           >
-            Reset
+            {t('product.reset')}
           </Button>
 
           <Box sx={{ flex: 1 }} />
@@ -157,7 +159,7 @@ export default function ProductProfileListPage() {
             variant="outlined"
             sx={{ height: 32, fontSize: '13px', px: 2, color: tuyaColors.orange, borderColor: tuyaColors.orange }}
           >
-            Multi-Language
+            {t('product.multi-language')}
           </Button>
         </Box>
       </Paper>
@@ -168,13 +170,13 @@ export default function ProductProfileListPage() {
           <Table sx={{ '& td': { fontSize: '13px' }, '& th': { fontSize: '13px', fontWeight: 500, color: tuyaColors.textSecondary } }}>
             <TableHead>
               <TableRow sx={{ bgcolor: '#fafafa' }}>
-                <TableCell sx={{ width: '24%' }}>Product Name / ID</TableCell>
-                <TableCell sx={{ width: '12%' }}>Device Type</TableCell>
-                <TableCell sx={{ width: '12%' }}>Development Status</TableCell>
-                <TableCell sx={{ width: '12%' }}>Created At</TableCell>
-                <TableCell sx={{ width: '12%' }}>Profile Status</TableCell>
-                <TableCell sx={{ width: '12%' }}>Brand</TableCell>
-                <TableCell sx={{ width: '16%' }}>Operation</TableCell>
+                <TableCell sx={{ width: '24%' }}>{t('product.product-name')} / {t('product.product-id')}</TableCell>
+                <TableCell sx={{ width: '12%' }}>{t('product.device-type')}</TableCell>
+                <TableCell sx={{ width: '12%' }}>{t('product.development-status')}</TableCell>
+                <TableCell sx={{ width: '12%' }}>{t('product.created-at')}</TableCell>
+                <TableCell sx={{ width: '12%' }}>{t('product.profile-status')}</TableCell>
+                <TableCell sx={{ width: '12%' }}>{t('product.brand')}</TableCell>
+                <TableCell sx={{ width: '16%' }}>{t('device.operation')}</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -188,7 +190,7 @@ export default function ProductProfileListPage() {
                 <TableRow>
                   <TableCell colSpan={7} align="center" sx={{ py: 6 }}>
                     <DevicesOtherIcon sx={{ fontSize: 48, color: tuyaColors.textHint, mb: 1, display: 'block', mx: 'auto' }} />
-                    <Typography color="text.secondary">No products found</Typography>
+                    <Typography color="text.secondary">{t('product.no-products')}</Typography>
                   </TableCell>
                 </TableRow>
               ) : (
@@ -226,7 +228,7 @@ export default function ProductProfileListPage() {
                       </TableCell>
 
                       {/* Device Type */}
-                      <TableCell>Common Device</TableCell>
+                      <TableCell>{t('device.common-device')}</TableCell>
 
                       {/* Development Status */}
                       <TableCell>
@@ -267,7 +269,7 @@ export default function ProductProfileListPage() {
                             '&:hover': { textDecoration: 'underline' },
                           }}
                         >
-                          Edit Product Profile
+                          {t('product.edit-product-profile')}
                         </Typography>
                       </TableCell>
                     </TableRow>

@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import Button from '@mui/material/Button';
@@ -28,6 +29,7 @@ import { tuyaColors } from '@/theme/theme';
 import DeviceDebugConsole from './DeviceDebugConsole';
 
 export default function DeviceDebugPage() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
 
@@ -133,9 +135,9 @@ export default function DeviceDebugPage() {
         {/* Page header */}
         <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', mb: 2 }}>
           <Box>
-            <Typography variant="h5" sx={{ mb: 0.5 }}>Device Debug</Typography>
+            <Typography variant="h5" sx={{ mb: 0.5 }}>{t('debug.title')}</Typography>
             <Typography variant="body2" sx={{ color: 'text.secondary', fontSize: '13px' }}>
-              Debug and test device data points with real-time RPC commands.
+              {t('debug.description')}
             </Typography>
           </Box>
         </Box>
@@ -156,9 +158,9 @@ export default function DeviceDebugPage() {
       {/* Page Header */}
       <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', mb: 2 }}>
         <Box>
-          <Typography variant="h5" sx={{ mb: 0.5 }}>Device Debug</Typography>
+          <Typography variant="h5" sx={{ mb: 0.5 }}>{t('debug.title')}</Typography>
           <Typography variant="body2" sx={{ color: 'text.secondary', fontSize: '13px' }}>
-            Debug and test device data points with real-time RPC commands.
+            {t('debug.description')}
           </Typography>
         </Box>
         <Box sx={{ display: 'flex', gap: 1 }}>
@@ -166,7 +168,7 @@ export default function DeviceDebugPage() {
             href="#"
             sx={{ fontSize: '12px', color: tuyaColors.info, textDecoration: 'none', '&:hover': { textDecoration: 'underline' }, mt: 0.5 }}
           >
-            View Docs
+            {t('debug.view-docs')}
           </Link>
           <Button
             variant="outlined"
@@ -176,7 +178,7 @@ export default function DeviceDebugPage() {
               '&:hover': { borderColor: tuyaColors.info, bgcolor: 'rgba(0,139,213,0.04)' },
             }}
           >
-            Choose Data Center
+            {t('debug.choose-data-center')}
           </Button>
         </Box>
       </Box>
@@ -191,7 +193,7 @@ export default function DeviceDebugPage() {
             mb: '-1px',
           }}
         >
-          My Products
+          {t('debug.my-products')}
         </Box>
       </Box>
 
@@ -200,7 +202,7 @@ export default function DeviceDebugPage() {
         <Box sx={{ py: 6, textAlign: 'center' }}>
           <DevicesOtherIcon sx={{ fontSize: 48, color: tuyaColors.textHint, mb: 1, display: 'block', mx: 'auto' }} />
           <Typography variant="body2" sx={{ color: tuyaColors.textHint }}>
-            No products found. Create a product (Device Profile) first.
+            {t('debug.no-products')}
           </Typography>
         </Box>
       ) : (
@@ -218,7 +220,7 @@ export default function DeviceDebugPage() {
               <Box sx={{ flex: 1 }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 0.5 }}>
                   <Typography sx={{ fontWeight: 500, fontSize: '14px', color: tuyaColors.textPrimary }}>
-                    {selectedProfile?.name || 'Select a product'}
+                    {selectedProfile?.name || t('debug.select-product')}
                   </Typography>
                   <Select
                     size="small"
@@ -234,10 +236,10 @@ export default function DeviceDebugPage() {
                   </Select>
                 </Box>
                 <Typography sx={{ fontSize: '11px', color: tuyaColors.textHint }}>
-                  Custom
-                  {selectedProfile && <> | PID: {selectedProfileId.substring(0, 16)}</>}
-                  {categoryName && <> | Category: {categoryName}</>}
-                  {selectedProfile?.transportType && <> | Protocol: {selectedProfile.transportType}</>}
+                  {t('debug.custom')}
+                  {selectedProfile && <> | {t('debug.pid')}: {selectedProfileId.substring(0, 16)}</>}
+                  {categoryName && <> | {t('debug.category')}: {categoryName}</>}
+                  {selectedProfile?.transportType && <> | {t('debug.protocol')}: {selectedProfile.transportType}</>}
                 </Typography>
               </Box>
 
@@ -249,7 +251,7 @@ export default function DeviceDebugPage() {
                   '&:hover': { textDecoration: 'underline' }, flexShrink: 0,
                 }}
               >
-                Development Details
+                {t('debug.development-details')}
               </Link>
             </Box>
           </Paper>
@@ -260,8 +262,7 @@ export default function DeviceDebugPage() {
             px: 2, py: 1, mb: 2.5,
           }}>
             <Typography sx={{ fontSize: '12px', color: '#8C6D1F' }}>
-              You can debug devices here to verify data point communication.
-              Ensure your device is online and connected before sending commands.
+              {t('debug.debug-info')}
             </Typography>
           </Box>
 
@@ -269,9 +270,9 @@ export default function DeviceDebugPage() {
           <Box sx={{ mb: 3 }}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 1.5 }}>
               <Typography variant="subtitle1" sx={{ fontWeight: 500, color: tuyaColors.textPrimary }}>
-                Real Device Debug
+                {t('debug.real-device')}
               </Typography>
-              <Tooltip title="Debug real devices connected to this product. Click Debug to open the DP debug console.">
+              <Tooltip title={t('debug.real-device-desc')}>
                 <HelpOutlineIcon sx={{ fontSize: 16, color: tuyaColors.textHint, cursor: 'pointer' }} />
               </Tooltip>
             </Box>
@@ -287,7 +288,7 @@ export default function DeviceDebugPage() {
                   mb: '-1px',
                 }}
               >
-                Device ID
+                {t('debug.device-id')}
               </Box>
               <Box
                 onClick={() => setRealDeviceTab('appAccount')}
@@ -298,7 +299,7 @@ export default function DeviceDebugPage() {
                   mb: '-1px',
                 }}
               >
-                App Account
+                {t('debug.app-account')}
               </Box>
             </Box>
 
@@ -307,9 +308,9 @@ export default function DeviceDebugPage() {
               <Table size="small">
                 <TableHead>
                   <TableRow>
-                    <TableCell sx={{ width: '45%' }}>Device Name / ID</TableCell>
-                    <TableCell sx={{ width: '20%' }}>Status</TableCell>
-                    <TableCell sx={{ width: '35%', textAlign: 'right' }}>Operation</TableCell>
+                    <TableCell sx={{ width: '45%' }}>{t('debug.device-name-id')}</TableCell>
+                    <TableCell sx={{ width: '20%' }}>{t('debug.status')}</TableCell>
+                    <TableCell sx={{ width: '35%', textAlign: 'right' }}>{t('device.operation')}</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
@@ -323,7 +324,7 @@ export default function DeviceDebugPage() {
                     <TableRow>
                       <TableCell colSpan={3} align="center" sx={{ py: 4 }}>
                         <DevicesOtherIcon sx={{ fontSize: 36, color: tuyaColors.textHint, mb: 0.5, display: 'block', mx: 'auto' }} />
-                        <Typography variant="body2" sx={{ color: tuyaColors.textHint }}>No Data</Typography>
+                        <Typography variant="body2" sx={{ color: tuyaColors.textHint }}>{t('debug.no-data')}</Typography>
                       </TableCell>
                     </TableRow>
                   ) : (
@@ -341,7 +342,7 @@ export default function DeviceDebugPage() {
                         </TableCell>
                         <TableCell>
                           <Chip
-                            label={device.active ? 'Online' : 'Offline'}
+                            label={device.active ? t('debug.online') : t('debug.offline')}
                             size="small"
                             sx={{
                               fontSize: '10px', height: 20,
@@ -359,7 +360,7 @@ export default function DeviceDebugPage() {
                               mr: 2, '&:hover': { textDecoration: 'underline' },
                             }}
                           >
-                            Debug
+                            {t('device.debug')}
                           </Link>
                           <Link
                             component="button"
@@ -369,7 +370,7 @@ export default function DeviceDebugPage() {
                               '&:hover': { textDecoration: 'underline' },
                             }}
                           >
-                            Remove
+                            {t('debug.remove')}
                           </Link>
                         </TableCell>
                       </TableRow>
@@ -392,7 +393,7 @@ export default function DeviceDebugPage() {
                   '&:hover': { borderColor: tuyaColors.info, bgcolor: 'rgba(0,139,213,0.04)' },
                 }}
               >
-                Add Real Device Debug
+                {t('debug.add-real-device')}
               </Button>
             </Box>
           </Box>
@@ -401,9 +402,9 @@ export default function DeviceDebugPage() {
           <Box sx={{ mb: 3 }}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 1.5 }}>
               <Typography variant="subtitle1" sx={{ fontWeight: 500, color: tuyaColors.textPrimary }}>
-                Virtual Device
+                {t('debug.virtual-device')}
               </Typography>
-              <Tooltip title="Virtual devices simulate real hardware for testing purposes.">
+              <Tooltip title={t('debug.virtual-device-desc')}>
                 <HelpOutlineIcon sx={{ fontSize: 16, color: tuyaColors.textHint, cursor: 'pointer' }} />
               </Tooltip>
             </Box>
@@ -412,8 +413,8 @@ export default function DeviceDebugPage() {
               <Table size="small">
                 <TableHead>
                   <TableRow>
-                    <TableCell sx={{ width: '60%' }}>Device ID</TableCell>
-                    <TableCell sx={{ width: '40%', textAlign: 'right' }}>Operation</TableCell>
+                    <TableCell sx={{ width: '60%' }}>{t('debug.device-id')}</TableCell>
+                    <TableCell sx={{ width: '40%', textAlign: 'right' }}>{t('device.operation')}</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
@@ -438,7 +439,7 @@ export default function DeviceDebugPage() {
                   color: tuyaColors.textHint, borderColor: tuyaColors.border,
                 }}
               >
-                Add Virtual Device
+                {t('debug.add-virtual-device')}
               </Button>
             </Box>
           </Box>

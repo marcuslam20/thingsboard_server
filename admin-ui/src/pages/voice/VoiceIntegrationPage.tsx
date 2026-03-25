@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import Button from '@mui/material/Button';
@@ -113,6 +114,7 @@ function setConfiguring(profileId: string, platformId: string, value: boolean): 
 }
 
 export default function VoiceIntegrationPage() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
 
@@ -271,12 +273,12 @@ export default function VoiceIntegrationPage() {
     <Box>
       {/* Page Header */}
       <Box sx={{ mb: 0.5 }}>
-        <Typography variant="h5" sx={{ mb: 0.5 }}>Voice Platform Integration</Typography>
+        <Typography variant="h5" sx={{ mb: 0.5 }}>{t('voice.title')}</Typography>
         <Typography variant="body2" sx={{ color: tuyaColors.textSecondary, fontSize: '13px', mb: 0.5 }}>
-          Select a voice platform and customize voice features to quickly make your product voice-enabled.
+          {t('voice.description')}
         </Typography>
         <Link href="#" sx={{ fontSize: '12px', color: tuyaColors.info, textDecoration: 'none', '&:hover': { textDecoration: 'underline' } }}>
-          How-To Guide
+          {t('voice.how-to-guide')}
         </Link>
       </Box>
 
@@ -286,7 +288,7 @@ export default function VoiceIntegrationPage() {
         <Box sx={{ py: 6, textAlign: 'center' }}>
           <DevicesOtherIcon sx={{ fontSize: 48, color: tuyaColors.textHint, mb: 1, display: 'block', mx: 'auto' }} />
           <Typography variant="body2" sx={{ color: tuyaColors.textHint }}>
-            No products found. Create a product (Device Profile) first.
+            {t('voice.no-products')}
           </Typography>
         </Box>
       ) : (
@@ -331,10 +333,10 @@ export default function VoiceIntegrationPage() {
                   </Select>
                 </Box>
                 <Typography sx={{ fontSize: '11px', color: tuyaColors.textHint }}>
-                  Custom
-                  {selectedProfile && <> | PID: {selectedProfileId.substring(0, 16)}</>}
-                  {categoryName && <> | Category: {categoryName}</>}
-                  {selectedProfile?.transportType && <> | Protocol Type: {selectedProfile.transportType}</>}
+                  {t('voice.custom')}
+                  {selectedProfile && <> | {t('voice.pid')}: {selectedProfileId.substring(0, 16)}</>}
+                  {categoryName && <> | {t('voice.category')}: {categoryName}</>}
+                  {selectedProfile?.transportType && <> | {t('voice.protocol-type')}: {selectedProfile.transportType}</>}
                 </Typography>
               </Box>
               <Link
@@ -345,7 +347,7 @@ export default function VoiceIntegrationPage() {
                   '&:hover': { textDecoration: 'underline' }, flexShrink: 0,
                 }}
               >
-                View Product Features
+                {t('voice.view-product-features')}
               </Link>
             </Box>
           </Paper>
@@ -353,13 +355,13 @@ export default function VoiceIntegrationPage() {
           {/* Voice Solution Configuration */}
           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
             <Typography variant="subtitle1" sx={{ fontWeight: 500, color: tuyaColors.textPrimary }}>
-              Voice Solution Configuration
+              {t('voice.solution-config')}
             </Typography>
             <Button
               variant="outlined"
               sx={{ height: 32, fontSize: '12px', px: 2, color: tuyaColors.textPrimary, borderColor: tuyaColors.border }}
             >
-              Export Voice Command
+              {t('voice.export-command')}
             </Button>
           </Box>
 
@@ -369,10 +371,10 @@ export default function VoiceIntegrationPage() {
               <Table>
                 <TableHead>
                   <TableRow>
-                    <TableCell sx={{ width: '25%' }}>Platform Name</TableCell>
-                    <TableCell sx={{ width: '30%' }}>Developing</TableCell>
-                    <TableCell sx={{ width: '25%' }}>Released</TableCell>
-                    <TableCell sx={{ width: '20%', textAlign: 'right' }}>Operation</TableCell>
+                    <TableCell sx={{ width: '25%' }}>{t('voice.platform-name')}</TableCell>
+                    <TableCell sx={{ width: '30%' }}>{t('voice.developing')}</TableCell>
+                    <TableCell sx={{ width: '25%' }}>{t('voice.released')}</TableCell>
+                    <TableCell sx={{ width: '20%', textAlign: 'right' }}>{t('device.operation')}</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
@@ -408,19 +410,19 @@ export default function VoiceIntegrationPage() {
                           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                             {platform.status === 'released' || platform.status === 'configuring' ? (
                               <>
-                                <Typography sx={{ fontSize: '12px', color: tuyaColors.textSecondary }}>Configuring...</Typography>
+                                <Typography sx={{ fontSize: '12px', color: tuyaColors.textSecondary }}>{t('voice.configuring')}</Typography>
                                 <Button
                                   variant="contained"
                                   size="small"
                                   sx={{ height: 24, fontSize: '11px', px: 1.5 }}
                                   onClick={() => navigate(`/voice/integration/${platform.id}/config?profileId=${selectedProfileId}&mode=edit`)}
                                 >
-                                  Continue
+                                  {t('voice.continue')}
                                 </Button>
                               </>
                             ) : (
                               <>
-                                <Typography sx={{ fontSize: '12px', color: tuyaColors.textHint }}>No solution</Typography>
+                                <Typography sx={{ fontSize: '12px', color: tuyaColors.textHint }}>{t('voice.no-solution')}</Typography>
                                 <Button
                                   variant="outlined"
                                   size="small"
@@ -435,7 +437,7 @@ export default function VoiceIntegrationPage() {
                                     borderColor: platform.supported ? tuyaColors.info : tuyaColors.border,
                                   }}
                                 >
-                                  Create Solution
+                                  {t('voice.create-solution')}
                                 </Button>
                               </>
                             )}
@@ -469,14 +471,14 @@ export default function VoiceIntegrationPage() {
                                 onClick={() => handleCancelActivation(platform.id)}
                                 sx={{ color: tuyaColors.info, fontSize: '12px', textDecoration: 'none', cursor: 'pointer', '&:hover': { textDecoration: 'underline' } }}
                               >
-                                Cancel Activation
+                                {t('voice.cancel-activation')}
                               </Link>
                               <Link
                                 component="button"
                                 onClick={() => navigate(`/voice/integration/${platform.id}/config?profileId=${selectedProfileId}&mode=released`)}
                                 sx={{ color: tuyaColors.info, fontSize: '12px', textDecoration: 'none', cursor: 'pointer', '&:hover': { textDecoration: 'underline' } }}
                               >
-                                Manage Versions
+                                {t('voice.manage-versions')}
                               </Link>
                             </Box>
                           ) : platform.supported && platform.status === 'configuring' ? (
@@ -484,7 +486,7 @@ export default function VoiceIntegrationPage() {
                               component="button"
                               sx={{ color: tuyaColors.info, fontSize: '12px', textDecoration: 'none', cursor: 'pointer', '&:hover': { textDecoration: 'underline' } }}
                             >
-                              Manage Versions
+                              {t('voice.manage-versions')}
                             </Link>
                           ) : (
                             <Typography sx={{ fontSize: '12px', color: tuyaColors.textHint }}>&mdash;</Typography>
@@ -500,7 +502,7 @@ export default function VoiceIntegrationPage() {
 
           <Box sx={{ mt: 2 }}>
             <Typography variant="body2" sx={{ fontSize: '12px', color: tuyaColors.textHint }}>
-              Currently supported voice platforms: <strong>Amazon Alexa</strong> and <strong>Google Assistant</strong>.
+              {t('voice.supported-platforms')}
             </Typography>
           </Box>
         </>

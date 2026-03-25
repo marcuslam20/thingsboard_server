@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import Button from '@mui/material/Button';
@@ -45,6 +46,7 @@ function formatDateTime(ts: number): string {
 }
 
 export default function FirmwareManagementPage() {
+  const { t } = useTranslation();
   const [data, setData] = useState<OtaPackageInfo[]>([]);
   const [totalElements, setTotalElements] = useState(0);
   const [page, setPage] = useState(0);
@@ -143,9 +145,9 @@ export default function FirmwareManagementPage() {
     <Box>
       {/* Page Header */}
       <Box sx={{ mb: 0.5 }}>
-        <Typography variant="h5" sx={{ mb: 0.5 }}>Firmware Management</Typography>
+        <Typography variant="h5" sx={{ mb: 0.5 }}>{t('firmware.management-title')}</Typography>
         <Link href="#" sx={{ fontSize: '12px', color: tuyaColors.info, textDecoration: 'none', '&:hover': { textDecoration: 'underline' } }}>
-          View Docs
+          {t('firmware.management-view-docs')}
         </Link>
       </Box>
 
@@ -159,7 +161,7 @@ export default function FirmwareManagementPage() {
             mb: '-1px',
           }}
         >
-          My Firmware
+          {t('firmware.my-firmware')}
         </Box>
       </Box>
 
@@ -167,7 +169,7 @@ export default function FirmwareManagementPage() {
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2, flexWrap: 'wrap' }}>
         <TextField
           size="small"
-          placeholder="Enter firmware na..."
+          placeholder={t('firmware.enter-name')}
           value={searchName}
           onChange={(e) => setSearchName(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
@@ -175,14 +177,14 @@ export default function FirmwareManagementPage() {
         />
         <TextField
           size="small"
-          placeholder="Enter firmware key"
+          placeholder={t('firmware.enter-key')}
           value={searchKey}
           onChange={(e) => setSearchKey(e.target.value)}
           sx={{ width: 150, ...compactInputSx }}
         />
         <TextField
           size="small"
-          placeholder="Enter product ID"
+          placeholder={t('firmware.enter-product-id')}
           value={searchProductId}
           onChange={(e) => setSearchProductId(e.target.value)}
           sx={{ width: 150, ...compactInputSx }}
@@ -193,9 +195,9 @@ export default function FirmwareManagementPage() {
           onChange={(e) => setTypeFilter(e.target.value)}
           sx={{ ...compactSelectSx, minWidth: 130 }}
         >
-          <MenuItem value="all" sx={{ fontSize: '12px' }}>Firmware Type</MenuItem>
-          <MenuItem value="FIRMWARE" sx={{ fontSize: '12px' }}>FIRMWARE</MenuItem>
-          <MenuItem value="SOFTWARE" sx={{ fontSize: '12px' }}>SOFTWARE</MenuItem>
+          <MenuItem value="all" sx={{ fontSize: '12px' }}>{t('firmware.firmware-type')}</MenuItem>
+          <MenuItem value="FIRMWARE" sx={{ fontSize: '12px' }}>{t('firmware.firmware')}</MenuItem>
+          <MenuItem value="SOFTWARE" sx={{ fontSize: '12px' }}>{t('firmware.software')}</MenuItem>
         </Select>
 
         <Button
@@ -203,14 +205,14 @@ export default function FirmwareManagementPage() {
           onClick={handleSearch}
           sx={{ height: 28, fontSize: '12px', px: 2, color: tuyaColors.textPrimary, borderColor: tuyaColors.border }}
         >
-          Search
+          {t('action.search')}
         </Button>
         <Button
           variant="outlined"
           onClick={handleReset}
           sx={{ height: 28, fontSize: '12px', px: 2, color: tuyaColors.textPrimary, borderColor: tuyaColors.border }}
         >
-          Reset
+          {t('action.reset')}
         </Button>
 
         <Box sx={{ flex: 1 }} />
@@ -221,7 +223,7 @@ export default function FirmwareManagementPage() {
           onClick={() => { setEditPkg(null); setDialogOpen(true); }}
           sx={{ height: 32, fontSize: '13px', px: 2 }}
         >
-          Add Firmware
+          {t('firmware.add')}
         </Button>
       </Box>
 
@@ -231,31 +233,31 @@ export default function FirmwareManagementPage() {
           <Table size="small">
             <TableHead>
               <TableRow>
-                <TableCell sx={{ width: '14%' }}>Firmware Key</TableCell>
-                <TableCell sx={{ width: '12%' }}>Initial Product ID</TableCell>
-                <TableCell sx={{ width: '8%' }}>Correlation Product</TableCell>
+                <TableCell sx={{ width: '14%' }}>{t('firmware.key')}</TableCell>
+                <TableCell sx={{ width: '12%' }}>{t('firmware.initial-product-id')}</TableCell>
+                <TableCell sx={{ width: '8%' }}>{t('firmware.correlation-product')}</TableCell>
                 <TableCell sx={{ width: '14%' }}>
                   <TableSortLabel
                     active={sortProperty === 'title'}
                     direction={sortProperty === 'title' ? (sortOrder === 'ASC' ? 'asc' : 'desc') : 'asc'}
                     onClick={() => handleSort('title')}
                   >
-                    Firmware Name
+                    {t('firmware.name')}
                   </TableSortLabel>
                 </TableCell>
-                <TableCell sx={{ width: '10%' }}>Firmware Type</TableCell>
-                <TableCell sx={{ width: '10%' }}>Data Uploaded</TableCell>
-                <TableCell sx={{ width: '8%' }}>Latest Version</TableCell>
+                <TableCell sx={{ width: '10%' }}>{t('firmware.type')}</TableCell>
+                <TableCell sx={{ width: '10%' }}>{t('firmware.data-uploaded')}</TableCell>
+                <TableCell sx={{ width: '8%' }}>{t('firmware.latest-version')}</TableCell>
                 <TableCell sx={{ width: '14%' }}>
                   <TableSortLabel
                     active={sortProperty === 'createdTime'}
                     direction={sortProperty === 'createdTime' ? (sortOrder === 'ASC' ? 'asc' : 'desc') : 'asc'}
                     onClick={() => handleSort('createdTime')}
                   >
-                    Creation/Update Time
+                    {t('firmware.creation-update-time')}
                   </TableSortLabel>
                 </TableCell>
-                <TableCell sx={{ width: '10%', textAlign: 'right' }}>Operation</TableCell>
+                <TableCell sx={{ width: '10%', textAlign: 'right' }}>{t('device.operation')}</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -268,7 +270,7 @@ export default function FirmwareManagementPage() {
               ) : filteredData.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={9} align="center" sx={{ py: 6 }}>
-                    <Typography variant="body2" sx={{ color: tuyaColors.textHint }}>No firmware found</Typography>
+                    <Typography variant="body2" sx={{ color: tuyaColors.textHint }}>{t('firmware.no-firmware')}</Typography>
                   </TableCell>
                 </TableRow>
               ) : (
@@ -291,11 +293,11 @@ export default function FirmwareManagementPage() {
                       <Typography sx={{ fontSize: '12px', color: tuyaColors.textPrimary }}>{pkg.title}</Typography>
                     </TableCell>
                     <TableCell>
-                      <Typography sx={{ fontSize: '12px' }}>{pkg.type === 'FIRMWARE' ? 'MCU Firmware' : 'Software'}</Typography>
+                      <Typography sx={{ fontSize: '12px' }}>{pkg.type === 'FIRMWARE' ? t('firmware.mcu-firmware') : t('firmware.software')}</Typography>
                     </TableCell>
                     <TableCell>
                       <Typography sx={{ fontSize: '12px', color: pkg.hasData ? tuyaColors.textPrimary : tuyaColors.textHint }}>
-                        {pkg.hasData ? 'Yes' : 'No'}
+                        {pkg.hasData ? t('firmware.yes') : t('firmware.no')}
                       </Typography>
                     </TableCell>
                     <TableCell>
@@ -313,14 +315,14 @@ export default function FirmwareManagementPage() {
                           onClick={() => { setEditPkg(pkg); setDialogOpen(true); }}
                           sx={{ color: tuyaColors.info, fontSize: '12px', textDecoration: 'none', cursor: 'pointer', '&:hover': { textDecoration: 'underline' } }}
                         >
-                          Details
+                          {t('firmware.details')}
                         </Link>
                         <Link
                           component="button"
                           onClick={() => { setEditPkg(null); setDialogOpen(true); }}
                           sx={{ color: tuyaColors.info, fontSize: '12px', textDecoration: 'none', cursor: 'pointer', '&:hover': { textDecoration: 'underline' } }}
                         >
-                          Create Version
+                          {t('firmware.create-version')}
                         </Link>
                         <IconButton
                           size="small"
@@ -359,7 +361,7 @@ export default function FirmwareManagementPage() {
           onClick={() => { setToDelete(menuRow); setDeleteDialogOpen(true); setMenuAnchor(null); setMenuRow(null); }}
           sx={{ fontSize: '12px', color: tuyaColors.error }}
         >
-          Delete
+          {t('action.delete')}
         </MenuItem>
       </Menu>
 
@@ -372,8 +374,8 @@ export default function FirmwareManagementPage() {
       />
       <ConfirmDialog
         open={deleteDialogOpen}
-        title="Delete Firmware"
-        content={`Are you sure you want to delete firmware "${toDelete?.title} v${toDelete?.version}"?`}
+        title={t('firmware.delete-title')}
+        content={t('firmware.delete-confirm')}
         onConfirm={handleDelete}
         onCancel={() => { setDeleteDialogOpen(false); setToDelete(null); }}
       />

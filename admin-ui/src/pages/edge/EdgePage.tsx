@@ -38,16 +38,16 @@ export default function EdgePage() {
 
   const columns: ColumnDef<EdgeInfo>[] = [
     { id: 'createdTime', label: t('common.created-time'), width: '170px', render: (r) => new Date(r.createdTime).toLocaleString() },
-    { id: 'name', label: 'Name', width: '22%' },
-    { id: 'type', label: 'Type', width: '15%' },
-    { id: 'label', label: 'Label', width: '15%', render: (r) => r.label || '' },
-    { id: 'routingKey', label: 'Routing Key', width: '18%', render: (r) => r.routingKey || '' },
-    { id: 'customerTitle', label: 'Customer', width: '15%', render: (r) => r.customerTitle || '' },
+    { id: 'name', label: t('edge.name'), width: '22%' },
+    { id: 'type', label: t('edge.type'), width: '15%' },
+    { id: 'label', label: t('edge.label'), width: '15%', render: (r) => r.label || '' },
+    { id: 'routingKey', label: t('edge.routing-key'), width: '18%', render: (r) => r.routingKey || '' },
+    { id: 'customerTitle', label: t('common.customer'), width: '15%', render: (r) => r.customerTitle || '' },
   ];
 
   const rowActions: RowAction<EdgeInfo>[] = [
-    { icon: <EditIcon fontSize="small" />, tooltip: 'Edit', onClick: (r) => { setEditEdge(r); setDialogOpen(true); } },
-    { icon: <DeleteIcon fontSize="small" color="error" />, tooltip: 'Delete', onClick: (r) => { setToDelete(r); setDeleteDialogOpen(true); } },
+    { icon: <EditIcon fontSize="small" />, tooltip: t('action.edit'), onClick: (r) => { setEditEdge(r); setDialogOpen(true); } },
+    { icon: <DeleteIcon fontSize="small" color="error" />, tooltip: t('action.delete'), onClick: (r) => { setToDelete(r); setDeleteDialogOpen(true); } },
   ];
 
   const fetchData = useCallback((pl: PageLink) => edgeApi.getTenantEdgeInfos(pl), []);
@@ -68,7 +68,7 @@ export default function EdgePage() {
         fetchData={fetchData}
         onAdd={() => { setEditEdge(null); setDialogOpen(true); }}
         onRowClick={(r) => navigate(`/edgeManagement/edges/${r.id.id}`)}
-        addLabel="Add Edge"
+        addLabel={t('edge.add')}
         rowActions={rowActions}
         onDeleteSelected={handleDeleteSelected}
         getRowId={(r) => r.id.id}
@@ -76,8 +76,8 @@ export default function EdgePage() {
       />
       <EdgeDialog open={dialogOpen} edge={editEdge}
         onClose={() => { setDialogOpen(false); setEditEdge(null); }} onSaved={handleSaved} />
-      <ConfirmDialog open={deleteDialogOpen} title="Delete Edge"
-        content={`Are you sure you want to delete edge "${toDelete?.name}"?`}
+      <ConfirmDialog open={deleteDialogOpen} title={t('edge.delete-title')}
+        content={t('edge.delete-confirm', { name: toDelete?.name })}
         onConfirm={handleDelete} onCancel={() => { setDeleteDialogOpen(false); setToDelete(null); }} />
     </Box>
   );

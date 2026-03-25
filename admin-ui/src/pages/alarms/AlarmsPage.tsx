@@ -36,11 +36,11 @@ const SEVERITY_COLORS: Record<string, 'error' | 'warning' | 'info' | 'success' |
   INDETERMINATE: 'default',
 };
 
-const STATUS_LABELS: Record<string, string> = {
-  ACTIVE_UNACK: 'Active Unack',
-  ACTIVE_ACK: 'Active Ack',
-  CLEARED_UNACK: 'Cleared Unack',
-  CLEARED_ACK: 'Cleared Ack',
+const STATUS_KEYS: Record<string, string> = {
+  ACTIVE_UNACK: 'alarm.active-unack',
+  ACTIVE_ACK: 'alarm.active-ack',
+  CLEARED_UNACK: 'alarm.cleared-unack',
+  CLEARED_ACK: 'alarm.cleared-ack',
 };
 
 export default function AlarmsPage() {
@@ -55,35 +55,35 @@ export default function AlarmsPage() {
 
   const columns: ColumnDef<AlarmInfo>[] = [
     { id: 'createdTime', label: t('common.created-time'), width: '170px', render: (r) => new Date(r.createdTime).toLocaleString() },
-    { id: 'originatorName', label: 'Originator', width: '20%', render: (r) => r.originatorName || r.originator?.id || '' },
-    { id: 'type', label: 'Type', width: '15%' },
+    { id: 'originatorName', label: t('alarm.originator'), width: '20%', render: (r) => r.originatorName || r.originator?.id || '' },
+    { id: 'type', label: t('alarm.type'), width: '15%' },
     {
-      id: 'severity', label: 'Severity', width: '12%',
+      id: 'severity', label: t('alarm.severity'), width: '12%',
       render: (r) => <Chip label={r.severity} size="small" color={SEVERITY_COLORS[r.severity] || 'default'} />,
     },
     {
-      id: 'status', label: 'Status', width: '13%',
-      render: (r) => STATUS_LABELS[r.status] || r.status,
+      id: 'status', label: t('alarm.status'), width: '13%',
+      render: (r) => t(STATUS_KEYS[r.status]) || r.status,
     },
-    { id: 'startTs', label: 'Start Time', width: '170px', render: (r) => r.startTs ? new Date(r.startTs).toLocaleString() : '' },
+    { id: 'startTs', label: t('alarm.start-time'), width: '170px', render: (r) => r.startTs ? new Date(r.startTs).toLocaleString() : '' },
   ];
 
   const rowActions: RowAction<AlarmInfo>[] = [
     {
       icon: <CheckCircleIcon fontSize="small" color="success" />,
-      tooltip: 'Acknowledge',
+      tooltip: t('alarm.acknowledge'),
       onClick: async (r) => { await alarmApi.ackAlarm(r.id.id); refresh(); },
       hidden: (r) => r.status === 'ACTIVE_ACK' || r.status === 'CLEARED_ACK',
     },
     {
       icon: <ClearIcon fontSize="small" color="info" />,
-      tooltip: 'Clear',
+      tooltip: t('alarm.clear'),
       onClick: async (r) => { await alarmApi.clearAlarm(r.id.id); refresh(); },
       hidden: (r) => r.status === 'CLEARED_UNACK' || r.status === 'CLEARED_ACK',
     },
     {
       icon: <DeleteIcon fontSize="small" color="error" />,
-      tooltip: 'Delete',
+      tooltip: t('action.delete'),
       onClick: (r) => { setToDelete(r); setDeleteDialogOpen(true); },
     },
   ];
@@ -99,27 +99,27 @@ export default function AlarmsPage() {
     <Box>
       <Stack direction="row" spacing={2} sx={{ mb: 2 }}>
         <TextField
-          select size="small" label="Severity" value={severityFilter}
+          select size="small" label={t('alarm.severity')} value={severityFilter}
           onChange={(e) => { setSeverityFilter(e.target.value); setRefreshTrigger((n) => n + 1); }}
           sx={{ minWidth: 150 }}
         >
-          <MenuItem value="">All</MenuItem>
-          <MenuItem value="CRITICAL">Critical</MenuItem>
-          <MenuItem value="MAJOR">Major</MenuItem>
-          <MenuItem value="MINOR">Minor</MenuItem>
-          <MenuItem value="WARNING">Warning</MenuItem>
-          <MenuItem value="INDETERMINATE">Indeterminate</MenuItem>
+          <MenuItem value="">{t('alarm.all')}</MenuItem>
+          <MenuItem value="CRITICAL">{t('alarm.critical')}</MenuItem>
+          <MenuItem value="MAJOR">{t('alarm.major')}</MenuItem>
+          <MenuItem value="MINOR">{t('alarm.minor')}</MenuItem>
+          <MenuItem value="WARNING">{t('alarm.warning')}</MenuItem>
+          <MenuItem value="INDETERMINATE">{t('alarm.indeterminate')}</MenuItem>
         </TextField>
         <TextField
-          select size="small" label="Status" value={statusFilter}
+          select size="small" label={t('alarm.status')} value={statusFilter}
           onChange={(e) => { setStatusFilter(e.target.value); setRefreshTrigger((n) => n + 1); }}
           sx={{ minWidth: 180 }}
         >
-          <MenuItem value="">All</MenuItem>
-          <MenuItem value="ACTIVE_UNACK">Active Unack</MenuItem>
-          <MenuItem value="ACTIVE_ACK">Active Ack</MenuItem>
-          <MenuItem value="CLEARED_UNACK">Cleared Unack</MenuItem>
-          <MenuItem value="CLEARED_ACK">Cleared Ack</MenuItem>
+          <MenuItem value="">{t('alarm.all')}</MenuItem>
+          <MenuItem value="ACTIVE_UNACK">{t('alarm.active-unack')}</MenuItem>
+          <MenuItem value="ACTIVE_ACK">{t('alarm.active-ack')}</MenuItem>
+          <MenuItem value="CLEARED_UNACK">{t('alarm.cleared-unack')}</MenuItem>
+          <MenuItem value="CLEARED_ACK">{t('alarm.cleared-ack')}</MenuItem>
         </TextField>
       </Stack>
       <EntityTable<AlarmInfo>
@@ -130,8 +130,8 @@ export default function AlarmsPage() {
         getRowId={(r) => r.id.id}
         refreshTrigger={refreshTrigger}
       />
-      <ConfirmDialog open={deleteDialogOpen} title="Delete Alarm"
-        content={`Are you sure you want to delete this alarm?`}
+      <ConfirmDialog open={deleteDialogOpen} title={t('alarm.delete-title')}
+        content={t('alarm.delete-confirm')}
         onConfirm={handleDelete} onCancel={() => { setDeleteDialogOpen(false); setToDelete(null); }} />
     </Box>
   );
