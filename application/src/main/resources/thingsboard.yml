@@ -629,6 +629,9 @@ cache:
     twoFaVerificationCodes:
       timeToLiveInMinutes: "${CACHE_SPECS_TWO_FA_VERIFICATION_CODES_TTL:60}" # Two factor verification codes cache TTL
       maxSize: "${CACHE_SPECS_TWO_FA_VERIFICATION_CODES_MAX_SIZE:100000}" # 0 means the cache is disabled
+    signupVerificationCodes:
+      timeToLiveInMinutes: "${CACHE_SPECS_SIGNUP_VERIFICATION_CODES_TTL:10}" # Signup email verification codes cache TTL
+      maxSize: "${CACHE_SPECS_SIGNUP_VERIFICATION_CODES_MAX_SIZE:100000}" # 0 means the cache is disabled
     versionControlTask:
       timeToLiveInMinutes: "${CACHE_SPECS_VERSION_CONTROL_TASK_TTL:20}" # Version control task cache TTL
       maxSize: "${CACHE_SPECS_VERSION_CONTROL_TASK_MAX_SIZE:100000}" # 0 means the cache is disabled

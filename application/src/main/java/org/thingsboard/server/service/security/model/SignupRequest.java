@@ -20,6 +20,7 @@ import lombok.Data;
 @Data
 public class SignupRequest {
     private String email;
+    private String verificationCode; // Required — 6-digit code sent via email
     private String password;
     private String firstName;
     private String lastName;

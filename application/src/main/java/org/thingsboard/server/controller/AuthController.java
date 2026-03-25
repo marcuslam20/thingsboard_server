@@ -31,8 +31,12 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.apache.commons.lang3.StringUtils;
+import org.springframework.cache.Cache;
+import org.springframework.cache.CacheManager;
 import org.thingsboard.rule.engine.api.MailService;
 import org.thingsboard.server.cache.limits.RateLimitService;
+import org.thingsboard.server.common.data.CacheConstants;
 import org.thingsboard.server.common.data.User;
 import org.thingsboard.server.common.data.audit.ActionType;
 import org.thingsboard.server.common.data.exception.ThingsboardErrorCode;
@@ -84,6 +88,10 @@ public class AuthController extends BaseController {
     private final SecuritySettingsService securitySettingsService;
     private final RateLimitService rateLimitService;
     private final ApplicationEventPublisher eventPublisher;
+    private final CacheManager cacheManager;
+
+    private static final int SIGNUP_CODE_LENGTH = 6;
+    private static final long SIGNUP_CODE_TTL_MS = 5 * 60 * 1000L; // 5 minutes
 
 
     @ApiOperation(value = "Get current User (getUser)",
@@ -317,45 +325,120 @@ public class AuthController extends BaseController {
         }
     }
 
+    @ApiOperation(value = "Send Signup Verification Code (sendSignupVerificationCode)",
+        notes = "Sends a 6-digit verification code to the provided email address. " +
+                "The code is valid for 5 minutes. Must be called before signup.")
+    @PostMapping(value = "/noauth/signup/verificationCode")
+    public ResponseEntity<?> sendSignupVerificationCode(
+            @RequestBody java.util.Map<String, String> request) throws ThingsboardException {
+        try {
+            String email = request.get("email");
+            if (StringUtils.isBlank(email)) {
+                throw new ThingsboardException("Email is required", ThingsboardErrorCode.BAD_REQUEST_PARAMS);
+            }
+            email = email.trim().toLowerCase();
+
+            // Check email uniqueness
+            if (userService.findUserByEmail(TenantId.SYS_TENANT_ID, email) != null) {
+                throw new ThingsboardException("This email address has already been registered",
+                        ThingsboardErrorCode.BAD_REQUEST_PARAMS);
+            }
+
+            // Generate 6-digit code
+            String code = StringUtils.randomNumeric(SIGNUP_CODE_LENGTH);
+
+            // Store in cache with timestamp
+            Cache cache = cacheManager.getCache(CacheConstants.SIGNUP_VERIFICATION_CACHE);
+            if (cache != null) {
+                cache.put(email, new SignupVerificationCode(System.currentTimeMillis(), code));
+            }
+
+            // Send verification email (reuse 2FA email template)
+            try {
+                mailService.sendTwoFaVerificationEmail(email, code, (int) (SIGNUP_CODE_TTL_MS / 1000));
+                log.info("Signup verification code sent to [{}]", email);
+            } catch (Exception e) {
+                log.error("Failed to send signup verification code to [{}]", email, e);
+                throw new ThingsboardException("Failed to send verification email: " + e.getMessage(),
+                        ThingsboardErrorCode.GENERAL);
+            }
+
+            return ResponseEntity.ok()
+                .body(java.util.Map.of(
+                    "message", "Verification code sent successfully",
+                    "email", email
+                ));
+        } catch (Exception e) {
+            log.error("Send signup verification code failed", e);
+            throw handleException(e);
+        }
+    }
+
     @ApiOperation(value = "Sign Up (signup)",
-        notes = "Tuya-style signup: Creates a new Tenant (company) and TENANT_ADMIN user. " +
-                "Sends activation email. User must verify email before logging in. " +
-                "Required fields: email, password, companyName. Optional: firstName, lastName, country.")
+        notes = "Tuya-style signup: Verifies the email code, then creates a new Tenant (company) and TENANT_ADMIN user. " +
+                "Account is activated immediately (email already verified via code). " +
+                "Required fields: email, verificationCode, password, companyName. Optional: firstName, lastName, country.")
     @PostMapping(value = "/noauth/signup")
     public ResponseEntity<?> signUp(@RequestBody SignupRequest signupRequest,
                                     HttpServletRequest request) throws ThingsboardException {
         try {
             // Validate required fields
             String email = signupRequest.getEmail();
+            String verificationCode = signupRequest.getVerificationCode();
             String password = signupRequest.getPassword();
             String companyName = signupRequest.getCompanyName();
 
-            if (email == null || email.trim().isEmpty()) {
+            if (StringUtils.isBlank(email)) {
                 throw new ThingsboardException("Email is required", ThingsboardErrorCode.BAD_REQUEST_PARAMS);
             }
-            if (password == null || password.trim().isEmpty()) {
+            email = email.trim().toLowerCase();
+            if (StringUtils.isBlank(verificationCode)) {
+                throw new ThingsboardException("Verification code is required", ThingsboardErrorCode.BAD_REQUEST_PARAMS);
+            }
+            if (StringUtils.isBlank(password)) {
                 throw new ThingsboardException("Password is required", ThingsboardErrorCode.BAD_REQUEST_PARAMS);
             }
-            if (companyName == null || companyName.trim().isEmpty()) {
+            if (StringUtils.isBlank(companyName)) {
                 throw new ThingsboardException("Company name is required", ThingsboardErrorCode.BAD_REQUEST_PARAMS);
             }
+
+            // Verify the email code
+            Cache cache = cacheManager.getCache(CacheConstants.SIGNUP_VERIFICATION_CACHE);
+            if (cache == null) {
+                throw new ThingsboardException("Verification service unavailable", ThingsboardErrorCode.GENERAL);
+            }
+            SignupVerificationCode storedCode = cache.get(email, SignupVerificationCode.class);
+            if (storedCode == null) {
+                throw new ThingsboardException("Verification code not found or expired. Please request a new one.",
+                        ThingsboardErrorCode.BAD_REQUEST_PARAMS);
+            }
+            if (System.currentTimeMillis() - storedCode.timestamp() > SIGNUP_CODE_TTL_MS) {
+                cache.evict(email);
+                throw new ThingsboardException("Verification code expired. Please request a new one.",
+                        ThingsboardErrorCode.BAD_REQUEST_PARAMS);
+            }
+            if (!verificationCode.trim().equals(storedCode.code())) {
+                throw new ThingsboardException("Invalid verification code",
+                        ThingsboardErrorCode.BAD_REQUEST_PARAMS);
+            }
+            cache.evict(email); // Code used, remove it
 
             // Validate password against security policy
             systemSecurityService.validatePassword(password, null);
 
             // Check email uniqueness globally
             if (userService.findUserByEmail(TenantId.SYS_TENANT_ID, email) != null) {
-                throw new ThingsboardException("This email address has already been registered", ThingsboardErrorCode.BAD_REQUEST_PARAMS);
+                throw new ThingsboardException("This email address has already been registered",
+                        ThingsboardErrorCode.BAD_REQUEST_PARAMS);
             }
 
             // Create new Tenant (Company)
             Tenant tenant = new Tenant();
             tenant.setTitle(companyName.trim());
-            tenant.setEmail(email.trim());
-            if (signupRequest.getCountry() != null && !signupRequest.getCountry().trim().isEmpty()) {
+            tenant.setEmail(email);
+            if (StringUtils.isNotBlank(signupRequest.getCountry())) {
                 tenant.setCountry(signupRequest.getCountry().trim());
             }
-            // Save tenant with default rule chains, device profiles, dashboards
             tenant = tbTenantService.save(tenant);
             TenantId tenantId = tenant.getId();
 
@@ -363,44 +446,39 @@ public class AuthController extends BaseController {
             User user = new User();
             user.setTenantId(tenantId);
             user.setAuthority(org.thingsboard.server.common.data.security.Authority.TENANT_ADMIN);
-            user.setEmail(email.trim());
-            if (signupRequest.getFirstName() != null) {
+            user.setEmail(email);
+            if (StringUtils.isNotBlank(signupRequest.getFirstName())) {
                 user.setFirstName(signupRequest.getFirstName().trim());
             }
-            if (signupRequest.getLastName() != null) {
+            if (StringUtils.isNotBlank(signupRequest.getLastName())) {
                 user.setLastName(signupRequest.getLastName().trim());
             }
             user = userService.saveUser(tenantId, user);
 
-            // Get credentials (auto-created by saveUser with activation token)
+            // Activate immediately — email already verified via code
             UserCredentials credentials = userService.findUserCredentialsByUserId(tenantId, user.getId());
-            // Set password (user already provided it at signup, will be usable after activation)
             credentials.setPassword(passwordEncoder.encode(password));
-            credentials = userService.saveUserCredentials(tenantId, credentials);
-            // Get activation token (already generated by saveUser)
-            String activateToken = credentials.getActivateToken();
+            credentials.setEnabled(true);
+            credentials.setActivateToken(null);
+            credentials.setActivateTokenExpTime(null);
+            userService.saveUserCredentials(tenantId, credentials);
 
-            // Send activation email
-            try {
-                String baseUrl = systemSecurityService.getBaseUrl(tenantId, null, request);
-                String activationLink = String.format("%s/api/noauth/activate/verify?activateToken=%s", baseUrl, activateToken);
-                mailService.sendActivationEmail(activationLink, 0, email.trim());
-                log.info("Activation email sent to [{}] for tenant [{}]", email, companyName);
-            } catch (Exception e) {
-                log.warn("Signup succeeded but activation email not sent: {}", e.getMessage());
-            }
-
-            log.info("Tenant [{}] + admin user [{}] created. Awaiting email verification.", companyName, email);
+            log.info("Tenant [{}] + admin user [{}] created and activated (email verified via code).",
+                    companyName, email);
             return ResponseEntity.ok()
                 .body(java.util.Map.of(
-                    "message", "Account created successfully. Please check your email to activate your account.",
-                    "email", email.trim()
+                    "message", "Account created and activated successfully. You can now log in.",
+                    "email", email
                 ));
 
         } catch (Exception e) {
             log.error("Signup failed", e);
             throw handleException(e);
         }
+    }
+
+    private record SignupVerificationCode(long timestamp, String code) implements java.io.Serializable {
+        private static final long serialVersionUID = 1L;
     }
     private void logLogoutAction(HttpServletRequest request) throws ThingsboardException {
         var user = getCurrentUser();
