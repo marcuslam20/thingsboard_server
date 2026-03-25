@@ -10,9 +10,9 @@ export interface LoginResponse {
 }
 
 export interface SignupRequest {
-  firstName: string;
-  lastName: string;
   email: string;
+  verificationCode: string;
   password: string;
-  tenantId: string;
+  companyName: string;
+  country?: string;
 }

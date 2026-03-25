@@ -8,7 +8,11 @@ export const authApi = {
     return api.post('/api/auth/login', request).then((r) => r.data);
   },
 
-  signup(request: SignupRequest): Promise<void> {
+  sendSignupVerificationCode(email: string): Promise<{ message: string; email: string }> {
+    return api.post('/api/noauth/signup/verificationCode', { email }).then((r) => r.data);
+  },
+
+  signup(request: SignupRequest): Promise<{ message: string; email: string }> {
     return api.post('/api/noauth/signup', request).then((r) => r.data);
   },
 
