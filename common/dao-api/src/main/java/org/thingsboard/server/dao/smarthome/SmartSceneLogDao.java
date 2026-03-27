@@ -25,4 +25,6 @@ public interface SmartSceneLogDao {
     SmartSceneLog save(SmartSceneLog log);
 
     List<SmartSceneLog> findBySceneId(UUID sceneId);
+
+    void updateStatus(UUID id, String status, String details);
 }

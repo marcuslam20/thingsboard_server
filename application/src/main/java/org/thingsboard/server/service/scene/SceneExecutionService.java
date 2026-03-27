@@ -28,14 +28,19 @@ import org.thingsboard.server.common.data.smarthome.SmartSceneLog;
 public interface SceneExecutionService {
 
     /**
-     * Execute a scene's actions.
-     * For TAP_TO_RUN: called directly from controller (user presses button)
-     * For AUTOMATION: called by Scene Engine triggers (schedule, device status change)
+     * Execute a scene asynchronously — returns immediately with RUNNING status.
+     * Actions run in a background thread pool. Log is updated when execution completes.
+     * Used by Controller for Tap-to-Run (user presses button).
      *
-     * @param tenantId tenant context
-     * @param scene the scene to execute
-     * @param triggerType how the scene was triggered (MANUAL, SCHEDULE, DEVICE_STATUS)
-     * @return execution log entry
+     * @return log entry with status=RUNNING (check GET /scenes/{id}/logs for final result)
+     */
+    SmartSceneLog executeSceneAsync(TenantId tenantId, SmartScene scene, String triggerType);
+
+    /**
+     * Execute a scene synchronously — blocks until all actions complete.
+     * Used internally by Scene Engine (Automation triggers) and SCENE_RUN action.
+     *
+     * @return log entry with final status (SUCCESS/PARTIAL/FAILURE)
      */
     SmartSceneLog executeScene(TenantId tenantId, SmartScene scene, String triggerType);
 }

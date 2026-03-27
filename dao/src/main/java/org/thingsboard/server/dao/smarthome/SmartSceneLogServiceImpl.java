@@ -41,4 +41,10 @@ public class SmartSceneLogServiceImpl implements SmartSceneLogService {
         log.trace("Executing findBySceneId [{}]", sceneId);
         return smartSceneLogDao.findBySceneId(sceneId);
     }
+
+    @Override
+    public void updateStatus(UUID id, String status, String details) {
+        log.trace("Executing updateStatus [{}] status=[{}]", id, status);
+        smartSceneLogDao.updateStatus(id, status, details);
+    }
 }

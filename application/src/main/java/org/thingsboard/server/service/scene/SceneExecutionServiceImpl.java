@@ -45,10 +45,16 @@ import org.thingsboard.server.dao.smarthome.SmartSceneService;
 import org.thingsboard.server.queue.util.TbCoreComponent;
 import org.thingsboard.server.service.rpc.TbCoreDeviceRpcService;
 
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.PreDestroy;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 @Slf4j
@@ -66,6 +72,45 @@ public class SceneExecutionServiceImpl implements SceneExecutionService {
 
     private static final ObjectMapper mapper = new ObjectMapper();
     private static final int RPC_TIMEOUT_MS = 5000;
+
+    // Thread pool for background scene execution (Tap-to-Run async)
+    private ExecutorService sceneExecutor;
+    // Scheduler for DELAY actions (replaces Thread.sleep)
+    private ScheduledExecutorService delayScheduler;
+
+    @PostConstruct
+    public void init() {
+        sceneExecutor = Executors.newFixedThreadPool(10); // max 10 scenes executing concurrently
+        delayScheduler = Executors.newScheduledThreadPool(4); // handles delayed continuations
+        log.info("SceneExecutionService initialized: executor=10 threads, delayScheduler=4 threads");
+    }
+
+    @PreDestroy
+    public void destroy() {
+        if (sceneExecutor != null) sceneExecutor.shutdown();
+        if (delayScheduler != null) delayScheduler.shutdown();
+        log.info("SceneExecutionService shut down");
+    }
+
+    @Override
+    public SmartSceneLog executeSceneAsync(TenantId tenantId, SmartScene scene, String triggerType) {
+        log.info("Async executing scene '{}' (id={}, trigger={})", scene.getName(), scene.getId(), triggerType);
+
+        // Step 1: Create log with RUNNING status and return to caller immediately
+        SmartSceneLog runningLog = logExecution(scene, triggerType, "RUNNING", "Execution started");
+
+        // Step 2: Submit actions to background thread pool
+        sceneExecutor.submit(() -> {
+            try {
+                executeActionsWithScheduledDelay(tenantId, scene, triggerType, runningLog.getId());
+            } catch (Exception e) {
+                log.error("Background execution failed for scene '{}'", scene.getName(), e);
+                updateLogStatus(runningLog.getId(), "FAILURE", "Unexpected error: " + e.getMessage());
+            }
+        });
+
+        return runningLog; // returned to app in ~50ms
+    }
 
     @Override
     public SmartSceneLog executeScene(TenantId tenantId, SmartScene scene, String triggerType) {
@@ -135,6 +180,110 @@ public class SceneExecutionServiceImpl implements SceneExecutionService {
                 scene.getName(), successCount, successCount + failCount);
 
         return logExecution(scene, triggerType, status, details);
+    }
+
+    /**
+     * Background execution with scheduled delay (no Thread.sleep).
+     * Processes actions sequentially. When hitting DELAY, schedules remaining actions
+     * to run after the delay period using ScheduledExecutorService.
+     */
+    private void executeActionsWithScheduledDelay(TenantId tenantId, SmartScene scene,
+                                                   String triggerType, UUID logId) {
+        JsonNode actions = scene.getActions();
+        if (actions == null || !actions.isArray() || actions.isEmpty()) {
+            updateLogStatus(logId, "SUCCESS", "No actions to execute");
+            return;
+        }
+        executeActionsFromIndex(tenantId, scene, triggerType, logId, actions, 0,
+                new ArrayList<>(), new int[]{0}, new int[]{0});
+    }
+
+    /**
+     * Execute actions starting from a given index.
+     * Called initially with index=0, and again after DELAY with the next index.
+     */
+    private void executeActionsFromIndex(TenantId tenantId, SmartScene scene, String triggerType,
+                                          UUID logId, JsonNode actions, int startIndex,
+                                          List<String> results, int[] successCount, int[] failCount) {
+        for (int i = startIndex; i < actions.size(); i++) {
+            JsonNode action = actions.get(i);
+            String actionType = action.has("actionType") ? action.get("actionType").asText() : "UNKNOWN";
+
+            try {
+                if ("DELAY".equals(actionType)) {
+                    // Schedule remaining actions after delay — don't block the thread
+                    JsonNode prop = action.get("executorProperty");
+                    int seconds = prop.has("seconds") ? prop.get("seconds").asInt(0) : 0;
+                    int minutes = prop.has("minutes") ? prop.get("minutes").asInt(0) : 0;
+                    long totalMs = Math.min((minutes * 60L + seconds) * 1000L, 300_000L);
+
+                    if (totalMs > 0) {
+                        results.add("Action " + (i + 1) + ": DELAY " + totalMs + "ms → SCHEDULED");
+                        successCount[0]++;
+                        log.debug("DELAY: scheduling remaining {} actions after {}ms", actions.size() - i - 1, totalMs);
+
+                        final int nextIndex = i + 1;
+                        delayScheduler.schedule(
+                                () -> executeActionsFromIndex(tenantId, scene, triggerType,
+                                        logId, actions, nextIndex, results, successCount, failCount),
+                                totalMs, TimeUnit.MILLISECONDS
+                        );
+                        return; // exit loop — will continue from nextIndex after delay
+                    }
+                    results.add("Action " + (i + 1) + ": DELAY 0ms → SKIPPED");
+                    successCount[0]++;
+                    continue;
+                }
+
+                // Non-DELAY actions: execute normally
+                switch (actionType) {
+                    case "DEVICE_CONTROL":
+                        executeDeviceControl(tenantId, action);
+                        results.add("Action " + (i + 1) + ": DEVICE_CONTROL → OK");
+                        successCount[0]++;
+                        break;
+                    case "SCENE_RUN":
+                        executeSceneRun(tenantId, action, triggerType);
+                        results.add("Action " + (i + 1) + ": SCENE_RUN → OK");
+                        successCount[0]++;
+                        break;
+                    case "NOTIFICATION":
+                        results.add("Action " + (i + 1) + ": NOTIFICATION → SKIPPED (not implemented)");
+                        successCount[0]++;
+                        break;
+                    case "SCENE_TOGGLE":
+                        executeSceneToggle(action);
+                        results.add("Action " + (i + 1) + ": SCENE_TOGGLE → OK");
+                        successCount[0]++;
+                        break;
+                    default:
+                        results.add("Action " + (i + 1) + ": " + actionType + " → SKIPPED (unknown)");
+                        break;
+                }
+            } catch (Exception e) {
+                log.error("Failed to execute action {} in scene '{}'", i + 1, scene.getName(), e);
+                results.add("Action " + (i + 1) + ": " + actionType + " → FAILED: " + e.getMessage());
+                failCount[0]++;
+            }
+        }
+
+        // All actions done (no more DELAY interruptions) — update log with final status
+        String status = failCount[0] == 0 ? "SUCCESS" : (successCount[0] > 0 ? "PARTIAL" : "FAILURE");
+        String details = String.join("; ", results);
+        log.info("Scene '{}' async execution completed: {}/{} actions succeeded",
+                scene.getName(), successCount[0], successCount[0] + failCount[0]);
+        updateLogStatus(logId, status, details);
+    }
+
+    /**
+     * Update an existing log entry with final execution status.
+     */
+    private void updateLogStatus(UUID logId, String status, String details) {
+        try {
+            smartSceneLogService.updateStatus(logId, status, details);
+        } catch (Exception e) {
+            log.error("Failed to update scene log {}: {}", logId, e.getMessage());
+        }
     }
 
     /**

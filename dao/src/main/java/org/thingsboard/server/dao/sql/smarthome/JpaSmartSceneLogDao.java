@@ -15,6 +15,8 @@
  */
 package org.thingsboard.server.dao.sql.smarthome;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.thingsboard.server.common.data.smarthome.SmartSceneLog;
@@ -31,6 +33,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class JpaSmartSceneLogDao implements SmartSceneLogDao {
 
+    private static final ObjectMapper mapper = new ObjectMapper();
     private final SmartSceneLogRepository repository;
 
     @Override
@@ -48,5 +51,12 @@ public class JpaSmartSceneLogDao implements SmartSceneLogDao {
         return repository.findBySceneIdOrderByCreatedTimeDesc(sceneId).stream()
                 .map(SmartSceneLogEntity::toData)
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    public void updateStatus(UUID id, String status, String details) {
+        ObjectNode detailsNode = mapper.createObjectNode();
+        detailsNode.put("details", details);
+        repository.updateStatus(id, status, detailsNode);
     }
 }

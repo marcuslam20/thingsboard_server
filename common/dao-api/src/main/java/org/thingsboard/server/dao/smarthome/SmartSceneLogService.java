@@ -25,4 +25,6 @@ public interface SmartSceneLogService {
     SmartSceneLog logExecution(SmartSceneLog log);
 
     List<SmartSceneLog> findBySceneId(UUID sceneId);
+
+    void updateStatus(UUID id, String status, String details);
 }

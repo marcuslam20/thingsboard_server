@@ -162,7 +162,7 @@ public class SmartSceneController extends BaseController {
         if (!scene.isEnabled()) {
             throw new ThingsboardException("Scene is disabled", ThingsboardErrorCode.BAD_REQUEST_PARAMS);
         }
-        return checkNotNull(sceneExecutionService.executeScene(
+        return checkNotNull(sceneExecutionService.executeSceneAsync(
                 getTenantId(), scene, TriggerType.MANUAL.name()));
     }
 

@@ -15,7 +15,12 @@
  */
 package org.thingsboard.server.dao.sql.smarthome;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+import org.springframework.transaction.annotation.Transactional;
 import org.thingsboard.server.dao.model.sql.SmartSceneLogEntity;
 
 import java.util.List;
@@ -24,4 +29,9 @@ import java.util.UUID;
 public interface SmartSceneLogRepository extends JpaRepository<SmartSceneLogEntity, UUID> {
 
     List<SmartSceneLogEntity> findBySceneIdOrderByCreatedTimeDesc(UUID sceneId);
+
+    @Modifying
+    @Transactional
+    @Query("UPDATE SmartSceneLogEntity e SET e.status = :status, e.executionDetails = :details WHERE e.id = :id")
+    void updateStatus(@Param("id") UUID id, @Param("status") String status, @Param("details") JsonNode details);
 }
