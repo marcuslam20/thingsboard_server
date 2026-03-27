@@ -55,8 +55,12 @@ public class JpaSmartSceneLogDao implements SmartSceneLogDao {
 
     @Override
     public void updateStatus(UUID id, String status, String details) {
-        ObjectNode detailsNode = mapper.createObjectNode();
-        detailsNode.put("details", details);
-        repository.updateStatus(id, status, detailsNode);
+        repository.findById(id).ifPresent(entity -> {
+            entity.setStatus(status);
+            ObjectNode detailsNode = mapper.createObjectNode();
+            detailsNode.put("details", details);
+            entity.setExecutionDetails(detailsNode);
+            repository.save(entity);
+        });
     }
 }
