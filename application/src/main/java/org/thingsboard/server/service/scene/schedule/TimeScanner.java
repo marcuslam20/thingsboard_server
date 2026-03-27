@@ -54,14 +54,14 @@ public class TimeScanner {
     private final SmartSceneService smartSceneService;
 
     /**
-     * Runs every 15 seconds. Scans cache for due scenes and executes them.
+     * Runs every 1 second. Scans cache for due scenes and executes them.
      *
-     * Why 15 seconds?
-     * - 1 second: too frequent, wastes CPU on empty scans
-     * - 60 seconds: too slow, scenes could be delayed up to 1 minute
-     * - 15 seconds: good balance — max delay is 15s, CPU usage negligible
+     * Why 1 second?
+     * - Scanning is O(log N) on sorted set — negligible CPU even at 100K scenes
+     * - Users expect "đúng giờ" = max 1-2 second delay (same as Tuya)
+     * - Configurable via scene.scanner.interval property if needed
      */
-    @Scheduled(fixedDelayString = "${scene.scanner.interval:15000}")
+    @Scheduled(fixedDelayString = "${scene.scanner.interval:1000}")
     public void scan() {
         long now = System.currentTimeMillis();
         List<SceneScheduleEntry> dueEntries = scheduleCache.pollDueEntries(now);
@@ -70,7 +70,7 @@ public class TimeScanner {
             return; // nothing to trigger — most common case
         }
 
-        log.info("TimeScanner: {} scene(s) due for execution", dueEntries.size());
+        log.debug("TimeScanner: {} scene(s) due for execution", dueEntries.size());
 
         for (SceneScheduleEntry entry : dueEntries) {
             try {
