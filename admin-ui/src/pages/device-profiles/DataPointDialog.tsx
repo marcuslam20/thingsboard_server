@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import Dialog from '@mui/material/Dialog';
 import DialogTitle from '@mui/material/DialogTitle';
 import DialogContent from '@mui/material/DialogContent';
@@ -37,22 +38,23 @@ interface Props {
   onSaved: () => void;
 }
 
-const DP_TYPE_OPTIONS = [
-  { value: DpType.BOOLEAN, label: 'Bool' },
-  { value: DpType.VALUE, label: 'Value' },
-  { value: DpType.ENUM, label: 'Enum' },
-  { value: DpType.STRING, label: 'String' },
-  { value: DpType.RAW, label: 'Raw' },
-  { value: DpType.FAULT, label: 'Fault' },
-];
+const DP_TYPE_KEYS: Record<string, string> = {
+  [DpType.BOOLEAN]: 'datapoint.bool',
+  [DpType.VALUE]: 'datapoint.value',
+  [DpType.ENUM]: 'datapoint.enum',
+  [DpType.STRING]: 'datapoint.string',
+  [DpType.RAW]: 'datapoint.raw',
+  [DpType.FAULT]: 'datapoint.fault',
+};
 
-const DP_MODE_OPTIONS = [
-  { value: DpMode.RW, label: 'Send and Report (RW)' },
-  { value: DpMode.RO, label: 'Report Only (RO)' },
-  { value: DpMode.WO, label: 'Send Only (WO)' },
-];
+const DP_MODE_KEYS: Record<string, string> = {
+  [DpMode.RW]: 'datapoint.rw',
+  [DpMode.RO]: 'datapoint.ro',
+  [DpMode.WO]: 'datapoint.wo',
+};
 
 export default function DataPointDialog({ open, deviceProfileId, dataPoint, onClose, onSaved }: Props) {
+  const { t } = useTranslation();
   const isEdit = !!dataPoint;
 
   const [dpId, setDpId] = useState(1);
@@ -136,15 +138,15 @@ export default function DataPointDialog({ open, deviceProfileId, dataPoint, onCl
 
   const handleSave = async () => {
     if (!name.trim()) {
-      setError('DP Name is required');
+      setError(t('datapoint.name-required'));
       return;
     }
     if (!code.trim()) {
-      setError('Identifier is required');
+      setError(t('datapoint.code-required'));
       return;
     }
     if (dpId < 1 || dpId > 255) {
-      setError('DP ID must be between 1 and 255');
+      setError(t('datapoint.dp-id-range'));
       return;
     }
 
@@ -167,7 +169,7 @@ export default function DataPointDialog({ open, deviceProfileId, dataPoint, onCl
       await smartHomeProductApi.saveDataPoint(deviceProfileId, payload);
       onSaved();
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Failed to save data point';
+      const message = err instanceof Error ? err.message : t('datapoint.save-failed');
       setError(message);
     } finally {
       setSaving(false);
@@ -184,11 +186,11 @@ export default function DataPointDialog({ open, deviceProfileId, dataPoint, onCl
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
-      <DialogTitle>{isEdit ? 'Edit Data Point' : 'Add Data Point'}</DialogTitle>
+      <DialogTitle>{isEdit ? t('datapoint.edit') : t('datapoint.add')}</DialogTitle>
       <DialogContent sx={{ pt: '16px !important' }}>
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
           <TextField
-            label="DP ID"
+            label={t('datapoint.dp-id')}
             type="number"
             value={dpId}
             onChange={(e) => setDpId(Number(e.target.value))}
@@ -197,55 +199,55 @@ export default function DataPointDialog({ open, deviceProfileId, dataPoint, onCl
             fullWidth
           />
           <TextField
-            label="DP Name"
+            label={t('datapoint.name')}
             value={name}
             onChange={(e) => setName(e.target.value)}
             size="small"
             fullWidth
           />
           <TextField
-            label="Identifier (Code)"
+            label={t('datapoint.code')}
             value={code}
             onChange={(e) => setCode(e.target.value)}
             size="small"
             fullWidth
-            helperText="e.g., switch_led, bright_value"
+            helperText={t('datapoint.code-hint')}
           />
           <TextField
-            label="Data Type"
+            label={t('datapoint.dp-type')}
             select
             value={dpType}
             onChange={(e) => setDpType(e.target.value as DpType)}
             size="small"
             fullWidth
           >
-            {DP_TYPE_OPTIONS.map((opt) => (
-              <MenuItem key={opt.value} value={opt.value}>{opt.label}</MenuItem>
+            {Object.values(DpType).map((val) => (
+              <MenuItem key={val} value={val}>{t(DP_TYPE_KEYS[val])}</MenuItem>
             ))}
           </TextField>
           <TextField
-            label="Data Transfer Type"
+            label={t('datapoint.dp-mode')}
             select
             value={mode}
             onChange={(e) => setMode(e.target.value as DpMode)}
             size="small"
             fullWidth
           >
-            {DP_MODE_OPTIONS.map((opt) => (
-              <MenuItem key={opt.value} value={opt.value}>{opt.label}</MenuItem>
+            {Object.values(DpMode).map((val) => (
+              <MenuItem key={val} value={val}>{t(DP_MODE_KEYS[val])}</MenuItem>
             ))}
           </TextField>
 
           {/* Dynamic constraints */}
           {dpType === DpType.VALUE && (
             <Box sx={{ border: '1px solid #e0e0e0', borderRadius: 1, p: 2 }}>
-              <Typography variant="subtitle2" sx={{ mb: 1.5 }}>Value Properties</Typography>
+              <Typography variant="subtitle2" sx={{ mb: 1.5 }}>{t('datapoint.value-properties')}</Typography>
               <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1.5 }}>
-                <TextField label="Min" type="number" value={min} onChange={(e) => setMin(Number(e.target.value))} size="small" />
-                <TextField label="Max" type="number" value={max} onChange={(e) => setMax(Number(e.target.value))} size="small" />
-                <TextField label="Step (Pitch)" type="number" value={step} onChange={(e) => setStep(Number(e.target.value))} size="small" />
-                <TextField label="Scale" type="number" value={scale} onChange={(e) => setScale(Number(e.target.value))} size="small" />
-                <TextField label="Unit" value={unit} onChange={(e) => setUnit(e.target.value)} size="small" sx={{ gridColumn: 'span 2' }} />
+                <TextField label={t('datapoint.min')} type="number" value={min} onChange={(e) => setMin(Number(e.target.value))} size="small" />
+                <TextField label={t('datapoint.max')} type="number" value={max} onChange={(e) => setMax(Number(e.target.value))} size="small" />
+                <TextField label={t('datapoint.step')} type="number" value={step} onChange={(e) => setStep(Number(e.target.value))} size="small" />
+                <TextField label={t('datapoint.scale')} type="number" value={scale} onChange={(e) => setScale(Number(e.target.value))} size="small" />
+                <TextField label={t('datapoint.unit')} value={unit} onChange={(e) => setUnit(e.target.value)} size="small" sx={{ gridColumn: 'span 2' }} />
               </Box>
             </Box>
           )}
@@ -253,7 +255,7 @@ export default function DataPointDialog({ open, deviceProfileId, dataPoint, onCl
           {dpType === DpType.ENUM && (
             <Box sx={{ border: '1px solid #e0e0e0', borderRadius: 1, p: 2 }}>
               <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1.5 }}>
-                <Typography variant="subtitle2">Enum Values</Typography>
+                <Typography variant="subtitle2">{t('datapoint.enum-values')}</Typography>
                 <IconButton size="small" onClick={addEnumValue}><AddIcon fontSize="small" /></IconButton>
               </Box>
               {enumValues.map((val, idx) => (
@@ -277,8 +279,8 @@ export default function DataPointDialog({ open, deviceProfileId, dataPoint, onCl
 
           {dpType === DpType.STRING && (
             <Box sx={{ border: '1px solid #e0e0e0', borderRadius: 1, p: 2 }}>
-              <Typography variant="subtitle2" sx={{ mb: 1.5 }}>String Properties</Typography>
-              <TextField label="Max Length" type="number" value={maxLen} onChange={(e) => setMaxLen(Number(e.target.value))} size="small" fullWidth />
+              <Typography variant="subtitle2" sx={{ mb: 1.5 }}>{t('datapoint.string-properties')}</Typography>
+              <TextField label={t('datapoint.max-length')} type="number" value={maxLen} onChange={(e) => setMaxLen(Number(e.target.value))} size="small" fullWidth />
             </Box>
           )}
 
@@ -288,9 +290,9 @@ export default function DataPointDialog({ open, deviceProfileId, dataPoint, onCl
         </Box>
       </DialogContent>
       <DialogActions sx={{ px: 3, pb: 2 }}>
-        <Button onClick={onClose} disabled={saving}>Cancel</Button>
+        <Button onClick={onClose} disabled={saving}>{t('action.cancel')}</Button>
         <Button variant="contained" onClick={handleSave} disabled={saving}>
-          {saving ? 'Saving...' : isEdit ? 'Update' : 'Add'}
+          {saving ? t('datapoint.saving') : isEdit ? t('datapoint.update') : t('datapoint.add-btn')}
         </Button>
       </DialogActions>
     </Dialog>

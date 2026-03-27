@@ -1,5 +1,6 @@
 import { useEffect, useState, useRef } from 'react';
 import { useForm, Controller } from 'react-hook-form';
+import { useTranslation } from 'react-i18next';
 import Drawer from '@mui/material/Drawer';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
@@ -99,6 +100,7 @@ const LABEL_TOP_SX = {
 };
 
 export default function InformationManagementDrawer({ open, profile, category, onClose, onSaved }: Props) {
+  const { t } = useTranslation();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [imagePreview, setImagePreview] = useState<string | null>(null);
@@ -147,7 +149,7 @@ export default function InformationManagementDrawer({ open, profile, category, o
     const file = e.target.files?.[0];
     if (!file) return;
     if (file.size > 1024 * 1024) {
-      setError('Image size must be less than 1MB');
+      setError(t('product.image-size-error'));
       return;
     }
     const reader = new FileReader();
@@ -195,7 +197,7 @@ export default function InformationManagementDrawer({ open, profile, category, o
     } catch (err: unknown) {
       console.error('[InformationManagement] Save failed:', err);
       const e = err as { response?: { data?: { message?: string } } };
-      setError(e.response?.data?.message || 'Failed to save product information');
+      setError(e.response?.data?.message || t('product.save-failed'));
     } finally {
       setLoading(false);
     }
@@ -232,7 +234,7 @@ export default function InformationManagementDrawer({ open, profile, category, o
         borderBottom: `1px solid ${tuyaColors.border}`,
       }}>
         <Typography sx={{ fontSize: '16px', fontWeight: 500, color: tuyaColors.textPrimary }}>
-          Information Management
+          {t('product.information-management')}
         </Typography>
         <IconButton
           onClick={onClose}
@@ -257,19 +259,19 @@ export default function InformationManagementDrawer({ open, profile, category, o
           <Box sx={ROW_SX}>
             <Typography sx={LABEL_SX}>
               <Box component="span" sx={{ color: tuyaColors.error }}>*</Box>
-              {' '}Product Name:
+              {' '}{t('product.product-name')}:
             </Typography>
             <Box sx={{ flex: 1 }}>
               <Controller
                 name="name"
                 control={control}
-                rules={{ required: 'Product name is required' }}
+                rules={{ required: t('product.name-required') }}
                 render={({ field }) => (
                   <TextField
                     {...field}
                     fullWidth
                     size="small"
-                    placeholder="Enter product name"
+                    placeholder={t('product.enter-product-name')}
                     error={!!errors.name}
                     helperText={errors.name?.message}
                     sx={{ '& .MuiInputBase-root': { height: 36 } }}
@@ -277,7 +279,7 @@ export default function InformationManagementDrawer({ open, profile, category, o
                 )}
               />
               <Typography sx={{ fontSize: '12px', color: tuyaColors.textHint, mt: 0.5 }}>
-                To edit the device name displayed in the app, go Product Configuration &gt; Multilingual
+                {t('product.edit-name-hint')}
               </Typography>
             </Box>
           </Box>
@@ -286,7 +288,7 @@ export default function InformationManagementDrawer({ open, profile, category, o
           <Box sx={ROW_SX}>
             <Typography sx={LABEL_TOP_SX}>
               <Box component="span" sx={{ color: tuyaColors.error }}>*</Box>
-              {' '}Product Image:
+              {' '}{t('product.product-image')}:
             </Typography>
             <Box sx={{ flex: 1 }}>
               <input
@@ -338,15 +340,11 @@ export default function InformationManagementDrawer({ open, profile, category, o
                     }}
                   >
                     <CloudUploadOutlinedIcon sx={{ fontSize: 24, color: tuyaColors.textHint, mb: 0.5 }} />
-                    <Typography sx={{ fontSize: '11px', color: tuyaColors.textHint }}>Upload</Typography>
+                    <Typography sx={{ fontSize: '11px', color: tuyaColors.textHint }}>{t('product.upload')}</Typography>
                   </Box>
                 )}
                 <Typography sx={{ fontSize: '12px', color: tuyaColors.textHint, lineHeight: 1.6 }}>
-                  Product Icons maintain
-                  <br /><br />
-                  Dimension: 404*404px, Up to 6 uploads are supported.
-                  <br />
-                  Note: A change in the image takes effect in the app in 15 minutes. For a paired device, the change takes effect only after it&apos;s paired again.
+                  {t('product.image-hint')}
                 </Typography>
               </Box>
             </Box>
@@ -354,7 +352,7 @@ export default function InformationManagementDrawer({ open, profile, category, o
 
           {/* Product Type (readonly) */}
           <Box sx={ROW_SX}>
-            <Typography sx={LABEL_SX}>Product Type:</Typography>
+            <Typography sx={LABEL_SX}>{t('product.product-type')}:</Typography>
             <Typography sx={{ fontSize: '14px', color: tuyaColors.textPrimary, lineHeight: '36px' }}>
               {categoryName || '—'}
             </Typography>
@@ -362,7 +360,7 @@ export default function InformationManagementDrawer({ open, profile, category, o
 
           {/* Protocol Type (readonly chips) */}
           <Box sx={ROW_SX}>
-            <Typography sx={LABEL_SX}>Protocol Type:</Typography>
+            <Typography sx={LABEL_SX}>{t('product.protocol-type')}:</Typography>
             <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap', alignItems: 'center', minHeight: 36 }}>
               {protocolLabels.map((label) => (
                 <Chip
@@ -382,7 +380,7 @@ export default function InformationManagementDrawer({ open, profile, category, o
 
           {/* Product Model */}
           <Box sx={ROW_SX}>
-            <Typography sx={LABEL_SX}>Product Model:</Typography>
+            <Typography sx={LABEL_SX}>{t('product.product-model')}:</Typography>
             <Box sx={{ flex: 1 }}>
               <Controller
                 name="productModel"
@@ -392,7 +390,7 @@ export default function InformationManagementDrawer({ open, profile, category, o
                     {...field}
                     fullWidth
                     size="small"
-                    placeholder="Enter your product model, supported by product category"
+                    placeholder={t('product.enter-product-model')}
                     sx={{ '& .MuiInputBase-root': { height: 36 } }}
                   />
                 )}
@@ -402,12 +400,12 @@ export default function InformationManagementDrawer({ open, profile, category, o
 
           {/* Power (W) */}
           <Box sx={ROW_SX}>
-            <Typography sx={LABEL_SX}>Power (W):</Typography>
+            <Typography sx={LABEL_SX}>{t('product.power')}:</Typography>
             <Box sx={{ flex: 1 }}>
               <TextField
                 fullWidth
                 size="small"
-                placeholder="Fill in the number(s) and unit(s), e.g. 200W"
+                placeholder={t('product.power-placeholder')}
                 sx={{ '& .MuiInputBase-root': { height: 36 } }}
               />
             </Box>
@@ -415,7 +413,7 @@ export default function InformationManagementDrawer({ open, profile, category, o
 
           {/* Remarks */}
           <Box sx={{ ...ROW_SX, alignItems: 'flex-start' }}>
-            <Typography sx={LABEL_TOP_SX}>Remarks:</Typography>
+            <Typography sx={LABEL_TOP_SX}>{t('product.remarks')}:</Typography>
             <Box sx={{ flex: 1 }}>
               <Controller
                 name="description"
@@ -426,7 +424,7 @@ export default function InformationManagementDrawer({ open, profile, category, o
                     fullWidth
                     multiline
                     rows={3}
-                    placeholder="E.g. product features, sales territory, sales channels, and model numbers"
+                    placeholder={t('product.remarks-placeholder')}
                     sx={{ '& .MuiInputBase-root': { height: 'auto' } }}
                   />
                 )}
@@ -451,7 +449,7 @@ export default function InformationManagementDrawer({ open, profile, category, o
               '&:hover': { borderColor: tuyaColors.textHint, bgcolor: '#fafafa' },
             }}
           >
-            Cancel
+            {t('action.cancel')}
           </Button>
           <Button
             type="submit"
@@ -459,7 +457,7 @@ export default function InformationManagementDrawer({ open, profile, category, o
             disabled={loading}
             sx={{ height: 36, px: 3, fontSize: '13px' }}
           >
-            Save
+            {t('action.save')}
           </Button>
         </Box>
       </Box>

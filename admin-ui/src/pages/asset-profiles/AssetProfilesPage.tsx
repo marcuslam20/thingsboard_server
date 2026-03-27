@@ -38,7 +38,7 @@ export default function AssetProfilesPage() {
   const columns: ColumnDef<AssetProfile>[] = [
     { id: 'createdTime', label: t('common.created-time'), width: '170px', render: (r) => new Date(r.createdTime).toLocaleString() },
     {
-      id: 'name', label: 'Name', width: '30%',
+      id: 'name', label: t('common.name'), width: '30%',
       render: (r) => (
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           {r.name}
@@ -46,13 +46,13 @@ export default function AssetProfilesPage() {
         </Box>
       ),
     },
-    { id: 'description', label: 'Description', width: '35%', render: (r) => r.description || '' },
+    { id: 'description', label: t('common.description'), width: '35%', render: (r) => r.description || '' },
   ];
 
   const rowActions: RowAction<AssetProfile>[] = [
-    { icon: <EditIcon fontSize="small" />, tooltip: 'Edit', onClick: (r) => { setEditProfile(r); setDialogOpen(true); } },
+    { icon: <EditIcon fontSize="small" />, tooltip: t('action.edit'), onClick: (r) => { setEditProfile(r); setDialogOpen(true); } },
     {
-      icon: <DeleteIcon fontSize="small" color="error" />, tooltip: 'Delete',
+      icon: <DeleteIcon fontSize="small" color="error" />, tooltip: t('action.delete'),
       onClick: (r) => { setToDelete(r); setDeleteDialogOpen(true); },
       hidden: (r) => r.default,
     },
@@ -76,7 +76,7 @@ export default function AssetProfilesPage() {
         columns={columns}
         fetchData={fetchData}
         onAdd={() => { setEditProfile(null); setDialogOpen(true); }}
-        addLabel="Add Asset Profile"
+        addLabel={t('asset-profile.add')}
         rowActions={rowActions}
         onDeleteSelected={handleDeleteSelected}
         getRowId={(r) => r.id.id}
@@ -84,8 +84,8 @@ export default function AssetProfilesPage() {
       />
       <AssetProfileDialog open={dialogOpen} profile={editProfile}
         onClose={() => { setDialogOpen(false); setEditProfile(null); }} onSaved={handleSaved} />
-      <ConfirmDialog open={deleteDialogOpen} title="Delete Asset Profile"
-        content={`Are you sure you want to delete asset profile "${toDelete?.name}"?`}
+      <ConfirmDialog open={deleteDialogOpen} title={t('asset-profile.delete-title')}
+        content={t('asset-profile.delete-confirm', { name: toDelete?.name })}
         onConfirm={handleDelete} onCancel={() => { setDeleteDialogOpen(false); setToDelete(null); }} />
     </Box>
   );

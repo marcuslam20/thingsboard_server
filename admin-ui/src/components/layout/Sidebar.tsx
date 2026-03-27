@@ -19,6 +19,7 @@ import { useAppSelector } from '@/store/store';
 import { selectAuthority } from '@/store/auth.slice';
 import { Authority } from '@/models/authority.model';
 import { tuyaColors } from '@/theme/theme';
+import { useTranslation } from 'react-i18next';
 
 // --- Types ---
 
@@ -51,158 +52,158 @@ const FLYOUT_WIDTH = 200;
 
 // --- Module definitions matching Tuya Platform ---
 
-const modules: ModuleItem[] = [
+const getModules = (t: (key: string) => string): ModuleItem[] => [
   {
     id: 'overview',
-    label: 'Overview',
+    label: t('sidebar.overview'),
     icon: <HomeOutlinedIcon />,
     path: '/home',
   },
   {
     id: 'ai-product',
-    label: 'AI Product',
+    label: t('sidebar.product'),
     icon: <DevicesOtherIcon />,
     authorities: [Authority.TENANT_ADMIN, Authority.CUSTOMER_USER],
     categories: [
       {
         id: 'product',
-        label: 'Product',
+        label: t('sidebar.product'),
         children: [
-          { id: 'development', label: 'Development', path: '/profiles/deviceProfiles' },
+          { id: 'development', label: t('sidebar.development'), path: '/profiles/deviceProfiles' },
         ],
       },
       {
         id: 'device',
-        label: 'Device',
+        label: t('sidebar.device'),
         children: [
-          { id: 'all-devices', label: 'Sold Device Details', path: '/entities/devices' },
-          { id: 'device-logs', label: 'Device Logs', path: '/security-settings/auditLogs' },
-          { id: 'firmware-mgmt', label: 'Firmware Mgmt', path: '/firmware/management' },
-          { id: 'firmware-update', label: 'Firmware Update', path: '/firmware/update' },
-          { id: 'device-debug', label: 'Device Debug', path: '/devices/debug' },
+          { id: 'all-devices', label: t('sidebar.sold-device-details'), path: '/entities/devices' },
+          { id: 'device-logs', label: t('sidebar.device-logs'), path: '/security-settings/auditLogs' },
+          { id: 'firmware-mgmt', label: t('sidebar.firmware-mgmt'), path: '/firmware/management' },
+          { id: 'firmware-update', label: t('sidebar.firmware-update'), path: '/firmware/update' },
+          { id: 'device-debug', label: t('sidebar.device-debug'), path: '/devices/debug' },
         ],
       },
       {
         id: 'voice',
-        label: 'Voice Platform',
+        label: t('sidebar.voice-platform'),
         children: [
-          { id: 'voice-integration', label: 'Voice Integration', path: '/voice/integration' },
+          { id: 'voice-integration', label: t('sidebar.voice-integration'), path: '/voice/integration' },
         ],
       },
     ],
   },
   {
     id: 'app',
-    label: 'App',
+    label: t('sidebar.app'),
     icon: <DashboardOutlinedIcon />,
     authorities: [Authority.TENANT_ADMIN, Authority.CUSTOMER_USER],
     categories: [
       {
         id: 'app-dev',
-        label: 'App Development',
+        label: t('sidebar.app-development'),
         children: [
-          { id: 'dashboards', label: 'Dashboards', path: '/dashboards' },
-          { id: 'widgets', label: 'Widget Library', path: '/widgets-bundles', authorities: [Authority.SYS_ADMIN, Authority.TENANT_ADMIN] },
+          { id: 'dashboards', label: t('sidebar.dashboards'), path: '/dashboards' },
+          { id: 'widgets', label: t('sidebar.widget-library'), path: '/widgets-bundles', authorities: [Authority.SYS_ADMIN, Authority.TENANT_ADMIN] },
         ],
       },
     ],
   },
   {
     id: 'cloud',
-    label: 'Cloud',
+    label: t('sidebar.cloud'),
     icon: <CloudOutlinedIcon />,
     authorities: [Authority.TENANT_ADMIN],
     categories: [
       {
         id: 'cloud-dev',
-        label: 'Cloud Development',
+        label: t('sidebar.cloud-development'),
         children: [
-          { id: 'rule-chains', label: 'Rule Chains', path: '/ruleChains' },
-          { id: 'edges', label: 'Edge Management', path: '/edgeManagement/edges' },
-          { id: 'gateways', label: 'Gateways', path: '/gateways' },
+          { id: 'rule-chains', label: t('sidebar.rule-chains'), path: '/ruleChains' },
+          { id: 'edges', label: t('sidebar.edge-management'), path: '/edgeManagement/edges' },
+          { id: 'gateways', label: t('sidebar.gateways'), path: '/gateways' },
         ],
       },
     ],
   },
   {
     id: 'ai-agent',
-    label: 'AI Agent',
+    label: t('sidebar.ai-agent'),
     icon: <SmartToyOutlinedIcon />,
     authorities: [Authority.TENANT_ADMIN],
     categories: [
       {
         id: 'assets-mgmt',
-        label: 'Asset Management',
+        label: t('sidebar.asset-management'),
         children: [
-          { id: 'assets', label: 'Assets', path: '/entities/assets' },
-          { id: 'asset-profiles', label: 'Asset Profiles', path: '/profiles/assetProfiles' },
+          { id: 'assets', label: t('sidebar.assets'), path: '/entities/assets' },
+          { id: 'asset-profiles', label: t('sidebar.asset-profiles'), path: '/profiles/assetProfiles' },
         ],
       },
     ],
   },
   {
     id: 'data',
-    label: 'Data',
+    label: t('sidebar.data'),
     icon: <BarChartOutlinedIcon />,
     authorities: [Authority.TENANT_ADMIN, Authority.CUSTOMER_USER],
     categories: [
       {
         id: 'analytics',
-        label: 'Analytics',
+        label: t('sidebar.analytics'),
         children: [
-          { id: 'alarms', label: 'Alarms', path: '/alarms' },
-          { id: 'api-usage', label: 'API Usage', path: '/usage', authorities: [Authority.TENANT_ADMIN] },
+          { id: 'alarms', label: t('sidebar.alarms'), path: '/alarms' },
+          { id: 'api-usage', label: t('sidebar.api-usage'), path: '/usage', authorities: [Authority.TENANT_ADMIN] },
         ],
       },
     ],
   },
   {
     id: 'operation',
-    label: 'Operation',
+    label: t('sidebar.operation'),
     icon: <SettingsOutlinedIcon />,
     authorities: [Authority.SYS_ADMIN, Authority.TENANT_ADMIN],
     categories: [
       {
         id: 'system',
-        label: 'System',
+        label: t('sidebar.system'),
         children: [
-          { id: 'settings', label: 'Settings', path: '/settings/general', authorities: [Authority.SYS_ADMIN] },
-          { id: 'security', label: 'Security', path: '/security-settings/general', authorities: [Authority.SYS_ADMIN] },
-          { id: 'queues', label: 'Queues', path: '/queues', authorities: [Authority.SYS_ADMIN] },
-          { id: 'resources', label: 'Resources', path: '/resources', authorities: [Authority.SYS_ADMIN, Authority.TENANT_ADMIN] },
-          { id: 'notifications', label: 'Notifications', path: '/notifications' },
+          { id: 'settings', label: t('sidebar.settings'), path: '/settings/general', authorities: [Authority.SYS_ADMIN] },
+          { id: 'security', label: t('sidebar.security'), path: '/security-settings/general', authorities: [Authority.SYS_ADMIN] },
+          { id: 'queues', label: t('sidebar.queues'), path: '/queues', authorities: [Authority.SYS_ADMIN] },
+          { id: 'resources', label: t('sidebar.resources'), path: '/resources', authorities: [Authority.SYS_ADMIN, Authority.TENANT_ADMIN] },
+          { id: 'notifications', label: t('sidebar.notifications'), path: '/notifications' },
         ],
       },
       {
         id: 'product-profile',
-        label: 'Product Profile',
+        label: t('sidebar.product-profile'),
         children: [
-          { id: 'product-files', label: 'Product Profile', path: '/operation/productFiles', authorities: [Authority.TENANT_ADMIN] },
+          { id: 'product-files', label: t('sidebar.product-profile'), path: '/operation/productFiles', authorities: [Authority.TENANT_ADMIN] },
         ],
       },
       {
         id: 'user-mgmt',
-        label: 'User Management',
+        label: t('sidebar.user-management'),
         children: [
-          { id: 'app-user-mgmt', label: 'User Management', path: '/operation/app', authorities: [Authority.TENANT_ADMIN] },
-          { id: 'tenants', label: 'Tenants', path: '/tenants', authorities: [Authority.SYS_ADMIN] },
-          { id: 'tenant-profiles', label: 'Tenant Profiles', path: '/tenantProfiles', authorities: [Authority.SYS_ADMIN] },
-          { id: 'customers', label: 'Customers', path: '/customers', authorities: [Authority.TENANT_ADMIN] },
-          { id: 'users', label: 'Users', path: '/users' },
+          { id: 'app-user-mgmt', label: t('sidebar.user-management'), path: '/operation/app', authorities: [Authority.TENANT_ADMIN] },
+          { id: 'tenants', label: t('sidebar.tenants'), path: '/tenants', authorities: [Authority.SYS_ADMIN] },
+          { id: 'tenant-profiles', label: t('sidebar.tenant-profiles'), path: '/tenantProfiles', authorities: [Authority.SYS_ADMIN] },
+          { id: 'customers', label: t('sidebar.customers'), path: '/customers', authorities: [Authority.TENANT_ADMIN] },
+          { id: 'users', label: t('sidebar.users'), path: '/users' },
         ],
       },
     ],
   },
   {
     id: 'purchase',
-    label: 'Purchase',
+    label: t('sidebar.purchase'),
     icon: <ShoppingCartOutlinedIcon />,
     path: '/usage',
     authorities: [Authority.TENANT_ADMIN],
   },
   {
     id: 'vas',
-    label: 'VAS',
+    label: t('sidebar.vas'),
     icon: <StorefrontOutlinedIcon />,
     path: '/resources',
     authorities: [Authority.TENANT_ADMIN],
@@ -212,12 +213,14 @@ const modules: ModuleItem[] = [
 // --- Component ---
 
 export default function Sidebar() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
   const authority = useAppSelector(selectAuthority);
   const [hoveredModule, setHoveredModule] = useState<string | null>(null);
   const flyoutTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const sidebarRef = useRef<HTMLDivElement>(null);
+  const modules = getModules(t);
 
   // Close flyout when clicking outside
   useEffect(() => {

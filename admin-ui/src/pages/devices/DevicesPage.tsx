@@ -15,6 +15,7 @@
  */
 import { useState, useCallback, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import Button from '@mui/material/Button';
@@ -79,17 +80,16 @@ function formatDateTime(ts: number): string {
   return `${date} ${time}`;
 }
 
-function exportToCsv(devices: DeviceInfo[]) {
-  const headers = ['Device Name', 'Device ID', 'UUID', 'Product', 'Device Type', 'Product ID', 'Firmware Version', 'Device Status', 'Created'];
+function exportToCsv(devices: DeviceInfo[], headers: string[], statusOnline: string, statusOffline: string, commonDevice: string) {
   const rows = devices.map((d) => [
     d.name,
     d.id.id,
     d.id.id,
     d.deviceProfileName,
-    d.type || 'Common Device',
+    d.type || commonDevice,
     d.deviceProfileId.id,
     '',
-    d.active ? 'Online' : 'Offline',
+    d.active ? statusOnline : statusOffline,
     formatDateTime(d.createdTime),
   ]);
   const csvContent = [headers, ...rows].map((row) => row.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\n');
@@ -103,6 +103,7 @@ function exportToCsv(devices: DeviceInfo[]) {
 }
 
 export default function DevicesPage() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [data, setData] = useState<DeviceInfo[]>([]);
   const [totalElements, setTotalElements] = useState(0);
@@ -255,10 +256,10 @@ export default function DevicesPage() {
       <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', mb: 2 }}>
         <Box>
           <Typography variant="h5" sx={{ mb: 0.5 }}>
-            Devices
+            {t('device.devices')}
           </Typography>
           <Typography variant="body2" sx={{ color: 'text.secondary', fontSize: '13px' }}>
-            Manage and monitor all devices that are activated on the platform.
+            {t('device.manage-description')}
           </Typography>
         </Box>
         <Button
@@ -272,47 +273,47 @@ export default function DevicesPage() {
             '&:hover': { borderColor: tuyaColors.info, bgcolor: 'rgba(0,139,213,0.04)' },
           }}
         >
-          Choose Data Center
+          {t('device.choose-data-center')}
         </Button>
       </Box>
 
       {/* Stats Row */}
           <Box sx={{ display: 'flex', alignItems: 'flex-end', gap: 6, mb: 2.5, pt: 1, borderTop: `1px solid ${tuyaColors.border}` }}>
             <Box>
-              <Typography sx={{ fontSize: '11px', color: tuyaColors.textHint, mb: 0.25 }}>Total Devices</Typography>
+              <Typography sx={{ fontSize: '11px', color: tuyaColors.textHint, mb: 0.25 }}>{t('device.total-devices')}</Typography>
               <Typography sx={{ fontSize: '24px', fontWeight: 400, color: tuyaColors.textPrimary, lineHeight: '32px' }}>
                 {totalDevices}
               </Typography>
             </Box>
             <Box>
-              <Typography sx={{ fontSize: '11px', color: tuyaColors.textHint, mb: 0.25 }}>Device Bounds</Typography>
+              <Typography sx={{ fontSize: '11px', color: tuyaColors.textHint, mb: 0.25 }}>{t('device.device-bounds')}</Typography>
               <Typography sx={{ fontSize: '24px', fontWeight: 400, color: tuyaColors.textPrimary, lineHeight: '32px' }}>
                 {totalDevices}
               </Typography>
             </Box>
             <Box>
-              <Typography sx={{ fontSize: '11px', color: tuyaColors.textHint, mb: 0.25 }}>Device Online</Typography>
+              <Typography sx={{ fontSize: '11px', color: tuyaColors.textHint, mb: 0.25 }}>{t('device.device-online')}</Typography>
               <Typography sx={{ fontSize: '24px', fontWeight: 400, color: tuyaColors.textPrimary, lineHeight: '32px' }}>
                 {onlineDevices}
               </Typography>
             </Box>
             <Box>
-              <Typography sx={{ fontSize: '11px', color: tuyaColors.textHint, mb: 0.25 }}>Firmware Update Times</Typography>
+              <Typography sx={{ fontSize: '11px', color: tuyaColors.textHint, mb: 0.25 }}>{t('device.firmware-update-times')}</Typography>
               <Typography sx={{ fontSize: '24px', fontWeight: 400, color: tuyaColors.textPrimary, lineHeight: '32px' }}>
                 0
               </Typography>
             </Box>
             <Box>
-              <Typography sx={{ fontSize: '11px', color: tuyaColors.textHint, mb: 0.25 }}>Message Amounts</Typography>
+              <Typography sx={{ fontSize: '11px', color: tuyaColors.textHint, mb: 0.25 }}>{t('device.message-amounts')}</Typography>
               <Typography sx={{ fontSize: '24px', fontWeight: 400, color: tuyaColors.textPrimary, lineHeight: '32px' }}>
                 0
               </Typography>
             </Box>
             <Box sx={{ flex: 1 }} />
             <Typography sx={{ fontSize: '11px', color: tuyaColors.textHint, mb: 1 }}>
-              Total usage:{' '}
+              {t('device.total-usage')}{' '}
               <Typography component="span" sx={{ color: tuyaColors.info, cursor: 'pointer', fontSize: '11px' }}>
-                View details
+                {t('device.view-details')}
               </Typography>
             </Typography>
           </Box>
@@ -321,7 +322,7 @@ export default function DevicesPage() {
           <Paper elevation={0} sx={{ p: '8px 0', mb: 0, boxShadow: 'none', borderRadius: 0 }}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, flexWrap: 'wrap' }}>
               <Typography sx={{ fontSize: '11px', color: tuyaColors.textSecondary, mr: 0.5 }}>
-                Enter:
+                {t('common.enter')}
               </Typography>
 
               {/* Activate dropdown */}
@@ -331,15 +332,15 @@ export default function DevicesPage() {
                 onChange={(e) => setActivateFilter(e.target.value)}
                 sx={{ ...compactSelectSx, minWidth: 90 }}
               >
-                <MenuItem value="all" sx={{ fontSize: '11px' }}>Activate</MenuItem>
-                <MenuItem value="activated" sx={{ fontSize: '11px' }}>Activated</MenuItem>
-                <MenuItem value="unactivated" sx={{ fontSize: '11px' }}>Unactivated</MenuItem>
+                <MenuItem value="all" sx={{ fontSize: '11px' }}>{t('device.activate')}</MenuItem>
+                <MenuItem value="activated" sx={{ fontSize: '11px' }}>{t('device.activated')}</MenuItem>
+                <MenuItem value="unactivated" sx={{ fontSize: '11px' }}>{t('device.unactivated')}</MenuItem>
               </Select>
 
               {/* Device name */}
               <TextField
                 size="small"
-                placeholder="Device name"
+                placeholder={t('device.device-name')}
                 value={searchName}
                 onChange={(e) => setSearchName(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
@@ -349,7 +350,7 @@ export default function DevicesPage() {
               {/* UUID */}
               <TextField
                 size="small"
-                placeholder="UUID"
+                placeholder={t('device.uuid')}
                 value={searchUuid}
                 onChange={(e) => setSearchUuid(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
@@ -364,7 +365,7 @@ export default function DevicesPage() {
                 sx={{ ...compactSelectSx, minWidth: 130 }}
                 displayEmpty
               >
-                <MenuItem value="all" sx={{ fontSize: '11px' }}>Product</MenuItem>
+                <MenuItem value="all" sx={{ fontSize: '11px' }}>{t('device.product')}</MenuItem>
                 {profileInfos.map((pi) => (
                   <MenuItem key={pi.id.id} value={pi.id.id} sx={{ fontSize: '11px' }}>
                     {pi.name}
@@ -375,7 +376,7 @@ export default function DevicesPage() {
               {/* Product ID */}
               <TextField
                 size="small"
-                placeholder="Product ID"
+                placeholder={t('device.product-id')}
                 value={searchProductId}
                 onChange={(e) => setSearchProductId(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
@@ -383,10 +384,10 @@ export default function DevicesPage() {
               />
 
               <Button variant="outlined" onClick={handleSearch} sx={compactBtnSx}>
-                Search
+                {t('action.search')}
               </Button>
               <Button variant="outlined" onClick={handleReset} sx={compactBtnSx}>
-                Reset
+                {t('action.reset')}
               </Button>
 
               <Box sx={{ flex: 1 }} />
@@ -397,16 +398,22 @@ export default function DevicesPage() {
                 onClick={() => { setEditDevice(null); setDialogOpen(true); }}
                 sx={{ minWidth: 0, px: 1.5, height: 24, fontSize: '11px' }}
               >
-                Add Device
+                {t('device.add')}
               </Button>
 
               <Button
                 variant="outlined"
                 startIcon={<FileDownloadOutlinedIcon sx={{ fontSize: 14 }} />}
-                onClick={() => exportToCsv(filteredData)}
+                onClick={() => exportToCsv(
+                  filteredData,
+                  [t('device.device-name'), t('device.device-id'), t('device.uuid'), t('device.product'), t('device.device-type'), t('device.product-id'), t('device.firmware-version'), t('device.device-status'), t('device.created')],
+                  t('device.online'),
+                  t('device.offline'),
+                  t('device.common-device'),
+                )}
                 sx={{ ...compactBtnSx, px: 1.5 }}
               >
-                Export data
+                {t('device.export-data')}
               </Button>
             </Box>
           </Paper>
@@ -423,28 +430,28 @@ export default function DevicesPage() {
                         direction={sortProperty === 'name' ? (sortOrder === 'ASC' ? 'asc' : 'desc') : 'asc'}
                         onClick={() => handleSort('name')}
                       >
-                        Device Name/ID
+                        {t('device.device-name-id')}
                       </TableSortLabel>
                     </TableCell>
-                    <TableCell sx={{ width: '10%' }}>UUID</TableCell>
-                    <TableCell sx={{ width: '14%' }}>Product</TableCell>
-                    <TableCell sx={{ width: '10%' }}>Device Type</TableCell>
-                    <TableCell sx={{ width: '12%' }}>Product ID</TableCell>
-                    <TableCell sx={{ width: '8%' }}>Firmware Version</TableCell>
-                    <TableCell sx={{ width: '8%' }}>Device Status</TableCell>
+                    <TableCell sx={{ width: '10%' }}>{t('device.uuid')}</TableCell>
+                    <TableCell sx={{ width: '14%' }}>{t('device.product')}</TableCell>
+                    <TableCell sx={{ width: '10%' }}>{t('device.device-type')}</TableCell>
+                    <TableCell sx={{ width: '12%' }}>{t('device.product-id')}</TableCell>
+                    <TableCell sx={{ width: '8%' }}>{t('device.firmware-version')}</TableCell>
+                    <TableCell sx={{ width: '8%' }}>{t('device.device-status')}</TableCell>
                     <TableCell sx={{ width: '10%' }}>
                       <TableSortLabel
                         active={sortProperty === 'createdTime'}
                         direction={sortProperty === 'createdTime' ? (sortOrder === 'ASC' ? 'asc' : 'desc') : 'asc'}
                         onClick={() => handleSort('createdTime')}
                       >
-                        Created
+                        {t('device.created')}
                       </TableSortLabel>
                     </TableCell>
                     <TableCell sx={{ width: '10%' }}>
                       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end' }}>
                         <Typography sx={{ fontWeight: 500, color: '#1a1a1a', fontSize: '12px', mr: 'auto', pl: 1 }}>
-                          Operation
+                          {t('device.operation')}
                         </Typography>
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
                           <Box sx={{ width: '1px', height: 14, bgcolor: tuyaColors.border }} />
@@ -467,7 +474,7 @@ export default function DevicesPage() {
                     <TableRow>
                       <TableCell colSpan={9} align="center" sx={{ py: 6 }}>
                         <DevicesOtherIcon sx={{ fontSize: 48, color: tuyaColors.textHint, mb: 1, display: 'block', mx: 'auto' }} />
-                        <Typography color="text.secondary">No devices found</Typography>
+                        <Typography color="text.secondary">{t('device.no-devices')}</Typography>
                       </TableCell>
                     </TableRow>
                   ) : (
@@ -504,7 +511,7 @@ export default function DevicesPage() {
 
                         {/* Device Type */}
                         <TableCell>
-                          <Typography sx={{ fontSize: '11px' }}>{device.type || 'Common Device'}</Typography>
+                          <Typography sx={{ fontSize: '11px' }}>{device.type || t('device.common-device')}</Typography>
                         </TableCell>
 
                         {/* Product ID */}
@@ -537,7 +544,7 @@ export default function DevicesPage() {
                                 color: device.active ? tuyaColors.success : tuyaColors.textHint,
                               }}
                             >
-                              {device.active ? 'Online' : 'Offline'}
+                              {device.active ? t('device.online') : t('device.offline')}
                             </Typography>
                           </Box>
                         </TableCell>
@@ -563,7 +570,7 @@ export default function DevicesPage() {
                                 '&:hover': { textDecoration: 'underline' },
                               }}
                             >
-                              Debug
+                              {t('device.debug')}
                             </Link>
                             <IconButton
                               size="small"
@@ -602,8 +609,8 @@ export default function DevicesPage() {
         onSaved={handleSaved}
       />
       <ConfirmDialog
-        open={deleteDialogOpen} title="Delete Device"
-        content={`Are you sure you want to delete device "${deviceToDelete?.name}"?`}
+        open={deleteDialogOpen} title={t('device.delete-title')}
+        content={t('device.delete-confirm', { name: deviceToDelete?.name })}
         onConfirm={handleDelete}
         onCancel={() => { setDeleteDialogOpen(false); setDeviceToDelete(null); }}
       />

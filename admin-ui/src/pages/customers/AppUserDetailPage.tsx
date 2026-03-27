@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import IconButton from '@mui/material/IconButton';
@@ -30,6 +31,7 @@ interface DeviceRow {
 }
 
 export default function AppUserDetailPage() {
+  const { t } = useTranslation();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const uid = searchParams.get('uid') || '';
@@ -81,7 +83,7 @@ export default function AppUserDetailPage() {
           product: profileName,
           pid: profileId.replace(/-/g, '').substring(0, 10),
           productType: (dev.type as string) || '—',
-          addMethod: "User's Own Device",
+          addMethod: t('user-mgmt.users-own-device'),
         });
       }
 
@@ -127,7 +129,7 @@ export default function AppUserDetailPage() {
           <ArrowBackIcon />
         </IconButton>
         <Typography variant="h5" sx={{ fontWeight: 400 }}>
-          App User
+          {t('user-mgmt.app-user')}
         </Typography>
       </Box>
 
@@ -144,7 +146,7 @@ export default function AppUserDetailPage() {
           <Typography component="span" sx={{ fontSize: '13px', color: tuyaColors.textPrimary }}>
             <Box component="span" sx={{ fontWeight: 500 }}>Osprey</Box>
             {' | '}
-            <Box component="span" sx={{ color: tuyaColors.textSecondary }}>User {userEmail} has {deviceCount} device(s)</Box>
+            <Box component="span" sx={{ color: tuyaColors.textSecondary }}>{t('user-mgmt.user-device-count', { email: userEmail, count: deviceCount })}</Box>
           </Typography>
         </Box>
       </Paper>
@@ -168,12 +170,12 @@ export default function AppUserDetailPage() {
                       onChange={(_, checked) => handleSelectAll(checked)}
                     />
                   </TableCell>
-                  <TableCell sx={{ fontWeight: 500 }}>Device Name</TableCell>
-                  <TableCell sx={{ fontWeight: 500 }}>Device ID</TableCell>
-                  <TableCell sx={{ fontWeight: 500 }}>Product</TableCell>
-                  <TableCell sx={{ fontWeight: 500 }}>PID</TableCell>
-                  <TableCell sx={{ fontWeight: 500 }}>Product Type</TableCell>
-                  <TableCell sx={{ fontWeight: 500 }}>Add Method</TableCell>
+                  <TableCell sx={{ fontWeight: 500 }}>{t('user-mgmt.col-device-name')}</TableCell>
+                  <TableCell sx={{ fontWeight: 500 }}>{t('user-mgmt.col-device-id')}</TableCell>
+                  <TableCell sx={{ fontWeight: 500 }}>{t('user-mgmt.col-product')}</TableCell>
+                  <TableCell sx={{ fontWeight: 500 }}>{t('user-mgmt.col-pid')}</TableCell>
+                  <TableCell sx={{ fontWeight: 500 }}>{t('user-mgmt.col-product-type')}</TableCell>
+                  <TableCell sx={{ fontWeight: 500 }}>{t('user-mgmt.col-add-method')}</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -181,7 +183,7 @@ export default function AppUserDetailPage() {
                   <TableRow>
                     <TableCell colSpan={7} align="center" sx={{ py: 6 }}>
                       <Typography sx={{ fontSize: '13px', color: tuyaColors.textHint }}>
-                        No devices found for this user
+                        {t('user-mgmt.no-devices-for-user')}
                       </Typography>
                     </TableCell>
                   </TableRow>
@@ -227,7 +229,7 @@ export default function AppUserDetailPage() {
                   '&:hover': { textDecoration: 'underline' },
                 }}
               >
-                Download more data of this user
+                {t('user-mgmt.download-more-data')}
               </Link>
             </Box>
           )}

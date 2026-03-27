@@ -1,5 +1,6 @@
 import { useState, useCallback, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import Button from '@mui/material/Button';
@@ -80,6 +81,7 @@ function AuthImage({ src, size = 36 }: { src: string; size?: number }) {
 }
 
 export default function DeviceProfilesPage() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [data, setData] = useState<DeviceProfile[]>([]);
   const [totalElements, setTotalElements] = useState(0);
@@ -184,11 +186,10 @@ export default function DeviceProfilesPage() {
       {/* Page Header */}
       <Box sx={{ mb: 2.5 }}>
         <Typography variant="h5" sx={{ mb: 0.5 }}>
-          Product Development
+          {t('product.title')}
         </Typography>
         <Typography variant="body2" sx={{ color: 'text.secondary', fontSize: '13px' }}>
-          Manage your IoT products. After the product is created, the product can be configured through Function Definition,
-          Device Interaction, Hardware Development, Product Configuration, Product Test.
+          {t('product.description')}
         </Typography>
       </Box>
 
@@ -204,7 +205,7 @@ export default function DeviceProfilesPage() {
           }}
         >
           <Typography variant="subtitle1" sx={{ color: tuyaColors.orangeDark, fontWeight: 500 }}>
-            My Products
+            {t('product.my-products')}
           </Typography>
         </Box>
       </Box>
@@ -215,7 +216,7 @@ export default function DeviceProfilesPage() {
           {/* Filter chips */}
           <Chip
             icon={<LocalOfferOutlinedIcon sx={{ fontSize: 12 }} />}
-            label="Tag"
+            label={t('product.tag')}
             size="small"
             variant="outlined"
             sx={{
@@ -226,7 +227,7 @@ export default function DeviceProfilesPage() {
           />
           <Chip
             icon={<TuneIcon sx={{ fontSize: 12 }} />}
-            label="Filter"
+            label={t('product.filter')}
             size="small"
             variant="outlined"
             sx={{
@@ -237,7 +238,7 @@ export default function DeviceProfilesPage() {
           />
           <Chip
             icon={<SortIcon sx={{ fontSize: 12 }} />}
-            label="Creation Time - Descending"
+            label={t('product.sort-created-desc')}
             size="small"
             variant="outlined"
             sx={{
@@ -249,7 +250,7 @@ export default function DeviceProfilesPage() {
 
           <TextField
             size="small"
-            placeholder="Product ID / Product Name"
+            placeholder={t('product.search-placeholder')}
             value={searchText}
             onChange={(e) => setSearchText(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
@@ -271,14 +272,14 @@ export default function DeviceProfilesPage() {
             onClick={handleSearch}
             sx={{ minWidth: 0, px: 1, height: 24, fontSize: '11px', color: tuyaColors.textSecondary, borderColor: tuyaColors.border }}
           >
-            Search
+            {t('product.search')}
           </Button>
           <Button
             variant="outlined"
             onClick={handleReset}
             sx={{ minWidth: 0, px: 1, height: 24, fontSize: '11px', color: tuyaColors.textSecondary, borderColor: tuyaColors.border }}
           >
-            Reset
+            {t('product.reset')}
           </Button>
 
           <Box sx={{ flex: 1 }} />
@@ -288,7 +289,7 @@ export default function DeviceProfilesPage() {
             onClick={() => { setEditProfile(null); setDialogOpen(true); }}
             sx={{ height: 24, fontSize: '11px', px: 1.5 }}
           >
-            Create
+            {t('product.create')}
           </Button>
         </Box>
       </Paper>
@@ -299,31 +300,31 @@ export default function DeviceProfilesPage() {
           <Table sx={{ '& td': { fontSize: '11px' }, '& th': { fontSize: '12px' } }}>
             <TableHead>
               <TableRow>
-                <TableCell sx={{ width: '28%' }}>Product Information</TableCell>
+                <TableCell sx={{ width: '28%' }}>{t('product.product-info')}</TableCell>
                 <TableCell sx={{ width: '12%' }}>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                    Protocol
+                    {t('product.protocol')}
                     <FilterListIcon sx={{ fontSize: 14, color: tuyaColors.textHint, cursor: 'pointer' }} />
                   </Box>
                 </TableCell>
                 <TableCell sx={{ width: '10%' }}>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                    Device Type
+                    {t('product.device-type')}
                     <FilterListIcon sx={{ fontSize: 14, color: tuyaColors.textHint, cursor: 'pointer' }} />
                   </Box>
                 </TableCell>
                 <TableCell sx={{ width: '10%' }}>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                    Status
+                    {t('product.status')}
                     <FilterListIcon sx={{ fontSize: 14, color: tuyaColors.textHint, cursor: 'pointer' }} />
                   </Box>
                 </TableCell>
-                <TableCell sx={{ width: '11%' }}>Created At</TableCell>
-                <TableCell sx={{ width: '11%' }}>Last Updated</TableCell>
+                <TableCell sx={{ width: '11%' }}>{t('product.created-at')}</TableCell>
+                <TableCell sx={{ width: '11%' }}>{t('product.last-updated')}</TableCell>
                 <TableCell sx={{ width: '14%' }}>
                   <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end' }}>
                     <Typography variant="body2" sx={{ fontWeight: 500, color: '#1a1a1a', fontSize: '12px', mr: 'auto', pl: 2 }}>
-                      Operation
+                      {t('device.operation')}
                     </Typography>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
                       <Box sx={{ width: '1px', height: 14, bgcolor: tuyaColors.border }} />
@@ -346,7 +347,7 @@ export default function DeviceProfilesPage() {
                 <TableRow>
                   <TableCell colSpan={7} align="center" sx={{ py: 6 }}>
                     <DevicesOtherIcon sx={{ fontSize: 48, color: tuyaColors.textHint, mb: 1, display: 'block', mx: 'auto' }} />
-                    <Typography color="text.secondary">No products found</Typography>
+                    <Typography color="text.secondary">{t('product.no-products')}</Typography>
                   </TableCell>
                 </TableRow>
               ) : (
@@ -382,11 +383,11 @@ export default function DeviceProfilesPage() {
                             </Box>
                             {catName && (
                               <Typography sx={{ fontSize: '10px', color: tuyaColors.textSecondary, display: 'block', lineHeight: 1.4 }}>
-                                Custom | {catName}
+                                {t('product.custom')} | {catName}
                               </Typography>
                             )}
                             <Typography sx={{ fontSize: '10px', color: tuyaColors.textHint }}>
-                              Product ID: {profile.id.id.substring(0, 16)}
+                              {t('product.product-id')}: {profile.id.id.substring(0, 16)}
                             </Typography>
                           </Box>
                         </Box>
@@ -396,7 +397,7 @@ export default function DeviceProfilesPage() {
                       <TableCell>{getTransportLabel(profile)}</TableCell>
 
                       {/* Device Type */}
-                      <TableCell>Common Device</TableCell>
+                      <TableCell>{t('device.common-device')}</TableCell>
 
                       {/* Status */}
                       <TableCell>
@@ -436,7 +437,7 @@ export default function DeviceProfilesPage() {
                               '&:hover': { bgcolor: '#003A70' },
                             }}
                           >
-                            {profile.default ? 'Details' : 'Develop'}
+                            {profile.default ? t('product.details') : t('product.develop')}
                           </Button>
 
                           <Link
@@ -453,7 +454,7 @@ export default function DeviceProfilesPage() {
                               '&:hover': { textDecoration: 'underline' },
                             }}
                           >
-                            Manage
+                            {t('product.manage')}
                             <KeyboardArrowDownIcon sx={{ fontSize: 13, ml: 0.25 }} />
                           </Link>
 
@@ -504,7 +505,7 @@ export default function DeviceProfilesPage() {
           disabled={menuProfile?.default}
           sx={{ fontSize: '13px', color: menuProfile?.default ? tuyaColors.textHint : tuyaColors.textPrimary }}
         >
-          Delete
+          {t('action.delete')}
         </MenuItem>
       </Menu>
 
@@ -526,7 +527,7 @@ export default function DeviceProfilesPage() {
           }}
           sx={{ fontSize: '13px' }}
         >
-          Edit Product
+          {t('product.edit')}
         </MenuItem>
         <MenuItem
           onClick={() => {
@@ -536,7 +537,7 @@ export default function DeviceProfilesPage() {
           }}
           sx={{ fontSize: '13px' }}
         >
-          User Management
+          {t('sidebar.user-management')}
         </MenuItem>
       </Menu>
 
@@ -547,8 +548,8 @@ export default function DeviceProfilesPage() {
         onSaved={handleSaved}
       />
       <ConfirmDialog
-        open={deleteDialogOpen} title="Delete Product"
-        content={`Are you sure you want to delete product "${toDelete?.name}"?`}
+        open={deleteDialogOpen} title={t('product.delete-title')}
+        content={t('product.delete-confirm', { name: toDelete?.name })}
         onConfirm={handleDelete}
         onCancel={() => { setDeleteDialogOpen(false); setToDelete(null); }}
       />
