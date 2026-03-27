@@ -32,4 +32,6 @@ public interface SmartSceneDao {
     List<SmartScene> findBySmartHomeIdAndSceneType(UUID smartHomeId, String sceneType);
 
     void removeById(UUID id);
+
+    List<SmartScene> findBySceneType(String sceneType);
 }

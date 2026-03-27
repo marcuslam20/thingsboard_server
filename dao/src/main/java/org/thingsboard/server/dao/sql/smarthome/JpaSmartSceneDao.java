@@ -69,4 +69,11 @@ public class JpaSmartSceneDao implements SmartSceneDao {
     public void removeById(UUID id) {
         repository.deleteById(id);
     }
+
+    @Override
+    public List<SmartScene> findBySceneType(String sceneType) {
+        return repository.findBySceneType(sceneType).stream()
+                .map(SmartSceneEntity::toData)
+                .collect(Collectors.toList());
+    }
 }

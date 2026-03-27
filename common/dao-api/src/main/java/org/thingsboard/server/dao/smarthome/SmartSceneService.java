@@ -40,4 +40,10 @@ public interface SmartSceneService {
     SmartScene enableScene(UUID sceneId);
 
     SmartScene disableScene(UUID sceneId);
+
+    /**
+     * Find all AUTOMATION scenes (across all homes/tenants).
+     * Used by Scene Engine on startup to populate schedule cache.
+     */
+    List<SmartScene> findAllAutomationScenes();
 }

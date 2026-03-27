@@ -42,6 +42,7 @@ import org.thingsboard.server.dao.smarthome.SmartSceneLogService;
 import org.thingsboard.server.dao.smarthome.SmartSceneService;
 import org.thingsboard.server.queue.util.TbCoreComponent;
 import org.thingsboard.server.service.scene.SceneExecutionService;
+import org.thingsboard.server.service.scene.schedule.ScheduleCacheManager;
 import org.thingsboard.server.service.security.model.SecurityUser;
 
 import java.util.List;
@@ -60,6 +61,7 @@ public class SmartSceneController extends BaseController {
     private final SmartHomeMemberService smartHomeMemberService;
     private final SmartHomeService smartHomeService;
     private final SceneExecutionService sceneExecutionService;
+    private final ScheduleCacheManager scheduleCacheManager;
 
     // ========== Scene CRUD ==========
 
@@ -78,7 +80,9 @@ public class SmartSceneController extends BaseController {
             scene.setConditionLogic("AND");
         }
         scene.setEnabled(true);
-        return checkNotNull(smartSceneService.createScene(scene));
+        SmartScene created = checkNotNull(smartSceneService.createScene(scene));
+        scheduleCacheManager.onSceneCreatedOrUpdated(created);
+        return created;
     }
 
     @PreAuthorize("hasAnyAuthority('TENANT_ADMIN', 'CUSTOMER_USER')")
@@ -129,7 +133,9 @@ public class SmartSceneController extends BaseController {
         scene.setTenantId(existing.getTenantId());
         scene.setSmartHomeId(existing.getSmartHomeId());
         scene.setVersion(existing.getVersion());
-        return checkNotNull(smartSceneService.updateScene(scene));
+        SmartScene updated = checkNotNull(smartSceneService.updateScene(scene));
+        scheduleCacheManager.onSceneCreatedOrUpdated(updated);
+        return updated;
     }
 
     @PreAuthorize("hasAnyAuthority('TENANT_ADMIN', 'CUSTOMER_USER')")
@@ -143,6 +149,7 @@ public class SmartSceneController extends BaseController {
             throw new ThingsboardException("Scene not found", ThingsboardErrorCode.ITEM_NOT_FOUND);
         }
         checkSmartHomeRole(scene.getSmartHomeId(), SmartHomeMemberRole.OWNER, SmartHomeMemberRole.ADMIN);
+        scheduleCacheManager.onSceneDeleted(sceneId);
         smartSceneService.deleteScene(sceneId);
     }
 
@@ -195,7 +202,9 @@ public class SmartSceneController extends BaseController {
             throw new ThingsboardException("Scene not found", ThingsboardErrorCode.ITEM_NOT_FOUND);
         }
         checkSmartHomeRole(scene.getSmartHomeId(), SmartHomeMemberRole.OWNER, SmartHomeMemberRole.ADMIN);
-        return checkNotNull(smartSceneService.enableScene(sceneId));
+        SmartScene enabled = checkNotNull(smartSceneService.enableScene(sceneId));
+        scheduleCacheManager.onSceneEnabled(enabled);
+        return enabled;
     }
 
     @PreAuthorize("hasAnyAuthority('TENANT_ADMIN', 'CUSTOMER_USER')")
@@ -209,7 +218,9 @@ public class SmartSceneController extends BaseController {
             throw new ThingsboardException("Scene not found", ThingsboardErrorCode.ITEM_NOT_FOUND);
         }
         checkSmartHomeRole(scene.getSmartHomeId(), SmartHomeMemberRole.OWNER, SmartHomeMemberRole.ADMIN);
-        return checkNotNull(smartSceneService.disableScene(sceneId));
+        SmartScene disabled = checkNotNull(smartSceneService.disableScene(sceneId));
+        scheduleCacheManager.onSceneDisabled(sceneId);
+        return disabled;
     }
 
     // ========== Helper Methods ==========

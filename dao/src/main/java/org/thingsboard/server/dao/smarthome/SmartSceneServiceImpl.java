@@ -86,4 +86,10 @@ public class SmartSceneServiceImpl implements SmartSceneService {
         scene.setEnabled(false);
         return smartSceneDao.save(scene);
     }
+
+    @Override
+    public List<SmartScene> findAllAutomationScenes() {
+        log.trace("Executing findAllAutomationScenes");
+        return smartSceneDao.findBySceneType(SceneType.AUTOMATION.name());
+    }
 }

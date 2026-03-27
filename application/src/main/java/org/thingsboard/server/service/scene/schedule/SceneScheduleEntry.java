@@ -13,21 +13,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.thingsboard.server.dao.sql.smarthome;
+package org.thingsboard.server.service.scene.schedule;
 
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.thingsboard.server.dao.model.sql.SmartSceneEntity;
+import lombok.AllArgsConstructor;
+import lombok.Data;
 
-import java.util.List;
 import java.util.UUID;
 
-public interface SmartSceneRepository extends JpaRepository<SmartSceneEntity, UUID> {
-
-    List<SmartSceneEntity> findBySmartHomeId(UUID smartHomeId);
-
-    List<SmartSceneEntity> findBySmartHomeIdAndSceneType(UUID smartHomeId, String sceneType);
-
-    List<SmartSceneEntity> findByTenantId(UUID tenantId);
-
-    List<SmartSceneEntity> findBySceneType(String sceneType);
+/**
+ * One entry in the schedule cache.
+ * Represents: "scene X should trigger at time Y".
+ *
+ * Phase 2A: stored in ConcurrentSkipListMap (in-memory)
+ * Phase 2B: stored in Redis Sorted Set (score = nextTriggerTime, member = sceneId)
+ */
+@Data
+@AllArgsConstructor
+public class SceneScheduleEntry {
+    private UUID sceneId;
+    private UUID tenantId;
+    private long nextTriggerTime;   // epoch ms — when to trigger next
 }
