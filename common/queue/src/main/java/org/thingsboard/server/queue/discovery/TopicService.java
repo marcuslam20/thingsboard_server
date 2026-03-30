@@ -50,10 +50,14 @@ public class TopicService {
     @Value("${queue.calculated-fields.notifications-topic:calculated_field.notifications}")
     private String tbCalculatedFieldNotificationsTopic;
 
+    @Value("${queue.scene-engine.notifications-topic:tb_scene_engine.notifications}")
+    private String tbSceneEngineNotificationsTopic;
+
     private final ConcurrentMap<String, TopicPartitionInfo> tbCoreNotificationTopics = new ConcurrentHashMap<>();
     private final ConcurrentMap<String, TopicPartitionInfo> tbRuleEngineNotificationTopics = new ConcurrentHashMap<>();
     private final ConcurrentMap<String, TopicPartitionInfo> tbEdgeNotificationTopics = new ConcurrentHashMap<>();
     private final ConcurrentMap<String, TopicPartitionInfo> tbCalculatedFieldNotificationTopics = new ConcurrentHashMap<>();
+    private final ConcurrentMap<String, TopicPartitionInfo> tbSceneEngineNotificationTopics = new ConcurrentHashMap<>();
     private final ConcurrentReferenceHashMap<EdgeId, TopicPartitionInfo> tbEdgeEventsNotificationTopics = new ConcurrentReferenceHashMap<>();
 
     /**
@@ -70,6 +74,8 @@ public class TopicService {
             case TB_RULE_ENGINE -> tbRuleEngineNotificationTopics.computeIfAbsent(serviceId,
                     id -> buildNotificationsTopicPartitionInfo(tbRuleEngineNotificationsTopic, serviceId));
             case TB_TRANSPORT -> buildNotificationsTopicPartitionInfo(tbTransportNotificationsTopic, serviceId);
+            case TB_SCENE_ENGINE -> tbSceneEngineNotificationTopics.computeIfAbsent(serviceId,
+                    id -> buildNotificationsTopicPartitionInfo(tbSceneEngineNotificationsTopic, serviceId));
             default -> throw new IllegalStateException("Unexpected service type: " + serviceType);
         };
     }

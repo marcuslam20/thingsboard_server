@@ -1874,3 +1874,43 @@ message JobStatsMsg {
 message TaskResultProto {
   string value = 1;
 }
+
+/* ============================================================
+ * Scene Engine Messages
+ *
+ * ToSceneEngineMsg: Regular messages — scene execution triggers
+ *   - EXECUTE: run a scene (from Controller Tap-to-Run or TimeScanner schedule)
+ *
+ * ToSceneEngineNotificationMsg: Management notifications — cache sync
+ *   - SCENE_UPDATED: scene created or updated, sync to schedule cache
+ *   - SCENE_DELETED: scene removed, remove from cache
+ *   - SCENE_ENABLED/DISABLED: toggle scene, add/remove from cache
+ * ============================================================ */
+
+message ToSceneEngineMsg {
+  int64 tenantIdMSB = 1;           // TenantId upper 64 bits (UUID = 128 bits = 2 x int64)
+  int64 tenantIdLSB = 2;           // TenantId lower 64 bits
+  int64 sceneIdMSB = 3;            // Scene UUID upper 64 bits
+  int64 sceneIdLSB = 4;            // Scene UUID lower 64 bits
+  string triggerType = 5;           // MANUAL, SCHEDULE, DEVICE_STATUS
+}
+
+message ToSceneEngineNotificationMsg {
+  SceneMgmtMsgProto sceneMgmtMsg = 1;
+  ComponentLifecycleMsgProto componentLifecycle = 2;
+}
+
+message SceneMgmtMsgProto {
+  int64 tenantIdMSB = 1;
+  int64 tenantIdLSB = 2;
+  int64 sceneIdMSB = 3;
+  int64 sceneIdLSB = 4;
+  SceneMgmtMsgType msgType = 5;
+}
+
+enum SceneMgmtMsgType {
+  SCENE_UPDATED = 0;
+  SCENE_DELETED = 1;
+  SCENE_ENABLED = 2;
+  SCENE_DISABLED = 3;
+}

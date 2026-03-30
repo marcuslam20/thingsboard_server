@@ -22,7 +22,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.thingsboard.server.common.data.smarthome.SmartScene;
 import org.thingsboard.server.dao.smarthome.SmartSceneService;
-import org.thingsboard.server.queue.util.TbCoreComponent;
+import org.thingsboard.server.queue.util.TbSceneEngineComponent;
 
 import java.util.List;
 import java.util.UUID;
@@ -41,7 +41,7 @@ import java.util.UUID;
  */
 @Slf4j
 @Service
-@TbCoreComponent
+@TbSceneEngineComponent   // ← Changed from @TbCoreComponent (runs in Scene Engine)
 @RequiredArgsConstructor
 public class ScheduleCacheManager {
 
@@ -103,6 +103,15 @@ public class ScheduleCacheManager {
      */
     public void onSceneDisabled(UUID sceneId) {
         scheduleCache.remove(sceneId);
+    }
+
+    /**
+     * Re-schedule a scene after execution (called by TimeScanner).
+     * Loads scene from DB → calculates next trigger → updates cache.
+     * For one-time schedules (loops="0000000"), no next trigger → not re-added.
+     */
+    public void reschedule(UUID sceneId) {
+        smartSceneService.findById(sceneId).ifPresent(this::syncSceneToCache);
     }
 
     /**

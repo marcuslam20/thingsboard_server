@@ -18,6 +18,7 @@ package org.thingsboard.server.service.scene.schedule;
 import com.fasterxml.jackson.databind.JsonNode;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
+import org.thingsboard.server.queue.util.TbSceneEngineComponent;
 
 import java.time.DayOfWeek;
 import java.time.LocalDate;
@@ -46,6 +47,7 @@ import java.time.format.DateTimeFormatter;
  */
 @Slf4j
 @Component
+@TbSceneEngineComponent
 public class ScheduleCalculator {
 
     private static final DateTimeFormatter TIME_FORMAT = DateTimeFormatter.ofPattern("H:mm");

@@ -33,16 +33,15 @@ import org.thingsboard.server.common.data.id.SmartHomeId;
 import org.thingsboard.server.common.data.security.Authority;
 import org.thingsboard.server.common.data.smarthome.SceneType;
 import org.thingsboard.server.common.data.smarthome.SmartScene;
-import org.thingsboard.server.common.data.smarthome.SmartSceneLog;
 import org.thingsboard.server.common.data.smarthome.SmartHomeMemberRole;
 import org.thingsboard.server.common.data.smarthome.TriggerType;
 import org.thingsboard.server.dao.smarthome.SmartHomeMemberService;
 import org.thingsboard.server.dao.smarthome.SmartHomeService;
 import org.thingsboard.server.dao.smarthome.SmartSceneLogService;
 import org.thingsboard.server.dao.smarthome.SmartSceneService;
+import org.thingsboard.server.gen.transport.TransportProtos.SceneMgmtMsgType;
 import org.thingsboard.server.queue.util.TbCoreComponent;
-import org.thingsboard.server.service.scene.SceneExecutionService;
-import org.thingsboard.server.service.scene.schedule.ScheduleCacheManager;
+import org.thingsboard.server.service.scene.queue.SceneEngineProducerService;
 import org.thingsboard.server.service.security.model.SecurityUser;
 
 import java.util.List;
@@ -60,8 +59,7 @@ public class SmartSceneController extends BaseController {
     private final SmartSceneLogService smartSceneLogService;
     private final SmartHomeMemberService smartHomeMemberService;
     private final SmartHomeService smartHomeService;
-    private final SceneExecutionService sceneExecutionService;
-    private final ScheduleCacheManager scheduleCacheManager;
+    private final SceneEngineProducerService sceneEngineProducerService;
 
     // ========== Scene CRUD ==========
 
@@ -81,7 +79,9 @@ public class SmartSceneController extends BaseController {
         }
         scene.setEnabled(true);
         SmartScene created = checkNotNull(smartSceneService.createScene(scene));
-        scheduleCacheManager.onSceneCreatedOrUpdated(created);
+        // Notify Scene Engine via queue: "new scene created, sync to cache"
+        sceneEngineProducerService.pushSceneMgmtMsg(
+                getTenantId(), created.getId(), SceneMgmtMsgType.SCENE_UPDATED);
         return created;
     }
 
@@ -134,7 +134,8 @@ public class SmartSceneController extends BaseController {
         scene.setSmartHomeId(existing.getSmartHomeId());
         scene.setVersion(existing.getVersion());
         SmartScene updated = checkNotNull(smartSceneService.updateScene(scene));
-        scheduleCacheManager.onSceneCreatedOrUpdated(updated);
+        sceneEngineProducerService.pushSceneMgmtMsg(
+                getTenantId(), updated.getId(), SceneMgmtMsgType.SCENE_UPDATED);
         return updated;
     }
 
@@ -149,7 +150,8 @@ public class SmartSceneController extends BaseController {
             throw new ThingsboardException("Scene not found", ThingsboardErrorCode.ITEM_NOT_FOUND);
         }
         checkSmartHomeRole(scene.getSmartHomeId(), SmartHomeMemberRole.OWNER, SmartHomeMemberRole.ADMIN);
-        scheduleCacheManager.onSceneDeleted(sceneId);
+        sceneEngineProducerService.pushSceneMgmtMsg(
+                getTenantId(), sceneId, SceneMgmtMsgType.SCENE_DELETED);
         smartSceneService.deleteScene(sceneId);
     }
 
@@ -157,7 +159,7 @@ public class SmartSceneController extends BaseController {
 
     @PreAuthorize("hasAnyAuthority('TENANT_ADMIN', 'CUSTOMER_USER')")
     @PostMapping("/scenes/{sceneId}/execute")
-    public SmartSceneLog executeScene(
+    public void executeScene(
             @PathVariable("sceneId") String strSceneId) throws ThingsboardException {
         checkParameter("sceneId", strSceneId);
         UUID sceneId = toUUID(strSceneId);
@@ -169,8 +171,10 @@ public class SmartSceneController extends BaseController {
         if (!scene.isEnabled()) {
             throw new ThingsboardException("Scene is disabled", ThingsboardErrorCode.BAD_REQUEST_PARAMS);
         }
-        return checkNotNull(sceneExecutionService.executeSceneAsync(
-                getTenantId(), scene, TriggerType.MANUAL.name()));
+        // Send trigger message to queue → Scene Engine will execute
+        // Response returns immediately (async execution)
+        sceneEngineProducerService.pushSceneTriggerMsg(
+                getTenantId(), sceneId, TriggerType.MANUAL.name());
     }
 
     // ========== Scene Logs ==========
@@ -203,7 +207,8 @@ public class SmartSceneController extends BaseController {
         }
         checkSmartHomeRole(scene.getSmartHomeId(), SmartHomeMemberRole.OWNER, SmartHomeMemberRole.ADMIN);
         SmartScene enabled = checkNotNull(smartSceneService.enableScene(sceneId));
-        scheduleCacheManager.onSceneEnabled(enabled);
+        sceneEngineProducerService.pushSceneMgmtMsg(
+                getTenantId(), sceneId, SceneMgmtMsgType.SCENE_ENABLED);
         return enabled;
     }
 
@@ -219,7 +224,8 @@ public class SmartSceneController extends BaseController {
         }
         checkSmartHomeRole(scene.getSmartHomeId(), SmartHomeMemberRole.OWNER, SmartHomeMemberRole.ADMIN);
         SmartScene disabled = checkNotNull(smartSceneService.disableScene(sceneId));
-        scheduleCacheManager.onSceneDisabled(sceneId);
+        sceneEngineProducerService.pushSceneMgmtMsg(
+                getTenantId(), sceneId, SceneMgmtMsgType.SCENE_DISABLED);
         return disabled;
     }
 

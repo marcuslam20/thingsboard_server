@@ -42,7 +42,7 @@ import org.thingsboard.server.dao.device.DeviceService;
 import org.thingsboard.server.dao.smarthome.DataPointService;
 import org.thingsboard.server.dao.smarthome.SmartSceneLogService;
 import org.thingsboard.server.dao.smarthome.SmartSceneService;
-import org.thingsboard.server.queue.util.TbCoreComponent;
+import org.thingsboard.server.queue.util.TbSceneEngineComponent;
 import org.thingsboard.server.service.rpc.TbCoreDeviceRpcService;
 
 import jakarta.annotation.PostConstruct;
@@ -59,7 +59,7 @@ import java.util.concurrent.TimeUnit;
 
 @Slf4j
 @Service
-@TbCoreComponent
+@TbSceneEngineComponent   // ← Changed: runs in Scene Engine (executes actions)
 @RequiredArgsConstructor
 public class SceneExecutionServiceImpl implements SceneExecutionService {
 

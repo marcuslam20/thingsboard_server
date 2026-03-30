@@ -17,6 +17,7 @@ package org.thingsboard.server.service.scene.schedule;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
+import org.thingsboard.server.queue.util.TbSceneEngineComponent;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -41,6 +42,7 @@ import java.util.concurrent.ConcurrentSkipListMap;
  */
 @Slf4j
 @Component
+@TbSceneEngineComponent
 public class ScheduleCache {
 
     // Sorted by trigger time — headMap(now) gives all due entries

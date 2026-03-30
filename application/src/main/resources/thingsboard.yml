@@ -1880,6 +1880,17 @@ queue:
     topic-deletion-delay: "${TB_QUEUE_RULE_ENGINE_TOPIC_DELETION_DELAY_SEC:15}"
     # Size of the thread pool that handles such operations as partition changes, config updates, queue deletion
     management-thread-pool-size: "${TB_QUEUE_RULE_ENGINE_MGMT_THREAD_POOL_SIZE:12}"
+  scene-engine:
+    # Topic for scene execution trigger messages (MANUAL, SCHEDULE, DEVICE_STATUS)
+    topic: "${TB_QUEUE_SCENE_ENGINE_TOPIC:tb_scene_engine}"
+    # Topic for scene management notifications (CRUD sync: created/updated/deleted/enabled/disabled)
+    notifications_topic: "${TB_QUEUE_SCENE_ENGINE_NOTIFICATIONS_TOPIC:tb_scene_engine.notifications}"
+    # Interval in milliseconds to poll messages by Scene Engine
+    poll-interval: "${TB_QUEUE_SCENE_ENGINE_POLL_INTERVAL_MS:25}"
+    # Amount of partitions used by Scene Engine (each partition = 1 consumer thread)
+    partitions: "${TB_QUEUE_SCENE_ENGINE_PARTITIONS:10}"
+    # Timeout for processing a message pack by Scene Engine
+    pack-processing-timeout: "${TB_QUEUE_SCENE_ENGINE_PACK_PROCESSING_TIMEOUT_MS:2000}"
   calculated_fields:
     # Topic name for Calculated Field (CF) events from Rule Engine
     event_topic: "${TB_QUEUE_CF_EVENT_TOPIC:tb_cf_event}"

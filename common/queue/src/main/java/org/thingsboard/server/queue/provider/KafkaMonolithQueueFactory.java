@@ -71,6 +71,7 @@ import org.thingsboard.server.queue.settings.TbQueueCoreSettings;
 import org.thingsboard.server.queue.settings.TbQueueEdgeSettings;
 import org.thingsboard.server.queue.settings.TbQueueRemoteJsInvokeSettings;
 import org.thingsboard.server.queue.settings.TbQueueRuleEngineSettings;
+import org.thingsboard.server.queue.settings.TbQueueSceneEngineSettings;
 import org.thingsboard.server.queue.settings.TbQueueTransportApiSettings;
 import org.thingsboard.server.queue.settings.TbQueueTransportNotificationSettings;
 import org.thingsboard.server.queue.settings.TbQueueVersionControlSettings;
@@ -80,7 +81,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 @Component
 @ConditionalOnExpression("'${queue.type:null}'=='kafka' && '${service.type:null}'=='monolith'")
-public class KafkaMonolithQueueFactory implements TbCoreQueueFactory, TbRuleEngineQueueFactory, TbVersionControlQueueFactory {
+public class KafkaMonolithQueueFactory implements TbCoreQueueFactory, TbRuleEngineQueueFactory, TbVersionControlQueueFactory, TbSceneEngineQueueFactory {
 
     private final TopicService topicService;
     private final TbKafkaSettings kafkaSettings;
@@ -94,6 +95,7 @@ public class KafkaMonolithQueueFactory implements TbCoreQueueFactory, TbRuleEngi
     private final TbQueueVersionControlSettings vcSettings;
     private final TbQueueEdgeSettings edgeSettings;
     private final TbQueueCalculatedFieldSettings calculatedFieldSettings;
+    private final TbQueueSceneEngineSettings sceneEngineSettings;
     private final TbKafkaConsumerStatsService consumerStatsService;
     private final EdqsConfig edqsConfig;
     private final TasksQueueConfig tasksQueueConfig;
@@ -701,6 +703,54 @@ public class KafkaMonolithQueueFactory implements TbCoreQueueFactory, TbRuleEngi
         if (cfAdmin != null) {
             cfAdmin.destroy();
         }
+    }
+
+    // ===== Scene Engine Queue Factory (Kafka) =====
+
+    @Override
+    public TbQueueProducer<TbProtoQueueMsg<TransportProtos.ToSceneEngineMsg>> createSceneEngineMsgProducer() {
+        TbKafkaProducerTemplate.TbKafkaProducerTemplateBuilder<TbProtoQueueMsg<TransportProtos.ToSceneEngineMsg>> requestBuilder = TbKafkaProducerTemplate.builder();
+        requestBuilder.settings(kafkaSettings);
+        requestBuilder.clientId("monolith-scene-engine-" + serviceInfoProvider.getServiceId());
+        requestBuilder.defaultTopic(topicService.buildTopicName(sceneEngineSettings.getTopic()));
+        requestBuilder.admin(coreAdmin);
+        return requestBuilder.build();
+    }
+
+    @Override
+    public TbQueueProducer<TbProtoQueueMsg<TransportProtos.ToSceneEngineNotificationMsg>> createSceneEngineNotificationsMsgProducer() {
+        TbKafkaProducerTemplate.TbKafkaProducerTemplateBuilder<TbProtoQueueMsg<TransportProtos.ToSceneEngineNotificationMsg>> requestBuilder = TbKafkaProducerTemplate.builder();
+        requestBuilder.settings(kafkaSettings);
+        requestBuilder.clientId("monolith-scene-engine-notifications-" + serviceInfoProvider.getServiceId());
+        requestBuilder.defaultTopic(topicService.getNotificationsTopic(ServiceType.TB_SCENE_ENGINE, serviceInfoProvider.getServiceId()).getFullTopicName());
+        requestBuilder.admin(notificationAdmin);
+        return requestBuilder.build();
+    }
+
+    @Override
+    public TbQueueConsumer<TbProtoQueueMsg<TransportProtos.ToSceneEngineMsg>> createSceneEngineMsgConsumer() {
+        TbKafkaConsumerTemplate.TbKafkaConsumerTemplateBuilder<TbProtoQueueMsg<TransportProtos.ToSceneEngineMsg>> consumerBuilder = TbKafkaConsumerTemplate.builder();
+        consumerBuilder.settings(kafkaSettings);
+        consumerBuilder.topic(topicService.buildTopicName(sceneEngineSettings.getTopic()));
+        consumerBuilder.clientId("monolith-scene-engine-consumer-" + serviceInfoProvider.getServiceId() + "-" + consumerCount.incrementAndGet());
+        consumerBuilder.groupId(topicService.buildTopicName("monolith-scene-engine-consumer"));
+        consumerBuilder.decoder(msg -> new TbProtoQueueMsg<>(msg.getKey(), TransportProtos.ToSceneEngineMsg.parseFrom(msg.getData()), msg.getHeaders()));
+        consumerBuilder.admin(coreAdmin);
+        consumerBuilder.statsService(consumerStatsService);
+        return consumerBuilder.build();
+    }
+
+    @Override
+    public TbQueueConsumer<TbProtoQueueMsg<TransportProtos.ToSceneEngineNotificationMsg>> createSceneEngineNotificationsMsgConsumer() {
+        TbKafkaConsumerTemplate.TbKafkaConsumerTemplateBuilder<TbProtoQueueMsg<TransportProtos.ToSceneEngineNotificationMsg>> consumerBuilder = TbKafkaConsumerTemplate.builder();
+        consumerBuilder.settings(kafkaSettings);
+        consumerBuilder.topic(topicService.getNotificationsTopic(ServiceType.TB_SCENE_ENGINE, serviceInfoProvider.getServiceId()).getFullTopicName());
+        consumerBuilder.clientId("monolith-scene-engine-notifications-consumer-" + serviceInfoProvider.getServiceId());
+        consumerBuilder.groupId(topicService.buildTopicName("monolith-scene-engine-notifications-consumer-" + serviceInfoProvider.getServiceId()));
+        consumerBuilder.decoder(msg -> new TbProtoQueueMsg<>(msg.getKey(), TransportProtos.ToSceneEngineNotificationMsg.parseFrom(msg.getData()), msg.getHeaders()));
+        consumerBuilder.admin(notificationAdmin);
+        consumerBuilder.statsService(consumerStatsService);
+        return consumerBuilder.build();
     }
 
 }
