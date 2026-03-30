@@ -33,6 +33,7 @@ import org.thingsboard.server.common.data.id.SmartHomeId;
 import org.thingsboard.server.common.data.security.Authority;
 import org.thingsboard.server.common.data.smarthome.SceneType;
 import org.thingsboard.server.common.data.smarthome.SmartScene;
+import org.thingsboard.server.common.data.smarthome.SmartSceneLog;
 import org.thingsboard.server.common.data.smarthome.SmartHomeMemberRole;
 import org.thingsboard.server.common.data.smarthome.TriggerType;
 import org.thingsboard.server.dao.smarthome.SmartHomeMemberService;
