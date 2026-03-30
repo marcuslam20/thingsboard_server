@@ -20,6 +20,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.thingsboard.server.common.data.id.TenantId;
+import org.thingsboard.server.common.msg.queue.TopicPartitionInfo;
 import org.thingsboard.server.gen.transport.TransportProtos.SceneMgmtMsgProto;
 import org.thingsboard.server.gen.transport.TransportProtos.SceneMgmtMsgType;
 import org.thingsboard.server.gen.transport.TransportProtos.ToSceneEngineMsg;
@@ -27,6 +28,8 @@ import org.thingsboard.server.gen.transport.TransportProtos.ToSceneEngineNotific
 import org.thingsboard.server.queue.TbQueueProducer;
 import org.thingsboard.server.queue.common.TbProtoQueueMsg;
 import org.thingsboard.server.queue.provider.TbSceneEngineQueueFactory;
+import org.thingsboard.server.queue.settings.TbQueueSceneEngineSettings;
+import org.thingsboard.server.queue.discovery.TopicService;
 import org.thingsboard.server.queue.util.TbCoreComponent;
 
 import java.util.UUID;
@@ -57,6 +60,8 @@ import java.util.UUID;
 public class SceneEngineProducerService {
 
     private final TbSceneEngineQueueFactory sceneEngineQueueFactory;
+    private final TopicService topicService;
+    private final TbQueueSceneEngineSettings sceneEngineSettings;
 
     private TbQueueProducer<TbProtoQueueMsg<ToSceneEngineMsg>> triggerProducer;
     private TbQueueProducer<TbProtoQueueMsg<ToSceneEngineNotificationMsg>> notificationProducer;
@@ -91,9 +96,12 @@ public class SceneEngineProducerService {
                 .setTriggerType(triggerType)
                 .build();
 
-        // Wrap in TbProtoQueueMsg (adds UUID key for Kafka partitioning)
-        // and send to queue topic "tb_scene_engine"
-        triggerProducer.send(new TbProtoQueueMsg<>(sceneId, msg), null);
+        // Build TopicPartitionInfo — tells producer which topic to send to
+        TopicPartitionInfo tpi = topicService.buildTopicPartitionInfo(
+                sceneEngineSettings.getTopic(), null, null, false);
+
+        // Wrap in TbProtoQueueMsg and send to queue
+        triggerProducer.send(tpi, new TbProtoQueueMsg<>(sceneId, msg), null);
 
         log.debug("Pushed scene trigger: sceneId={}, trigger={}", sceneId, triggerType);
     }
@@ -124,7 +132,10 @@ public class SceneEngineProducerService {
                 .setSceneMgmtMsg(mgmtMsg)
                 .build();
 
-        notificationProducer.send(new TbProtoQueueMsg<>(sceneId, msg), null);
+        TopicPartitionInfo tpi = topicService.buildTopicPartitionInfo(
+                sceneEngineSettings.getTopic(), null, null, false);
+
+        notificationProducer.send(tpi, new TbProtoQueueMsg<>(sceneId, msg), null);
 
         log.debug("Pushed scene mgmt: sceneId={}, type={}", sceneId, msgType);
     }
