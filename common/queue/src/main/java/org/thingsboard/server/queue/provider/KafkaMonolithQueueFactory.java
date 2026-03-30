@@ -136,6 +136,7 @@ public class KafkaMonolithQueueFactory implements TbCoreQueueFactory, TbRuleEngi
                                      TbQueueVersionControlSettings vcSettings,
                                      TbQueueEdgeSettings edgeSettings,
                                      TbQueueCalculatedFieldSettings calculatedFieldSettings,
+                                     TbQueueSceneEngineSettings sceneEngineSettings,
                                      TbKafkaConsumerStatsService consumerStatsService,
                                      TbKafkaTopicConfigs kafkaTopicConfigs,
                                      EdqsConfig edqsConfig,
@@ -153,6 +154,7 @@ public class KafkaMonolithQueueFactory implements TbCoreQueueFactory, TbRuleEngi
         this.consumerStatsService = consumerStatsService;
         this.edgeSettings = edgeSettings;
         this.calculatedFieldSettings = calculatedFieldSettings;
+        this.sceneEngineSettings = sceneEngineSettings;
         this.edqsConfig = edqsConfig;
         this.tasksQueueConfig = tasksQueueConfig;
 
