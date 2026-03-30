@@ -20,6 +20,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.thingsboard.server.common.data.id.TenantId;
+import org.thingsboard.server.common.msg.queue.ServiceType;
 import org.thingsboard.server.common.msg.queue.TopicPartitionInfo;
 import org.thingsboard.server.gen.transport.TransportProtos.SceneMgmtMsgProto;
 import org.thingsboard.server.gen.transport.TransportProtos.SceneMgmtMsgType;
@@ -27,9 +28,10 @@ import org.thingsboard.server.gen.transport.TransportProtos.ToSceneEngineMsg;
 import org.thingsboard.server.gen.transport.TransportProtos.ToSceneEngineNotificationMsg;
 import org.thingsboard.server.queue.TbQueueProducer;
 import org.thingsboard.server.queue.common.TbProtoQueueMsg;
+import org.thingsboard.server.queue.discovery.TbServiceInfoProvider;
+import org.thingsboard.server.queue.discovery.TopicService;
 import org.thingsboard.server.queue.provider.TbSceneEngineQueueFactory;
 import org.thingsboard.server.queue.settings.TbQueueSceneEngineSettings;
-import org.thingsboard.server.queue.discovery.TopicService;
 import org.thingsboard.server.queue.util.TbCoreComponent;
 
 import java.util.UUID;
@@ -62,6 +64,7 @@ public class SceneEngineProducerService {
     private final TbSceneEngineQueueFactory sceneEngineQueueFactory;
     private final TopicService topicService;
     private final TbQueueSceneEngineSettings sceneEngineSettings;
+    private final TbServiceInfoProvider serviceInfoProvider;
 
     private TbQueueProducer<TbProtoQueueMsg<ToSceneEngineMsg>> triggerProducer;
     private TbQueueProducer<TbProtoQueueMsg<ToSceneEngineNotificationMsg>> notificationProducer;
@@ -132,8 +135,11 @@ public class SceneEngineProducerService {
                 .setSceneMgmtMsg(mgmtMsg)
                 .build();
 
-        TopicPartitionInfo tpi = topicService.buildTopicPartitionInfo(
-                sceneEngineSettings.getTopic(), null, null, false);
+        // Use NOTIFICATIONS topic (not trigger topic!)
+        // Trigger topic = "tb_scene_engine" (for execution messages)
+        // Notifications topic = "tb_scene_engine.notifications.{serviceId}" (for CRUD sync)
+        TopicPartitionInfo tpi = topicService.getNotificationsTopic(
+                ServiceType.TB_SCENE_ENGINE, serviceInfoProvider.getServiceId());
 
         notificationProducer.send(tpi, new TbProtoQueueMsg<>(sceneId, msg), null);
 
